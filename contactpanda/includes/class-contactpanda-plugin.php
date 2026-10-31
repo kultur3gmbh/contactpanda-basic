@@ -1930,12 +1930,12 @@ final class ContactPanda_Plugin {
 
 		echo '<div class="wrap contactpanda-wrap contactpanda-dashboard"><div class="contactpanda-heading"><div><p class="contactpanda-eyebrow">CRM</p><h1>' . esc_html__( 'Overview', 'contactpanda' ) . '</h1><p>' . esc_html__( 'The most important ContactPanda figures at a glance.', 'contactpanda' ) . '</p></div></div>';
 		self::render_dashboard_product_visual();
+		self::render_dashboard_upgrades();
 		self::render_dashboard_section( __( 'People and companies', 'contactpanda' ), $contact_cards );
 		if ( $communication_cards ) self::render_dashboard_section( __( 'Newsletter and automations', 'contactpanda' ), $communication_cards );
 		self::render_dashboard_last_mailing( $last_mailing );
 		self::render_dashboard_release_news();
 		self::render_dashboard_news();
-		self::render_dashboard_upgrades();
 		echo '</div>';
 	}
 
@@ -1944,9 +1944,18 @@ final class ContactPanda_Plugin {
 	 * cue instead of competing with the operational dashboard information.
 	 */
 	private static function render_dashboard_product_visual() {
-		$visual = apply_filters( 'contactpanda_dashboard_product_visual', array( 'src' => CONTACTPANDA_URL . 'assets/images/contactpanda-admin-icon.png', 'alt' => '' ) );
-		if ( ! is_array( $visual ) || empty( $visual['src'] ) ) return;
-		echo '<section class="contactpanda-card contactpanda-dashboard-product-visual"><img src="' . esc_url( $visual['src'] ) . '" alt="' . esc_attr( $visual['alt'] ?? '' ) . '"><div><h2>' . esc_html__( 'Your contacts and communication in one place', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Manage people, companies, consent, newsletters, and connected extensions from a clear shared workspace.', 'contactpanda' ) . '</p></div></section>';
+		$visual = apply_filters(
+			'contactpanda_dashboard_product_visual',
+			array(
+				'src' => CONTACTPANDA_URL . 'assets/images/contactpanda-basic-dashboard-simple.png',
+				'alt' => __( 'ContactPanda Basic', 'contactpanda' ),
+			)
+		);
+		echo '<section class="contactpanda-card contactpanda-dashboard-product-visual">';
+		if ( is_array( $visual ) && ! empty( $visual['src'] ) ) {
+			echo '<img src="' . esc_url( $visual['src'] ) . '" alt="' . esc_attr( $visual['alt'] ?? '' ) . '">';
+		}
+		echo '<div><h2>' . esc_html__( 'Your contacts and communication in one place', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Manage people, companies, consent, newsletters, and connected extensions from a clear shared workspace.', 'contactpanda' ) . '</p></div></section>';
 	}
 
 	/** Explain user-relevant changes and provide a prepared feedback path. */
@@ -2123,7 +2132,7 @@ final class ContactPanda_Plugin {
 	private static function render_dashboard_upgrades() {
 		if ( ! current_user_can( 'manage_options' ) ) return;
 		$offers = array();
-		if ( ! defined( 'CONTACTPANDA_PLUS_VERSION' ) && ! ContactPanda_License::entitled( 'plus' ) ) {
+		if ( ! ContactPanda_License::entitled( 'plus' ) ) {
 			$offers[] = array(
 				'product'     => 'plus',
 				'name'        => 'ContactPanda Plus',
@@ -2133,20 +2142,20 @@ final class ContactPanda_Plugin {
 					__( 'Visual forms and form migrations', 'contactpanda' ),
 					__( 'Automations and integrations', 'contactpanda' ),
 				),
-				'button'      => __( 'Discover ContactPanda Plus', 'contactpanda' ),
+				'button'      => __( 'Upgrade to ContactPanda Plus now', 'contactpanda' ),
 			);
 		}
-		if ( ! defined( 'CONTACTPANDA_PRO_VERSION' ) && ! ContactPanda_License::entitled( 'pro' ) ) {
+		if ( ! ContactPanda_License::entitled( 'business' ) ) {
 			$offers[] = array(
-				'product'     => 'pro',
-				'name'        => 'ContactPanda Pro',
+				'product'     => 'business',
+				'name'        => 'ContactPanda Business',
 				'description' => __( 'Manage professional customer relationships with customer service, commercial workflows, and connected documents.', 'contactpanda' ),
 				'features'    => array(
 					__( 'Customer management and Support Desk', 'contactpanda' ),
-					__( 'Contracts and subscriptions', 'contactpanda' ),
-					__( 'Payments and invoice documents', 'contactpanda' ),
+					__( 'Projects, tasks, and corrections', 'contactpanda' ),
+					__( 'Business documents and workflows', 'contactpanda' ),
 				),
-				'button'      => __( 'Discover ContactPanda Pro', 'contactpanda' ),
+				'button'      => __( 'Upgrade to ContactPanda Business now', 'contactpanda' ),
 			);
 		}
 		$offers = apply_filters( 'contactpanda_dashboard_upgrade_offers', $offers );

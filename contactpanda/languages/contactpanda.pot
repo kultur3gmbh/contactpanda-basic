@@ -7474,16 +7474,19 @@ msgstr ""
 msgid "Customer management and Support Desk"
 msgstr ""
 
-msgid "Contracts and subscriptions"
+msgid "Projects, tasks, and corrections"
 msgstr ""
 
-msgid "Payments and invoice documents"
+msgid "Business documents and workflows"
 msgstr ""
 
 msgid "Discover ContactPanda Plus"
 msgstr ""
 
-msgid "Discover ContactPanda Pro"
+msgid "Upgrade to ContactPanda Plus now"
+msgstr ""
+
+msgid "Upgrade to ContactPanda Business now"
 msgstr ""
 
 msgid "More possibilities for your business"

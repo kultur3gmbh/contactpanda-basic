@@ -7662,17 +7662,20 @@ msgstr "Verwalten Sie professionelle Kundenbeziehungen mit Kundenservice, kaufm�
 msgid "Customer management and Support Desk"
 msgstr "Kundenverwaltung und Support Desk"
 
-msgid "Contracts and subscriptions"
-msgstr "Verträge und Abonnements"
+msgid "Projects, tasks, and corrections"
+msgstr "Projekte, Aufgaben und Korrekturen"
 
-msgid "Payments and invoice documents"
-msgstr "Zahlungen und Rechnungsdokumente"
+msgid "Business documents and workflows"
+msgstr "Geschäftsdokumente und Arbeitsabläufe"
 
 msgid "Discover ContactPanda Plus"
 msgstr "ContactPanda Plus entdecken"
 
-msgid "Discover ContactPanda Pro"
-msgstr "ContactPanda Pro entdecken"
+msgid "Upgrade to ContactPanda Plus now"
+msgstr "Jetzt auf ContactPanda Plus upgraden"
+
+msgid "Upgrade to ContactPanda Business now"
+msgstr "Jetzt auf ContactPanda Business upgraden"
 
 msgid "More possibilities for your business"
 msgstr "Mehr Möglichkeiten für Ihr Unternehmen"
@@ -7684,7 +7687,7 @@ msgid "Learn more"
 msgstr "Mehr erfahren"
 
 msgid "ContactPanda News"
-msgstr "ContactPanda News"
+msgstr "ContactPanda Neuigkeiten"
 
 msgid "Product news, practical tips, and important information about ContactPanda."
 msgstr "Produktneuigkeiten, praktische Tipps und wichtige Informationen rund um ContactPanda."

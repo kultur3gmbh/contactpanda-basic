@@ -299,6 +299,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			'contactpanda_settings_tabs',
 			array(
 				'general'      => __( 'General', 'contactpanda' ),
+				'portal'       => __( 'Customer portal', 'contactpanda' ),
 				'integrations' => __( 'Integrations', 'contactpanda' ),
 				'misc'         => __( 'Miscellaneous parameters', 'contactpanda' ),
 				'registration' => __( 'Registration & accounts', 'contactpanda' ),
@@ -328,6 +329,8 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			self::render_misc_settings();
 		} elseif ( 'general' === $tab ) {
 			self::render_general_tab();
+		} elseif ( 'portal' === $tab ) {
+			self::render_customer_portal_settings();
 		} elseif ( 'integrations' === $tab ) {
 			self::render_integrations_settings();
 		} elseif ( 'registration' === $tab ) {
@@ -584,15 +587,21 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		self::render_automatic_updates();
 		echo '<form method="post" action="options.php">';
 		settings_fields( 'contactpanda_general' );
-		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Customer portal', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Choose the WordPress page that contains the ContactPanda customer portal block or shortcode. The portal works without WooCommerce.', 'contactpanda' ) . '</p><label class="contactpanda-setting-row"><span><strong>' . esc_html__( 'Portal page', 'contactpanda' ) . '</strong></span>';
-		wp_dropdown_pages( array( 'name' => self::GENERAL_OPTION . '[portal_page_id]', 'selected' => absint( $settings['portal_page_id'] ?? 0 ), 'show_option_none' => __( 'Select a page', 'contactpanda' ), 'option_none_value' => 0 ) );
-		echo '</label><p class="description"><code>[contactpanda_customer_portal]</code></p>';
-		submit_button( __( 'Save portal settings', 'contactpanda' ), 'secondary' );
-		echo '</section>';
 		echo '<section class="contactpanda-card contactpanda-settings-card contactpanda-danger-card"><h2>' . esc_html__( 'Uninstallation and data', 'contactpanda' ) . '</h2><p><strong>' . esc_html__( 'By default, uninstalling ContactPanda does not delete customer data.', 'contactpanda' ) . '</strong></p>';
 		self::render_preserved_integrations();
 		echo '<div class="contactpanda-setting-row"><input type="hidden" name="' . esc_attr( self::GENERAL_OPTION ) . '[delete_on_uninstall]" value="0"><label><input type="checkbox" data-contactpanda-delete-on-uninstall name="' . esc_attr( self::GENERAL_OPTION ) . '[delete_on_uninstall]" value="1"' . checked( ! empty( $settings['delete_on_uninstall'] ), true, false ) . '> <strong>' . esc_html__( 'Permanently delete all ContactPanda-owned customer data when the plugin is uninstalled.', 'contactpanda' ) . '</strong></label><p class="description">' . esc_html__( 'This affects only ContactPanda cp_ tables, ContactPanda options, and ContactPanda user metadata. Data belonging to other plugins is never deleted.', 'contactpanda' ) . '</p></div>';
 		submit_button( __( 'Save general settings', 'contactpanda' ) );
+		echo '</section></form>';
+	}
+
+	private static function render_customer_portal_settings() {
+		$settings = self::general_settings();
+		echo '<form method="post" action="options.php">';
+		settings_fields( 'contactpanda_general' );
+		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Customer portal', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Choose the WordPress page that contains the ContactPanda customer portal block or shortcode. The portal works without WooCommerce.', 'contactpanda' ) . '</p><label class="contactpanda-setting-row"><span><strong>' . esc_html__( 'Portal page', 'contactpanda' ) . '</strong></span>';
+		wp_dropdown_pages( array( 'name' => self::GENERAL_OPTION . '[portal_page_id]', 'selected' => absint( $settings['portal_page_id'] ?? 0 ), 'show_option_none' => __( 'Select a page', 'contactpanda' ), 'option_none_value' => 0 ) );
+		echo '</label><p class="description"><code>[contactpanda_customer_portal]</code></p>';
+		submit_button( __( 'Save portal settings', 'contactpanda' ) );
 		echo '</section></form>';
 	}
 
