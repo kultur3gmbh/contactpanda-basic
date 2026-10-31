@@ -4,7 +4,7 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.8.85
+Stable tag: 0.9.0
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -17,6 +17,11 @@ ContactPanda Basic provides an independent contact and company database for Word
 Optional integrations are detected at runtime and remain hidden when their source plugin is unavailable. ContactPanda Basic remains fully usable without a paid ContactPanda extension.
 
 == Changelog ==
+
+= 0.9.0 =
+* Provides the release candidate for the public ContactPanda Basic 1.0 line while preserving the extension APIs required by current Plus and Business releases.
+* Retires ContactPanda Pro Legacy from protected family update registration without deleting installed plugins or historical data.
+* Includes the corrected event-attendee identities, quick filters, and WooCommerce order summaries validated in 0.8.85.
 
 = 0.8.85 =
 * Corrects event-attendee counts and quick filters in the people list, including merged email identities.

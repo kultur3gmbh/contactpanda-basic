@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
- * Version: 0.8.85
+ * Version: 0.9.0
  * Update URI: https://github.com/kultur3gmbh/contactpanda-basic
  * Author: Kultur3 GmbH
  * Text Domain: contactpanda
@@ -13,8 +13,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.8.85' );
-define( 'CONTACTPANDA_ASSET_VERSION', '0.8.85-20261031-1' );
+define( 'CONTACTPANDA_VERSION', '0.9.0' );
+define( 'CONTACTPANDA_ASSET_VERSION', '0.9.0-20261031-1' );
 define( 'CONTACTPANDA_EXTENSION_API_VERSION', '1.0' );
 define( 'CONTACTPANDA_FILE', __FILE__ );
 define( 'CONTACTPANDA_PATH', plugin_dir_path( __FILE__ ) );
@@ -100,9 +100,6 @@ add_action(
 function contactpanda_register_family_updaters() {
 	$products = array(
 		array( 'constant' => 'CONTACTPANDA_PLUS_FILE', 'version' => 'CONTACTPANDA_PLUS_VERSION', 'product' => 'contactpanda-plus', 'entitlement' => 'plus', 'slug' => 'contactpanda-plus', 'name' => 'ContactPanda Plus' ),
-		// Keep one final protected update path for existing Pro installations so
-		// they can receive the non-writing legacy bridge before Pro is retired.
-		array( 'constant' => 'CONTACTPANDA_PRO_FILE', 'version' => 'CONTACTPANDA_PRO_VERSION', 'product' => 'contactpanda-pro', 'entitlement' => 'pro', 'slug' => 'contactpanda-pro', 'name' => 'ContactPanda Pro (Legacy Bridge)' ),
 		array( 'constant' => 'CONTACTPANDA_BUSINESS_FILE', 'version' => 'CONTACTPANDA_BUSINESS_VERSION', 'product' => 'contactpanda-business', 'entitlement' => 'business', 'slug' => 'contactpanda-business', 'name' => 'ContactPanda Business' ),
 	);
 	foreach ( $products as $product ) {

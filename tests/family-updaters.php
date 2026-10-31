@@ -9,16 +9,21 @@ foreach (
 	array(
 		'contactpanda_register_family_updaters',
 		'CONTACTPANDA_PLUS_FILE',
-		'CONTACTPANDA_PRO_FILE',
 		'CONTACTPANDA_BUSINESS_FILE',
 		"'product' => 'contactpanda-plus'",
-		"'product' => 'contactpanda-pro'",
 		"'product' => 'contactpanda-business'",
 	)
 	as $contract
 ) {
 	if ( false === strpos( $main, $contract ) ) {
 		fwrite( STDERR, "Missing central family updater contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
+foreach ( array( 'CONTACTPANDA_PRO_FILE', "'product' => 'contactpanda-pro'", 'ContactPanda Pro (Legacy Bridge)' ) as $retired_contract ) {
+	if ( false !== strpos( $main, $retired_contract ) ) {
+		fwrite( STDERR, "Retired Pro Legacy updater contract is still registered: {$retired_contract}.\n" );
 		exit( 1 );
 	}
 }
