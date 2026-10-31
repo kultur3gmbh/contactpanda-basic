@@ -28,7 +28,7 @@ foreach ( array( 'render_dashboard', 'contactpanda-dashboard-grid', 'contactpand
 	}
 }
 
-foreach ( array( 'manual_contact_ids', "'manual' === \$audience_source", 'Selected people', 'Delivered / opened / clicked' ) as $contract ) {
+foreach ( array( 'manual_contact_ids', "'manual' === \$audience_source", 'Selected people', "__( 'Delivered', 'contactpanda' )", "__( 'Opened', 'contactpanda' )", "__( 'Clicked', 'contactpanda' )" ) as $contract ) {
 	if ( false === strpos( $schema . $campaigns, $contract ) ) {
 		fwrite( STDERR, "Missing ContactPanda 0.7.8 newsletter-selection contract {$contract}.\n" );
 		exit( 1 );
