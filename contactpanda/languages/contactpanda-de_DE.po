@@ -1,6 +1,156 @@
 msgid ""
 msgstr ""
 
+msgid "Website owner"
+msgstr "Website-Verantwortliche"
+
+msgid "Website owner details saved."
+msgstr "Die Angaben zur verantwortlichen Person oder Organisation wurden gespeichert."
+
+msgid "Responsible for this website"
+msgstr "Verantwortlich für diese Website"
+
+msgid "Maintain the responsible person or organisation, address, contact, tax, and logo details once. ContactPanda extensions use this shared source for messages and customer-facing pages."
+msgstr "Pflegen Sie die für diese Website verantwortliche Person oder Organisation sowie Anschrift, Kontakt-, Steuer- und Logodaten zentral. ContactPanda-Erweiterungen verwenden diese gemeinsame Quelle für Nachrichten und kundenorientierte Seiten."
+
+msgid "Name or organisation"
+msgstr "Name oder Organisation"
+
+msgid "Individual"
+msgstr "Einzelperson"
+
+msgid "Sole proprietorship"
+msgstr "Einzelunternehmen"
+
+msgid "Limited liability company (GmbH)"
+msgstr "Gesellschaft mit beschränkter Haftung (GmbH)"
+
+msgid "Stock corporation (AG)"
+msgstr "Aktiengesellschaft (AG)"
+
+msgid "General partnership (OG)"
+msgstr "Offene Gesellschaft (OG)"
+
+msgid "Limited partnership (KG)"
+msgstr "Kommanditgesellschaft (KG)"
+
+msgid "Association"
+msgstr "Verein"
+
+msgid "Cooperative"
+msgstr "Genossenschaft"
+
+msgid "Public-law entity"
+msgstr "Körperschaft öffentlichen Rechts"
+
+msgid "Other legal form"
+msgstr "Andere Rechtsform"
+
+msgid "Owner"
+msgstr "Inhaber/in"
+
+msgid "Managing director"
+msgstr "Geschäftsführung"
+
+msgid "Executive board"
+msgstr "Vorstand"
+
+msgid "Authorised partner"
+msgstr "Vertretungsberechtigte/r Gesellschafter/in"
+
+msgid "Chairperson or president"
+msgstr "Obmann/Obfrau bzw. Vorsitz"
+
+msgid "Authorised representative"
+msgstr "Vertretungsberechtigte Person"
+
+msgid "Responsible person"
+msgstr "Verantwortliche Person"
+
+msgid "Company or association register"
+msgstr "Firmenbuch- oder Vereinsregister"
+
+msgid "Branding"
+msgstr "Erscheinungsbild"
+
+msgid "Save website owner details"
+msgstr "Angaben speichern"
+
+msgid "Missing website owner details were adopted from WooCommerce."
+msgstr "Fehlende Angaben zur verantwortlichen Person oder Organisation wurden aus WooCommerce übernommen."
+
+msgid "Website owner, address, and logo details are maintained once under Website owner. This page contains only email-specific defaults."
+msgstr "Angaben zur verantwortlichen Person oder Organisation, Anschrift und Logo werden einmalig unter „Website-Verantwortliche“ gepflegt. Diese Seite enthält nur E-Mail-spezifische Vorgaben."
+
+msgid "System email design"
+msgstr "Gestaltung der System-E-Mails"
+
+msgid "Individual email headers and footers are available with ContactPanda Plus."
+msgstr "Individuelle E-Mail-Kopf- und Fußzeilen sind mit ContactPanda Plus verfügbar."
+
+msgid "Plus adds a visual composer for images, formatted text, separators, multiple rows, and reusable header and footer layouts."
+msgstr "Plus ergänzt einen visuellen Composer für Bilder, formatierte Texte, Trennlinien, mehrere Zeilen und wiederverwendbare Kopf- und Fußzeilen."
+
+msgid "Upgrade to ContactPanda Plus"
+msgstr "Jetzt auf ContactPanda Plus upgraden"
+
+msgid "ContactPanda Plus is required to customise system email headers and footers."
+msgstr "ContactPanda Plus ist erforderlich, um Kopf- und Fußzeilen von System-E-Mails individuell zu gestalten."
+
+msgid "ContactPanda Plus is required to manage user roles."
+msgstr "ContactPanda Plus ist erforderlich, um Benutzerrollen zu verwalten."
+
+msgid "Estonia"
+msgstr "Estland"
+
+msgid "Finland"
+msgstr "Finnland"
+
+msgid "Greece"
+msgstr "Griechenland"
+
+msgid "Ireland"
+msgstr "Irland"
+
+msgid "Iceland"
+msgstr "Island"
+
+msgid "Liechtenstein"
+msgstr "Liechtenstein"
+
+msgid "Lithuania"
+msgstr "Litauen"
+
+msgid "Luxembourg"
+msgstr "Luxemburg"
+
+msgid "Malta"
+msgstr "Malta"
+
+msgid "Norway"
+msgstr "Norwegen"
+
+msgid "Poland"
+msgstr "Polen"
+
+msgid "Portugal"
+msgstr "Portugal"
+
+msgid "Sweden"
+msgstr "Schweden"
+
+msgid "Spain"
+msgstr "Spanien"
+
+msgid "United States"
+msgstr "Vereinigte Staaten"
+
+msgid "Canada"
+msgstr "Kanada"
+
+msgid "Australia"
+msgstr "Australien"
+
 msgid "ContactPanda now has a clear Basic, Plus, Business, and future Members structure."
 msgstr "ContactPanda hat nun eine klare Struktur aus Basic, Plus, Business und künftig Members."
 
@@ -26,7 +176,7 @@ msgstr "Anteil für Variante B (%)"
 msgid "Placeholders such as {campaign_name}, {campaign_id} and {subject_variant} are resolved separately for every delivery."
 msgstr "Platzhalter wie {campaign_name}, {campaign_id} und {subject_variant} werden für jeden Versand einzeln aufgelöst."
 
-"Project-Id-Version: ContactPanda 0.9.0\n"
+"Project-Id-Version: ContactPanda 0.9.1\n"
 "Report-Msgid-Bugs-To: https://kultur3.com/\n"
 "POT-Creation-Date: 2026-10-23 14:30+0200\n"
 "PO-Revision-Date: 2026-10-23 14:30+0200\n"

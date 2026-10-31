@@ -8,16 +8,9 @@ final class ContactPanda_System_Emails {
 	private static $sending = false;
 
 	public static function boot() {
-		add_filter( 'contactpanda_general_settings_sections', array( __CLASS__, 'settings_section' ), 20 );
-		add_action( 'contactpanda_render_general_settings_section_system_emails', array( __CLASS__, 'render_settings' ) );
 		add_action( 'admin_post_contactpanda_save_system_email_template', array( __CLASS__, 'save' ) );
 		add_action( 'admin_post_contactpanda_test_system_email_template', array( __CLASS__, 'send_test' ) );
 		add_filter( 'wp_mail', array( __CLASS__, 'filter_wordpress_mail' ), 20 );
-	}
-
-	public static function settings_section( $sections ) {
-		$sections['system_emails'] = __( 'System emails', 'contactpanda' );
-		return $sections;
 	}
 
 	public static function defaults() {
@@ -44,6 +37,9 @@ final class ContactPanda_System_Emails {
 
 	public static function settings() {
 		$stored = (array) get_option( self::OPTION, array() );
+		if ( ! self::customisation_available() ) {
+			$stored = array();
+		}
 		$settings = wp_parse_args( $stored, self::defaults() );
 		if ( ! array_key_exists( 'header_blocks', $stored ) ) {
 			$settings['header_blocks'] = array( array( 'type' => 'image', 'url' => '' ) );
@@ -62,11 +58,16 @@ final class ContactPanda_System_Emails {
 		$settings = self::settings();
 		$profile  = class_exists( 'ContactPanda_Company_Profile' ) ? ContactPanda_Company_Profile::get() : array();
 		if ( isset( $_GET['system_email_saved'] ) ) echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'System email template saved.', 'contactpanda' ) . '</p></div>'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only flag.
-		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Template for system emails', 'contactpanda' ) . '</h2><p>' . esc_html__( 'This shared frame is used for transactional ContactPanda messages such as confirmations, account messages, form notifications, support replies, project notices, and automation administration messages. Newsletters keep their own design.', 'contactpanda' ) . '</p>';
+		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'System email design', 'contactpanda' ) . '</h2><p>' . esc_html__( 'This shared frame is used for transactional ContactPanda messages such as confirmations, account messages, form notifications, support replies, project notices, and automation administration messages. Newsletters keep their own design.', 'contactpanda' ) . '</p>';
+		if ( ! self::customisation_available() ) {
+			echo '<div class="contactpanda-system-email-preview">' . self::render( __( 'Your message subject', 'contactpanda' ), '<h2>' . esc_html__( 'Hello!', 'contactpanda' ) . '</h2><p>' . esc_html__( 'The actual system message is inserted here automatically.', 'contactpanda' ) . '</p>' ) . '</div>';
+			echo '<div class="contactpanda-plus-promotion"><p><strong>' . esc_html__( 'Individual email headers and footers are available with ContactPanda Plus.', 'contactpanda' ) . '</strong> ' . esc_html__( 'Plus adds a visual composer for images, formatted text, separators, multiple rows, and reusable header and footer layouts.', 'contactpanda' ) . '</p><p><a class="button button-primary" href="' . esc_url( apply_filters( 'contactpanda_plus_url', 'https://contactpanda.com/', 'system-emails' ) ) . '" target="_blank" rel="noopener">' . esc_html__( 'Upgrade to ContactPanda Plus', 'contactpanda' ) . '</a></p></div></section>';
+			return;
+		}
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-system-email-settings"><input type="hidden" name="action" value="contactpanda_save_system_email_template">';
 		wp_nonce_field( 'contactpanda_save_system_email_template' );
 		echo '<div class="contactpanda-system-email-grid"><div class="contactpanda-system-email-controls">';
-		echo '<label><span>' . esc_html__( 'Company logo', 'contactpanda' ) . '</span><span class="contactpanda-image-picker-source"><input type="url" name="logo_url" value="' . esc_attr( $settings['logo_url'] ?: ( $profile['logo_url'] ?? '' ) ) . '" data-contactpanda-image-url></span></label>';
+		echo '<label><span>' . esc_html__( 'Logo', 'contactpanda' ) . '</span><span class="contactpanda-image-picker-source"><input type="url" name="logo_url" value="' . esc_attr( $settings['logo_url'] ?: ( $profile['logo_url'] ?? '' ) ) . '" data-contactpanda-image-url></span></label>';
 		echo '<label><span>' . esc_html__( 'Logo position', 'contactpanda' ) . '</span><select name="logo_position"><option value="left"' . selected( $settings['logo_position'], 'left', false ) . '>' . esc_html__( 'Left', 'contactpanda' ) . '</option><option value="center"' . selected( $settings['logo_position'], 'center', false ) . '>' . esc_html__( 'Centered', 'contactpanda' ) . '</option><option value="right"' . selected( $settings['logo_position'], 'right', false ) . '>' . esc_html__( 'Right', 'contactpanda' ) . '</option></select></label>';
 		self::color( 'background_color', __( 'Email background', 'contactpanda' ), $settings );
 		self::color( 'content_color', __( 'Content background', 'contactpanda' ), $settings );
@@ -97,8 +98,13 @@ final class ContactPanda_System_Emails {
 		echo '<label class="contactpanda-settings-color-field"><span>' . esc_html( $label ) . '</span><input type="color" data-contactpanda-color-value="' . esc_attr( $value ) . '" name="' . esc_attr( $name ) . '" value="' . esc_attr( $native ) . '"></label>';
 	}
 
+	private static function customisation_available() {
+		return defined( 'CONTACTPANDA_PLUS_VERSION' ) && class_exists( 'ContactPanda_License' ) && ContactPanda_License::entitled( 'plus' );
+	}
+
 	public static function save() {
 		if ( ! current_user_can( 'manage_options' ) ) wp_die( esc_html__( 'You are not allowed to manage these settings.', 'contactpanda' ) );
+		if ( ! self::customisation_available() ) wp_die( esc_html__( 'ContactPanda Plus is required to customise system email headers and footers.', 'contactpanda' ), '', array( 'response' => 403 ) );
 		check_admin_referer( 'contactpanda_save_system_email_template' );
 		$defaults = self::defaults();
 		$settings = array(
@@ -117,7 +123,7 @@ final class ContactPanda_System_Emails {
 			$settings[ $key ] = self::sanitize_color( wp_unslash( $_POST[ $key ] ?? '' ), $defaults[ $key ] );
 		}
 		update_option( self::OPTION, $settings, false );
-		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=general&general_section=system_emails&system_email_saved=1' ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=newsletter&system_email_saved=1' ) );
 		exit;
 	}
 
@@ -133,10 +139,11 @@ final class ContactPanda_System_Emails {
 
 	public static function send_test() {
 		if ( ! current_user_can( 'manage_options' ) ) wp_die( esc_html__( 'You are not allowed to manage these settings.', 'contactpanda' ) );
+		if ( ! self::customisation_available() ) wp_die( esc_html__( 'ContactPanda Plus is required to customise system email headers and footers.', 'contactpanda' ), '', array( 'response' => 403 ) );
 		check_admin_referer( 'contactpanda_test_system_email_template' );
 		$email = sanitize_email( wp_unslash( $_POST['test_email'] ?? '' ) );
 		if ( is_email( $email ) ) self::send( $email, __( 'ContactPanda system email test', 'contactpanda' ), '<h2>' . esc_html__( 'The template is ready.', 'contactpanda' ) . '</h2><p>' . esc_html__( 'This is how future transactional ContactPanda emails will look.', 'contactpanda' ) . '</p>' );
-		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=general&general_section=system_emails&system_email_saved=1' ) );
+		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=newsletter&system_email_saved=1' ) );
 		exit;
 	}
 

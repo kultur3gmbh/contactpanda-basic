@@ -2,7 +2,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-/** Central company identity shared by every ContactPanda family member. */
+/** Central website-owner identity shared by every ContactPanda family member. */
 final class ContactPanda_Company_Profile {
 	const OPTION = 'contactpanda_company_profile';
 
@@ -14,7 +14,7 @@ final class ContactPanda_Company_Profile {
 	}
 
 	public static function settings_section( $sections ) {
-		$sections['company'] = __( 'Company details', 'contactpanda' );
+		$sections['company'] = __( 'Website owner', 'contactpanda' );
 		return $sections;
 	}
 
@@ -66,10 +66,10 @@ final class ContactPanda_Company_Profile {
 		}
 		$profile = self::get();
 		if ( isset( $_GET['company_profile_saved'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only flag.
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Company details saved.', 'contactpanda' ) . '</p></div>';
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Website owner details saved.', 'contactpanda' ) . '</p></div>';
 		}
-		if ( isset( $_GET['woocommerce_company_imported'] ) ) echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Missing company details were adopted from WooCommerce.', 'contactpanda' ) . '</p></div>'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only flag.
-		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Company details', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Maintain identity, contact, tax, bank, and branding details once. ContactPanda extensions use this shared source for documents, messages, and customer-facing pages.', 'contactpanda' ) . '</p>';
+		if ( isset( $_GET['woocommerce_company_imported'] ) ) echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Missing website owner details were adopted from WooCommerce.', 'contactpanda' ) . '</p></div>'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only flag.
+		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Responsible for this website', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Maintain the responsible person or organisation, address, contact, tax, and logo details once. ContactPanda extensions use this shared source for messages and customer-facing pages.', 'contactpanda' ) . '</p>';
 		if ( class_exists( 'WooCommerce' ) ) {
 			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-inline-action-form"><input type="hidden" name="action" value="contactpanda_import_woocommerce_company_profile">';
 			wp_nonce_field( 'contactpanda_import_woocommerce_company_profile' );
@@ -78,17 +78,123 @@ final class ContactPanda_Company_Profile {
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-company-profile"><input type="hidden" name="action" value="contactpanda_save_company_profile">';
 		wp_nonce_field( 'contactpanda_save_company_profile' );
 		self::heading( __( 'Identity and address', 'contactpanda' ) );
-		self::row( $profile, array( 'company_name' => __( 'Company name', 'contactpanda' ), 'legal_form' => __( 'Legal form', 'contactpanda' ), 'management' => __( 'Management', 'contactpanda' ), 'company_register' => __( 'Company register', 'contactpanda' ) ) );
-		self::row( $profile, array( 'street' => __( 'Street and house number', 'contactpanda' ), 'postcode' => __( 'Postal code', 'contactpanda' ), 'city' => __( 'City', 'contactpanda' ), 'country' => __( 'Country code', 'contactpanda' ) ) );
+		self::identity_row( $profile );
+		self::address_row( $profile );
 		self::heading( __( 'Contact and tax details', 'contactpanda' ) );
 		self::row( $profile, array( 'email' => __( 'Email address', 'contactpanda' ), 'phone' => __( 'Telephone', 'contactpanda' ), 'website' => __( 'Website', 'contactpanda' ), 'tax_number' => __( 'Tax number or VAT ID', 'contactpanda' ) ), array( 'email' => 'email', 'website' => 'url' ) );
-		self::heading( __( 'Payments and documents', 'contactpanda' ) );
-		self::row( $profile, array( 'bank_name' => __( 'Bank name', 'contactpanda' ), 'iban' => 'IBAN', 'bic' => 'BIC', 'payment_terms_days' => __( 'Default payment term in days', 'contactpanda' ) ), array( 'payment_terms_days' => 'number' ) );
-		self::row( $profile, array( 'logo_url' => __( 'Logo', 'contactpanda' ), 'alternate_logo_url' => __( 'Alternative logo', 'contactpanda' ), 'stamp_url' => __( 'Stamp image', 'contactpanda' ), 'signature_url' => __( 'Signature image', 'contactpanda' ) ), array(), true );
-		echo '<label class="contactpanda-company-profile-wide"><span>' . esc_html__( 'Legal footer', 'contactpanda' ) . '</span><textarea name="legal_footer" rows="4">' . esc_textarea( $profile['legal_footer'] ) . '</textarea></label>';
+		self::heading( __( 'Branding', 'contactpanda' ) );
+		self::row( $profile, array( 'logo_url' => __( 'Logo', 'contactpanda' ) ), array(), true );
 		echo '<p class="description">' . esc_html__( 'Available WooCommerce store values are used only as initial suggestions. Saving here never changes WooCommerce settings.', 'contactpanda' ) . '</p>';
-		submit_button( __( 'Save company details', 'contactpanda' ) );
+		submit_button( __( 'Save website owner details', 'contactpanda' ) );
 		echo '</form></section>';
+	}
+
+	private static function identity_row( $profile ) {
+		$legal_forms = self::legal_forms();
+		$legal_form  = self::normalized_legal_form( $profile['legal_form'] ?? '' );
+		$labels      = self::representative_labels();
+		$hidden      = 'individual' === $legal_form;
+		$label       = $labels[ $legal_form ] ?? $labels['other'];
+
+		echo '<div class="contactpanda-company-profile-row">';
+		echo '<label><span>' . esc_html__( 'Name or organisation', 'contactpanda' ) . '</span><input type="text" name="company_name" value="' . esc_attr( $profile['company_name'] ?? '' ) . '"></label>';
+		echo '<label><span>' . esc_html__( 'Legal form', 'contactpanda' ) . '</span><select name="legal_form" data-contactpanda-legal-form>';
+		echo '<option value="">' . esc_html__( 'Please select', 'contactpanda' ) . '</option>';
+		foreach ( $legal_forms as $value => $option_label ) {
+			echo '<option value="' . esc_attr( $value ) . '"' . selected( $legal_form, $value, false ) . '>' . esc_html( $option_label ) . '</option>';
+		}
+		if ( '' !== $legal_form && ! isset( $legal_forms[ $legal_form ] ) ) {
+			echo '<option value="' . esc_attr( $legal_form ) . '" selected>' . esc_html( $profile['legal_form'] ) . '</option>';
+		}
+		echo '</select></label>';
+		echo '<label data-contactpanda-representative-field data-labels="' . esc_attr( wp_json_encode( $labels ) ) . '"' . ( $hidden ? ' hidden' : '' ) . '><span data-contactpanda-representative-label>' . esc_html( $label ) . '</span><input type="text" name="management" value="' . esc_attr( $profile['management'] ?? '' ) . '"></label>';
+		echo '<label><span>' . esc_html__( 'Company or association register', 'contactpanda' ) . '</span><input type="text" name="company_register" value="' . esc_attr( $profile['company_register'] ?? '' ) . '"></label>';
+		echo '</div>';
+	}
+
+	private static function address_row( $profile ) {
+		$countries = self::countries();
+		$country   = strtoupper( (string) ( $profile['country'] ?? '' ) );
+		echo '<div class="contactpanda-company-profile-row">';
+		foreach ( array( 'street' => __( 'Street and house number', 'contactpanda' ), 'postcode' => __( 'Postal code', 'contactpanda' ), 'city' => __( 'City', 'contactpanda' ) ) as $name => $label ) {
+			echo '<label><span>' . esc_html( $label ) . '</span><input type="text" name="' . esc_attr( $name ) . '" value="' . esc_attr( $profile[ $name ] ?? '' ) . '"></label>';
+		}
+		echo '<label><span>' . esc_html__( 'Country', 'contactpanda' ) . '</span><select name="country"><option value="">' . esc_html__( 'Please select', 'contactpanda' ) . '</option>';
+		foreach ( $countries as $code => $name ) {
+			if ( '__separator__' === $code ) {
+				echo '<option value="" disabled>' . esc_html( $name ) . '</option>';
+				continue;
+			}
+			echo '<option value="' . esc_attr( $code ) . '"' . selected( $country, $code, false ) . '>' . esc_html( $name ) . '</option>';
+		}
+		if ( '' !== $country && ! isset( $countries[ $country ] ) ) {
+			echo '<option value="' . esc_attr( $country ) . '" selected>' . esc_html( $country ) . '</option>';
+		}
+		echo '</select></label></div>';
+	}
+
+	private static function legal_forms() {
+		return array(
+			'individual'          => __( 'Individual', 'contactpanda' ),
+			'sole_proprietorship' => __( 'Sole proprietorship', 'contactpanda' ),
+			'gmbh'                => __( 'Limited liability company (GmbH)', 'contactpanda' ),
+			'ag'                  => __( 'Stock corporation (AG)', 'contactpanda' ),
+			'og'                  => __( 'General partnership (OG)', 'contactpanda' ),
+			'kg'                  => __( 'Limited partnership (KG)', 'contactpanda' ),
+			'association'         => __( 'Association', 'contactpanda' ),
+			'cooperative'         => __( 'Cooperative', 'contactpanda' ),
+			'public_body'         => __( 'Public-law entity', 'contactpanda' ),
+			'other'               => __( 'Other legal form', 'contactpanda' ),
+		);
+	}
+
+	private static function representative_labels() {
+		return array(
+			'individual'          => '',
+			'sole_proprietorship' => __( 'Owner', 'contactpanda' ),
+			'gmbh'                => __( 'Managing director', 'contactpanda' ),
+			'ag'                  => __( 'Executive board', 'contactpanda' ),
+			'og'                  => __( 'Authorised partner', 'contactpanda' ),
+			'kg'                  => __( 'Authorised partner', 'contactpanda' ),
+			'association'         => __( 'Chairperson or president', 'contactpanda' ),
+			'cooperative'         => __( 'Executive board', 'contactpanda' ),
+			'public_body'         => __( 'Authorised representative', 'contactpanda' ),
+			'other'               => __( 'Responsible person', 'contactpanda' ),
+		);
+	}
+
+	private static function normalized_legal_form( $value ) {
+		$value = sanitize_text_field( (string) $value );
+		$key   = strtolower( trim( $value ) );
+		$map   = array(
+			'einzelperson' => 'individual', 'individual' => 'individual',
+			'einzelunternehmen' => 'sole_proprietorship', 'sole proprietorship' => 'sole_proprietorship',
+			'gmbh' => 'gmbh', 'ag' => 'ag', 'og' => 'og', 'kg' => 'kg',
+			'verein' => 'association', 'association' => 'association',
+			'genossenschaft' => 'cooperative', 'cooperative' => 'cooperative',
+		);
+		return $map[ $key ] ?? $value;
+	}
+
+	private static function countries() {
+		if ( function_exists( 'WC' ) && WC() && WC()->countries ) {
+			return ContactPanda_Plugin::ordered_countries( WC()->countries->get_countries() );
+		}
+		return ContactPanda_Plugin::ordered_countries(
+			array(
+				'AT' => __( 'Austria', 'contactpanda' ), 'DE' => __( 'Germany', 'contactpanda' ), 'CH' => __( 'Switzerland', 'contactpanda' ),
+				'IT' => __( 'Italy', 'contactpanda' ), 'FR' => __( 'France', 'contactpanda' ), 'NL' => __( 'Netherlands', 'contactpanda' ),
+				'BE' => __( 'Belgium', 'contactpanda' ), 'CZ' => __( 'Czechia', 'contactpanda' ), 'SK' => __( 'Slovakia', 'contactpanda' ),
+				'HU' => __( 'Hungary', 'contactpanda' ), 'SI' => __( 'Slovenia', 'contactpanda' ), 'HR' => __( 'Croatia', 'contactpanda' ),
+				'DK' => __( 'Denmark', 'contactpanda' ), 'EE' => __( 'Estonia', 'contactpanda' ), 'FI' => __( 'Finland', 'contactpanda' ),
+				'GR' => __( 'Greece', 'contactpanda' ), 'IE' => __( 'Ireland', 'contactpanda' ), 'IS' => __( 'Iceland', 'contactpanda' ),
+				'LI' => __( 'Liechtenstein', 'contactpanda' ), 'LT' => __( 'Lithuania', 'contactpanda' ), 'LU' => __( 'Luxembourg', 'contactpanda' ),
+				'MT' => __( 'Malta', 'contactpanda' ), 'NO' => __( 'Norway', 'contactpanda' ), 'PL' => __( 'Poland', 'contactpanda' ),
+				'PT' => __( 'Portugal', 'contactpanda' ), 'RO' => __( 'Romania', 'contactpanda' ), 'SE' => __( 'Sweden', 'contactpanda' ),
+				'ES' => __( 'Spain', 'contactpanda' ), 'GB' => __( 'United Kingdom', 'contactpanda' ), 'US' => __( 'United States', 'contactpanda' ),
+				'CA' => __( 'Canada', 'contactpanda' ), 'AU' => __( 'Australia', 'contactpanda' ),
+			)
+		);
 	}
 
 	private static function heading( $label ) {
@@ -115,17 +221,17 @@ final class ContactPanda_Company_Profile {
 			wp_die( esc_html__( 'You are not allowed to manage these settings.', 'contactpanda' ) );
 		}
 		check_admin_referer( 'contactpanda_save_company_profile' );
-		$text = array( 'company_name', 'legal_form', 'management', 'company_register', 'street', 'postcode', 'city', 'country', 'phone', 'tax_number', 'bank_name', 'iban', 'bic' );
-		$profile = array();
+		$text    = array( 'company_name', 'management', 'company_register', 'street', 'postcode', 'city', 'country', 'phone', 'tax_number' );
+		$profile = self::get();
 		foreach ( $text as $key ) {
 			$profile[ $key ] = sanitize_text_field( wp_unslash( $_POST[ $key ] ?? '' ) );
 		}
+		$profile['country']    = strtoupper( $profile['country'] );
+		$profile['legal_form'] = self::normalized_legal_form( wp_unslash( $_POST['legal_form'] ?? '' ) );
 		$profile['email'] = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
-		foreach ( array( 'website', 'logo_url', 'alternate_logo_url', 'stamp_url', 'signature_url' ) as $key ) {
+		foreach ( array( 'website', 'logo_url' ) as $key ) {
 			$profile[ $key ] = esc_url_raw( wp_unslash( $_POST[ $key ] ?? '' ) );
 		}
-		$profile['payment_terms_days'] = min( 365, max( 0, absint( $_POST['payment_terms_days'] ?? 14 ) ) );
-		$profile['legal_footer'] = sanitize_textarea_field( wp_unslash( $_POST['legal_footer'] ?? '' ) );
 		update_option( self::OPTION, $profile, false );
 		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=general&general_section=company&company_profile_saved=1' ) );
 		exit;

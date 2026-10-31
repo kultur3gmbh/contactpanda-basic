@@ -44,8 +44,14 @@ final class ContactPanda_Capabilities {
 	}
 
 	public static function settings_tab( $tabs ) {
-		$tabs['roles'] = __( 'Users & roles', 'contactpanda' );
+		if ( self::management_available() ) {
+			$tabs['roles'] = __( 'Users & roles', 'contactpanda' );
+		}
 		return $tabs;
+	}
+
+	public static function management_available() {
+		return defined( 'CONTACTPANDA_PLUS_VERSION' ) && class_exists( 'ContactPanda_License' ) && ContactPanda_License::entitled( 'plus' );
 	}
 
 	public static function ensure_default_capabilities() {
@@ -61,7 +67,7 @@ final class ContactPanda_Capabilities {
 	}
 
 	public static function render_settings() {
-		if ( ! current_user_can( 'manage_options' ) ) return;
+		if ( ! current_user_can( 'manage_options' ) || ! self::management_available() ) return;
 		global $wp_roles;
 		$matrix = (array) get_option( self::OPTION, array() );
 		$definitions = self::definitions();
@@ -84,6 +90,7 @@ final class ContactPanda_Capabilities {
 
 	public static function save_settings() {
 		if ( ! current_user_can( 'manage_options' ) ) wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ), '', array( 'response' => 403 ) );
+		if ( ! self::management_available() ) wp_die( esc_html__( 'ContactPanda Plus is required to manage user roles.', 'contactpanda' ), '', array( 'response' => 403 ) );
 		check_admin_referer( 'contactpanda_save_role_capabilities' );
 		global $wp_roles;
 		$allowed = array_keys( self::definitions() );

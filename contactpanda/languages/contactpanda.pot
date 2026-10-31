@@ -1,6 +1,156 @@
 msgid ""
 msgstr ""
 
+msgid "Website owner"
+msgstr ""
+
+msgid "Website owner details saved."
+msgstr ""
+
+msgid "Responsible for this website"
+msgstr ""
+
+msgid "Maintain the responsible person or organisation, address, contact, tax, and logo details once. ContactPanda extensions use this shared source for messages and customer-facing pages."
+msgstr ""
+
+msgid "Name or organisation"
+msgstr ""
+
+msgid "Individual"
+msgstr ""
+
+msgid "Sole proprietorship"
+msgstr ""
+
+msgid "Limited liability company (GmbH)"
+msgstr ""
+
+msgid "Stock corporation (AG)"
+msgstr ""
+
+msgid "General partnership (OG)"
+msgstr ""
+
+msgid "Limited partnership (KG)"
+msgstr ""
+
+msgid "Association"
+msgstr ""
+
+msgid "Cooperative"
+msgstr ""
+
+msgid "Public-law entity"
+msgstr ""
+
+msgid "Other legal form"
+msgstr ""
+
+msgid "Owner"
+msgstr ""
+
+msgid "Managing director"
+msgstr ""
+
+msgid "Executive board"
+msgstr ""
+
+msgid "Authorised partner"
+msgstr ""
+
+msgid "Chairperson or president"
+msgstr ""
+
+msgid "Authorised representative"
+msgstr ""
+
+msgid "Responsible person"
+msgstr ""
+
+msgid "Company or association register"
+msgstr ""
+
+msgid "Branding"
+msgstr ""
+
+msgid "Save website owner details"
+msgstr ""
+
+msgid "Missing website owner details were adopted from WooCommerce."
+msgstr ""
+
+msgid "Website owner, address, and logo details are maintained once under Website owner. This page contains only email-specific defaults."
+msgstr ""
+
+msgid "System email design"
+msgstr ""
+
+msgid "Individual email headers and footers are available with ContactPanda Plus."
+msgstr ""
+
+msgid "Plus adds a visual composer for images, formatted text, separators, multiple rows, and reusable header and footer layouts."
+msgstr ""
+
+msgid "Upgrade to ContactPanda Plus"
+msgstr ""
+
+msgid "ContactPanda Plus is required to customise system email headers and footers."
+msgstr ""
+
+msgid "ContactPanda Plus is required to manage user roles."
+msgstr ""
+
+msgid "Estonia"
+msgstr ""
+
+msgid "Finland"
+msgstr ""
+
+msgid "Greece"
+msgstr ""
+
+msgid "Ireland"
+msgstr ""
+
+msgid "Iceland"
+msgstr ""
+
+msgid "Liechtenstein"
+msgstr ""
+
+msgid "Lithuania"
+msgstr ""
+
+msgid "Luxembourg"
+msgstr ""
+
+msgid "Malta"
+msgstr ""
+
+msgid "Norway"
+msgstr ""
+
+msgid "Poland"
+msgstr ""
+
+msgid "Portugal"
+msgstr ""
+
+msgid "Sweden"
+msgstr ""
+
+msgid "Spain"
+msgstr ""
+
+msgid "United States"
+msgstr ""
+
+msgid "Canada"
+msgstr ""
+
+msgid "Australia"
+msgstr ""
+
 msgid "ContactPanda now has a clear Basic, Plus, Business, and future Members structure."
 msgstr ""
 
@@ -26,7 +176,7 @@ msgstr ""
 msgid "Placeholders such as {campaign_name}, {campaign_id} and {subject_variant} are resolved separately for every delivery."
 msgstr ""
 
-"Project-Id-Version: ContactPanda 0.9.0\n"
+"Project-Id-Version: ContactPanda 0.9.1\n"
 "Report-Msgid-Bugs-To: https://kultur3.com/\n"
 "POT-Creation-Date: 2026-10-23 14:30+0200\n"
 "PO-Revision-Date: 2026-10-23 14:30+0200\n"

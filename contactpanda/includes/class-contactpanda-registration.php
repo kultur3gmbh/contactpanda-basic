@@ -1108,7 +1108,14 @@ The link is valid for 24 hours.', 'contactpanda' ),
 	}
 
 	private static function render_integrations_settings() {
-		$sections = (array) apply_filters( 'contactpanda_integration_sections', array( 'woocommerce' => 'WooCommerce', 'groundhogg' => 'Groundhogg', 'messaging' => __( 'SMS and WhatsApp gateways', 'contactpanda' ), 'email' => __( 'Email delivery', 'contactpanda' ) ) );
+		$sections = array( 'woocommerce' => 'WooCommerce', 'groundhogg' => 'Groundhogg' );
+		if ( class_exists( 'ContactPanda_Plus_Messaging' ) ) {
+			$sections['messaging'] = __( 'SMS and WhatsApp gateways', 'contactpanda' );
+		}
+		if ( class_exists( 'ContactPanda_Plus_Email_Delivery' ) ) {
+			$sections['email'] = __( 'Email delivery', 'contactpanda' );
+		}
+		$sections = (array) apply_filters( 'contactpanda_integration_sections', $sections );
 		$current = isset( $_GET['integration_section'] ) ? sanitize_key( wp_unslash( $_GET['integration_section'] ) ) : 'woocommerce'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- navigation only.
 		if ( ! isset( $sections[ $current ] ) ) $current = 'woocommerce';
 		echo '<nav class="nav-tab-wrapper contactpanda-settings-subtabs">'; foreach ( $sections as $key => $label ) echo '<a class="nav-tab ' . ( $current === $key ? 'nav-tab-active' : '' ) . '" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-settings&tab=integrations&integration_section=' . sanitize_key( $key ) ) ) . '">' . esc_html( $label ) . '</a>'; echo '</nav>';

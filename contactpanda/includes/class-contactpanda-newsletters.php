@@ -133,7 +133,7 @@ final class ContactPanda_Basic_Newsletters {
 			wp_nonce_field( 'contactpanda_import_woocommerce_email_style' );
 			echo '<button type="submit" class="button">' . esc_html__( 'Adopt WooCommerce settings', 'contactpanda' ) . '</button></form></section>';
 		}
-		echo '<form method="post" action="options.php"><section class="contactpanda-card contactpanda-settings-card contactpanda-newsletter-global-settings"><h2>' . esc_html__( 'Email defaults', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Company, address and logo details are maintained once under Company details. This page contains only email-specific defaults.', 'contactpanda' ) . '</p>';
+		echo '<form method="post" action="options.php"><section class="contactpanda-card contactpanda-settings-card contactpanda-newsletter-global-settings"><h2>' . esc_html__( 'Email defaults', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Website owner, address, and logo details are maintained once under Website owner. This page contains only email-specific defaults.', 'contactpanda' ) . '</p>';
 		settings_fields( 'contactpanda_newsletter' );
 		echo '<h3>' . esc_html__( 'Sender details', 'contactpanda' ) . '</h3><div class="contactpanda-settings-grid">';
 		self::settings_field( 'from_name', __( 'Sender name', 'contactpanda' ), $settings );
@@ -160,6 +160,9 @@ final class ContactPanda_Basic_Newsletters {
 		echo '<label><span>' . esc_html__( 'Reminder email text', 'contactpanda' ) . '</span><textarea rows="6" name="' . esc_attr( self::OPTION ) . '[reminder_message]">' . esc_textarea( $settings['reminder_message'] ) . '</textarea></label></div>';
 		submit_button( __( 'Save newsletter settings', 'contactpanda' ) );
 		echo '</section></form>';
+		if ( class_exists( 'ContactPanda_System_Emails' ) ) {
+			ContactPanda_System_Emails::render_settings();
+		}
 	}
 
 	public static function schedule_confirmation_reminders( $verification_key, $token, $payload ) {

@@ -1402,6 +1402,18 @@
 	});
 
 	document.addEventListener('change', function (event) {
+		if (event.target.matches('[data-contactpanda-legal-form]')) {
+			var representative = event.target.closest('form').querySelector('[data-contactpanda-representative-field]');
+			if (representative) {
+				var labels = {};
+				try { labels = JSON.parse(representative.dataset.labels || '{}'); } catch (error) {}
+				var selected = event.target.value;
+				representative.hidden = selected === 'individual';
+				var label = representative.querySelector('[data-contactpanda-representative-label]');
+				if (label) label.textContent = labels[selected] || labels.other || '';
+			}
+			return;
+		}
 		if (!event.target.matches('.contactpanda-file-drop input[type="file"]')) return;
 		var drop = event.target.closest('.contactpanda-file-drop');
 		var name = drop && drop.querySelector('.contactpanda-file-drop-name');

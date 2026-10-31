@@ -10,6 +10,43 @@ $styles     = file_get_contents( $root . '/contactpanda/assets/contactpanda-admi
 $menu_styles = file_get_contents( $root . '/contactpanda/assets/contactpanda-admin-menu.css' );
 $bootstrap  = file_get_contents( $root . '/contactpanda/contactpanda.php' );
 $registration = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-registration.php' );
+$company_profile = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-company-profile.php' );
+$newsletters = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-newsletters.php' );
+$system_emails = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-system-emails.php' );
+$capabilities = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-capabilities.php' );
+
+foreach ( array( 'data-contactpanda-legal-form', 'Name or organisation', 'Chairperson or president', "<select name=\"country\"", "\$profile = self::get();" ) as $contract ) {
+	if ( false === strpos( $company_profile, $contract ) ) {
+		fwrite( STDERR, "Missing inclusive website-owner contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
+foreach ( array( "Payments and documents", "Stamp image", "Signature image", "Country code" ) as $obsolete_contract ) {
+	if ( false !== strpos( $company_profile, "esc_html__( '" . $obsolete_contract ) ) {
+		fwrite( STDERR, "Basic must not render {$obsolete_contract} in website-owner settings.\n" );
+		exit( 1 );
+	}
+}
+
+if ( false !== strpos( $system_emails, "contactpanda_general_settings_sections" ) || false === strpos( $newsletters, 'ContactPanda_System_Emails::render_settings();' ) ) {
+	fwrite( STDERR, "System email design must be consolidated into Email defaults.\n" );
+	exit( 1 );
+}
+
+foreach ( array( "class_exists( 'ContactPanda_Plus_Messaging' )", "class_exists( 'ContactPanda_Plus_Email_Delivery' )" ) as $contract ) {
+	if ( false === strpos( $registration, $contract ) ) {
+		fwrite( STDERR, "Missing optional Plus integration visibility contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
+foreach ( array( 'management_available()', "ContactPanda_License::entitled( 'plus' )", 'ContactPanda Plus is required to manage user roles.' ) as $contract ) {
+	if ( false === strpos( $capabilities, $contract ) ) {
+		fwrite( STDERR, "Missing Plus-only role management contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
 
 foreach ( array( 'Button preview', 'contactpanda-theme-button-preview is-contactpanda', 'contactpanda-theme-button-preview is-theme', 'Detected theme colors' ) as $contract ) {
 	if ( false === strpos( $registration, $contract ) ) {

@@ -4,7 +4,7 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.9.0
+Stable tag: 0.9.1
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -17,6 +17,12 @@ ContactPanda Basic provides an independent contact and company database for Word
 Optional integrations are detected at runtime and remain hidden when their source plugin is unavailable. ContactPanda Basic remains fully usable without a paid ContactPanda extension.
 
 == Changelog ==
+
+= 0.9.1 =
+* Consolidates email defaults and system-email design into one settings area; custom header and footer composition is available with ContactPanda Plus.
+* Replaces company-only master data with inclusive website-owner settings, including legal-form-aware representatives and a country selector.
+* Keeps payment, document, stamp, and signature data out of Basic while preserving existing values for ContactPanda Business.
+* Shows SMS, WhatsApp, email-delivery, and user-role management settings only when the required ContactPanda Plus module is available.
 
 = 0.9.0 =
 * Provides the release candidate for the public ContactPanda Basic 1.0 line while preserving the extension APIs required by current Plus and Business releases.
@@ -610,24 +616,6 @@ Optional integrations are detected at runtime and remain hidden when their sourc
 * The Events Calendar and Event Tickets Plus adapter moved behind a ContactPanda Plus interface; Basic no longer contains third-party attendee queries.
 * Added extensible settings tabs and event data filters so future modules can be added without editing the Basic plugin.
 * Disabling ContactPanda Plus hides its modules but never deletes contacts, orders, event data, templates, or settings.
-
-= 0.9.2 =
-* Text blocks now provide a formatting toolbar directly above the selected block and can be edited immediately inside the email canvas.
-* Image blocks expose alignment and width controls directly on the block and in the sidebar; widths can use pixels or percent.
-* Added an optional WooCommerce product block for two or four products selected from latest, category, producer/brand or product attribute, featured, sale, or manual sources.
-* Product blocks query current WooCommerce product images, names, prices, and links without duplicating product data in ContactPanda.
-* When WooCommerce is unavailable, the product block is hidden from the palette while existing product blocks remain intact and display a clear notice.
-* The people list displays email addresses as plain text with a separate mailto icon and suppresses Groundhogg's global email detector throughout ContactPanda.
-
-= 0.9.1 =
-* Rebuilt the newsletter template editor as a three-part visual composer with draggable content blocks, an email canvas, and a contextual settings sidebar.
-* Rich-text blocks now use the WordPress WYSIWYG editor, while image blocks select files directly from the WordPress media library.
-* Blocks can be inserted, reordered by drag and drop, duplicated, removed, aligned, and edited without leaving the visual email canvas.
-* Added a dedicated Newsletter settings tab for sender details, company and legal data, logo, colors, typography, email width, and a fixed footer.
-* The company footer is locked in the template editor and automatically includes configured legal links and the unsubscribe link.
-* WooCommerce email colors, sender details, header image, and footer text can be copied into ContactPanda without creating a permanent WooCommerce dependency.
-* Existing 0.9.0 templates remain readable and receive the extended block properties when next saved.
-* Hidden shipping-address fields are disabled and never remain required; copied billing values are cleared when a customer switches to a genuinely separate shipping address.
 
 = 0.9.0 =
 * Groundhogg tags are now read page by page without the former fixed limit; regular tags are no longer hidden merely because their names match WordPress roles.
