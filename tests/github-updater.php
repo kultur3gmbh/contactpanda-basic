@@ -46,9 +46,9 @@ $engine = getenv( 'CONTACTPANDA_BASIC_UPDATER_FILE' ) ?: __DIR__ . '/../contactp
 require $engine;
 $plus = in_array( '--plus', $argv, true );
 $slug = $plus ? 'contactpanda-plus' : 'contactpanda';
-$config = array( 'slug' => $slug, 'name' => $slug, 'repo' => $slug, 'zip_prefix' => $plus ? $slug : 'contactpanda-basic', 'plugin' => $slug . '/' . $slug . '.php', 'version' => '0.14.0', 'enabled' => 'CONTACTPANDA_UPDATER_TEST_ENABLED', 'basic' => $plus, 'public_direct' => false );
+$config = array( 'slug' => $slug, 'name' => $slug, 'repo' => $plus ? $slug : 'contactpanda-basic', 'zip_prefix' => $plus ? $slug : 'contactpanda-basic', 'plugin' => $slug . '/' . $slug . '.php', 'version' => '0.14.0', 'enabled' => 'CONTACTPANDA_UPDATER_TEST_ENABLED', 'basic' => $plus, 'public_direct' => false );
 if ( $plus ) $config['token'] = 'CONTACTPANDA_UPDATER_TEST_TOKEN';
-$api = 'https://api.github.com/repos/kultur3gmbh/' . $slug;
+$api = 'https://api.github.com/repos/kultur3gmbh/' . $config['repo'];
 $package = 'fixture bytes, not a published release archive';
 function fixture( $config ) {
 	$GLOBALS['cache'] = array(); $GLOBALS['deleted'] = array(); $GLOBALS['requests'] = array(); $GLOBALS['queue'] = array(); $GLOBALS['options'] = array(); $GLOBALS['wp_version'] = '6.8'; $GLOBALS['basic_active'] = true; $GLOBALS['basic_version'] = '0.14.0';

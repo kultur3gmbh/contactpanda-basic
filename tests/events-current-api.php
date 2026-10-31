@@ -11,6 +11,15 @@ function sanitize_key( $value ) { return strtolower( preg_replace( '/[^a-z0-9_\-
 function wp_cache_get() { return false; }
 function wp_cache_set() { return true; }
 
+final class ContactPanda_Current_Events_Test_DB {
+	public $prefix = 'fixture_';
+	public function esc_like( $value ) { return $value; }
+	public function prepare( $query, $value ) { return $value; }
+	public function get_var() { return null; }
+}
+
+$wpdb = new ContactPanda_Current_Events_Test_DB();
+
 require_once dirname( __DIR__ ) . '/contactpanda/includes/class-contactpanda-events.php';
 
 if ( ! ContactPanda_Events::tec_available() ) {

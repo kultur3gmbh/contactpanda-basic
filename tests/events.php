@@ -16,6 +16,7 @@ function wp_cache_get() { return false; }
 function wp_cache_set() { return true; }
 function get_user_by() { return false; }
 function get_user_meta() { return ''; }
+function get_bloginfo() { return ''; }
 
 final class ContactPanda_Events_Test_DB {
 	public $prefix = 'fixture_';

@@ -24,7 +24,7 @@ foreach ( array( "'licenses'", "'legacy_grants'", 'updates_allowed_for', 'contac
 	}
 }
 
-if ( false !== strpos( $license, "'license_key' =>" ) || false !== strpos( $license, '[\'license_key\'] =' ) ) {
+if ( false !== strpos( $license, "\$license['license_key'] =" ) || preg_match( '/update_(?:site_)?option\s*\([^;]*license_key/s', $license ) ) {
 	fwrite( STDERR, "A raw license key must never be persisted after activation.\n" );
 	exit( 1 );
 }
