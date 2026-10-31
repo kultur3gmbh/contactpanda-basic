@@ -22,8 +22,9 @@ fi
 basic_version="$(awk -F': ' '/^ \* Version:/{print $2; exit}' contactpanda/contactpanda.php)"
 basic_requires="$(awk -F': ' '/^ \* Requires at least:/{print $2; exit}' contactpanda/contactpanda.php)"
 basic_requires_php="$(awk -F': ' '/^ \* Requires PHP:/{print $2; exit}' contactpanda/contactpanda.php)"
-basic_tested="${CONTACTPANDA_TESTED_WP:-$basic_requires}"
-if [[ -z "$basic_version" || -z "$basic_requires" || -z "$basic_requires_php" ]]; then
+basic_readme_tested="$(awk -F': ' '/^Tested up to:/{print $2; exit}' contactpanda/readme.txt)"
+basic_tested="${CONTACTPANDA_TESTED_WP:-$basic_readme_tested}"
+if [[ -z "$basic_version" || -z "$basic_requires" || -z "$basic_requires_php" || -z "$basic_tested" ]]; then
   echo "Could not read plugin versions." >&2
   exit 1
 fi

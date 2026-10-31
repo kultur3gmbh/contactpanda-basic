@@ -5,6 +5,7 @@ function __( $value, $domain = '' ) { return $value; }
 function esc_attr( $value ) { return htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' ); }
 function esc_html( $value ) { return htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' ); }
 function esc_url( $value ) { return $value; }
+function wp_create_nonce( $action ) { return 'fixture-nonce-' . $action; }
 function verify( $condition, $label ) { if ( ! $condition ) throw new RuntimeException( $label ); }
 
 class ContactPanda_Trash {

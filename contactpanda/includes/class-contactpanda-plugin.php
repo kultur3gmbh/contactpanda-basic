@@ -1130,7 +1130,7 @@ final class ContactPanda_Plugin {
 		if ( 'besteller' === $customer_filter ) {
 			$contacts = array_values( array_filter( $contacts, static function ( $contact ) use ( $order_summaries ) { $id = absint( self::value( $contact, array( 'id', 'ID' ) ) ); return ! empty( $order_summaries[ $id ]['count'] ); } ) );
 		} elseif ( 'event-besucher' === $customer_filter ) {
-			$contacts = array_values( array_filter( $contacts, static function ( $contact ) use ( $event_summaries ) { $id = absint( self::value( $contact, array( 'id', 'ID' ) ) ); return ! empty( $event_summaries[ $id ]['visited'] ); } ) );
+			$contacts = array_values( array_filter( $contacts, static function ( $contact ) use ( $event_summaries ) { $id = absint( self::value( $contact, array( 'id', 'ID' ) ) ); return ! empty( $event_summaries[ $id ]['count'] ); } ) );
 		}
 		if ( $segment_id || $advanced_filter ) $contacts = apply_filters( 'contactpanda_people_contacts', $contacts, $segment_id, $advanced_filter );
 		if ( in_array( $orderby, array( 'first_name', 'last_name', 'company', 'order_total', 'event_count' ), true ) ) {
@@ -2238,7 +2238,7 @@ final class ContactPanda_Plugin {
 			if ( 'event-besucher' === $customer_filter ) {
 				$contacts = array_values( array_filter( $contacts, static function ( $contact ) use ( $event_summaries ) {
 					$id = absint( self::value( $contact, array( 'id', 'ID' ) ) );
-					return isset( $event_summaries[ $id ] ) && $event_summaries[ $id ]['visited'] > 0;
+					return isset( $event_summaries[ $id ] ) && $event_summaries[ $id ]['count'] > 0;
 				} ) );
 			}
 			if ( $segment_id || $advanced_filter ) {
@@ -5070,7 +5070,9 @@ final class ContactPanda_Plugin {
 		if ( ! function_exists( 'wc_get_order_statuses' ) ) {
 			return array();
 		}
-		return array_values( array_diff( array_keys( wc_get_order_statuses() ), array( 'wc-cancelled', 'wc-failed', 'wc-checkout-draft' ) ) );
+		// Keep the list summary consistent with the order history in the person
+		// detail view. Cancelled and failed orders remain historical orders.
+		return array_values( array_diff( array_keys( wc_get_order_statuses() ), array( 'wc-checkout-draft' ) ) );
 	}
 
 	/** Include historical aliases retained by the local duplicate merge. */

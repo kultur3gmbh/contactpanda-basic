@@ -63,7 +63,7 @@ namespace {
 		verify( false !== strpos( $store_source, $contract ), 'Groundhogg custom-field migration contract is present: ' . $contract );
 	}
 	$custom_fields_source = file_get_contents( dirname( __DIR__ ) . '/contactpanda/includes/class-contactpanda-custom-fields.php' );
-	foreach ( array( 'ensure_definition', 'integration_definitions', "'imported-'", 'Existing definitions are never overwritten', 'does not discard source fields' ) as $contract ) {
+	foreach ( array( 'ensure_definition', 'integration_definitions', "'imported-'", 'Existing definitions are never overwritten', 'not discard source fields' ) as $contract ) {
 		verify( false !== strpos( $custom_fields_source, $contract ), 'Imported source fields retain stable ContactPanda custom-field definitions: ' . $contract );
 	}
 

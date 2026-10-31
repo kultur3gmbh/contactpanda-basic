@@ -11,7 +11,7 @@ $updater    = file_get_contents( $root . '/contactpanda/includes/class-contactpa
 $licensed_updater = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-licensed-updater.php' );
 
 foreach ( array( 'ContactPanda_License::newsletter_entitled', 'ContactPanda_License::advanced_newsletter_entitled', 'contactpanda_boot_newsletter_module', "'free-core'" ) as $contract ) {
-	if ( false === strpos( $main, $contract ) ) {
+	if ( false === strpos( $main . $newsletter, $contract ) ) {
 		fwrite( STDERR, "Missing Basic newsletter bootstrap contract {$contract}.\n" );
 		exit( 1 );
 	}

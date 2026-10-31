@@ -1,13 +1,27 @@
 === ContactPanda Basic ===
-Developer: Kultur3 GmbH
+Contributors: kultur3gmbh
+Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
+Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.8.84
+Stable tag: 0.8.85
 License: GPLv3
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 A user-friendly contact and company CRM for WordPress with a free, reduced newsletter workflow, a WooCommerce customer overview, optional Groundhogg compatibility, and stable extension APIs for the ContactPanda product family.
 
+== Description ==
+
+ContactPanda Basic provides an independent contact and company database for WordPress. It can also use Groundhogg as its leading contact source, presents WooCommerce customer and order summaries without changing source orders, and reads supported event and ticket systems without modifying their records.
+
+Optional integrations are detected at runtime and remain hidden when their source plugin is unavailable. ContactPanda Basic remains fully usable without a paid ContactPanda extension.
+
 == Changelog ==
+
+= 0.8.85 =
+* Corrects event-attendee counts and quick filters in the people list, including merged email identities.
+* Keeps WooCommerce order totals consistent between the people list and person details by retaining cancelled and failed historical orders.
+* Restores the labelled event-source compatibility contract used by supported extensions and repairs the complete validation suite.
 
 = 0.8.84 =
 * Adds reusable newsletter templates with duplication, preview, search, and a visual template gallery.

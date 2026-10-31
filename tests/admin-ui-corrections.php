@@ -25,7 +25,7 @@ foreach ( array( 'Drop a CSV file here', 'Drop a vCard file here', 'contactpanda
 	}
 }
 
-foreach ( array( 'contactpanda-people-search-row', 'contactpanda-search-primary', 'Search by name, email, phone, or company', "esc_html__( 'Execute', 'contactpanda' )" ) as $contract ) {
+foreach ( array( 'contactpanda-people-search-row', 'contactpanda-search-primary', 'Quick search by name, email, phone, or company', "esc_html__( 'Execute', 'contactpanda' )" ) as $contract ) {
 	if ( false === strpos( $plugin, $contract ) ) {
 		fwrite( STDERR, "Missing people-list UI contract {$contract}.\n" );
 		exit( 1 );

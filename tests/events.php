@@ -9,9 +9,13 @@ $contactpanda_test_option = '';
 
 function tribe_attendees() { return new stdClass(); }
 function get_option( $key, $default = false ) { global $contactpanda_test_option; return 'contactpanda_event_source' === $key ? $contactpanda_test_option : $default; }
+function absint( $value ) { return abs( (int) $value ); }
+function sanitize_email( $value ) { return filter_var( $value, FILTER_SANITIZE_EMAIL ); }
 function sanitize_key( $value ) { return preg_replace( '/[^a-z0-9_-]/', '', strtolower( (string) $value ) ); }
 function wp_cache_get() { return false; }
 function wp_cache_set() { return true; }
+function get_user_by() { return false; }
+function get_user_meta() { return ''; }
 
 final class ContactPanda_Events_Test_DB {
 	public $prefix = 'fixture_';
@@ -37,5 +41,27 @@ verify_event( 'amelia' === ContactPanda_Events::source(), 'Use the saved Amelia 
 verify_event( ContactPanda_Events::available(), 'Enable event output after a valid selection.' );
 $contactpanda_test_option = 'unknown';
 verify_event( '' === ContactPanda_Events::source(), 'Reject unavailable saved sources.' );
+
+$identity_method = new ReflectionMethod( 'ContactPanda_Events', 'contact_identity_maps' );
+$identity_method->setAccessible( true );
+$identity = $identity_method->invoke(
+	null,
+	array(
+		array(
+			'id'      => 17,
+			'email'   => 'primary@example.test',
+			'user_id' => 0,
+			'meta'    => array(
+				'merged_email_aliases'         => array( 'former@example.test' ),
+				'contactpanda_contact_channels' => array(
+					array( 'type' => 'email', 'value' => 'tickets@example.test' ),
+				),
+			),
+		),
+	)
+);
+verify_event( array( 17 ) === $identity['emails']['primary@example.test'], 'Map the primary contact email to event attendees.' );
+verify_event( array( 17 ) === $identity['emails']['former@example.test'], 'Map merged historical email aliases to event attendees.' );
+verify_event( array( 17 ) === $identity['emails']['tickets@example.test'], 'Map additional contact-channel emails to event attendees.' );
 
 echo "ContactPanda event source tests passed.\n";

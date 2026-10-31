@@ -15,6 +15,7 @@ function is_wp_error( $value ) { return $value instanceof WP_Error; }
 function __( $message, $domain = '' ) { return $message; }
 function esc_html( $message ) { return htmlspecialchars( $message ); }
 function add_filter( ...$args ) {}
+function apply_filters( $hook, $value ) { return $value; }
 function add_action( ...$args ) {}
 function absint( $value ) { return abs( (int) $value ); }
 function wp_parse_url( $value ) { return parse_url( $value ); }

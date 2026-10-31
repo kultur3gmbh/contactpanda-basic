@@ -40,6 +40,7 @@ class WooCommerceImportOrder {
 function __( $message, $domain = '' ) { return $message; }
 function is_wp_error( $value ) { return $value instanceof WP_Error; }
 function absint( $value ) { return abs( (int) $value ); }
+function sanitize_key( $value ) { return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( (string) $value ) ); }
 function sanitize_email( $value ) { return filter_var( $value, FILTER_SANITIZE_EMAIL ); }
 function current_time( $format ) { return '2026-10-16 12:00:00'; }
 function get_option( $key, $default = array() ) { return 'contactpanda_general_settings' === $key ? array( 'data_source' => 'standalone' ) : $default; }

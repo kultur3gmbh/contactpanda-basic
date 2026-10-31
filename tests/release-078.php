@@ -7,7 +7,7 @@ $schema    = file_get_contents( $root . '/contactpanda/includes/class-contactpan
 $script    = file_get_contents( $root . '/contactpanda/assets/contactpanda-admin.js' );
 $styles    = file_get_contents( $root . '/contactpanda/assets/contactpanda-admin.css' );
 
-foreach ( array( 'render_dashboard_product_visual', 'contactpanda_dashboard_product_visual', 'contactpanda-basic-dashboard-simple.png', 'contactpanda-dashboard-product-visual' ) as $contract ) {
+foreach ( array( 'render_dashboard_product_visual', 'contactpanda_dashboard_product_visual', 'contactpanda-admin-icon.png', 'contactpanda-dashboard-product-visual' ) as $contract ) {
 	if ( false === strpos( $plugin . $styles, $contract ) ) {
 		fwrite( STDERR, "Missing ContactPanda dashboard visual contract {$contract}.\n" );
 		exit( 1 );

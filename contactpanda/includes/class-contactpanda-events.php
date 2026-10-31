@@ -35,6 +35,20 @@ final class ContactPanda_Events {
 		);
 	}
 
+	/**
+	 * Backward-compatible labelled source list used by earlier Plus releases.
+	 *
+	 * Keep the compact boolean map in sources() for internal feature detection,
+	 * while extensions may continue to render the established labels.
+	 */
+	public static function available_sources() {
+		$labels = array(
+			'tec'    => 'The Events Calendar',
+			'amelia' => 'Amelia',
+		);
+		return array_intersect_key( $labels, self::sources() );
+	}
+
 	public static function source() {
 		$sources = array_keys( self::sources() );
 		if ( 1 === count( $sources ) ) {
@@ -495,6 +509,17 @@ final class ContactPanda_Events {
 			$user_id = absint( self::value( $contact, array( 'user_id', 'get_user_id' ) ) );
 			if ( $user_id ) $users[ $user_id ][] = $id;
 			$contact_emails = array( self::value( $contact, array( 'email', 'get_email' ) ) );
+			$meta = is_array( $contact ) && isset( $contact['meta'] ) && is_array( $contact['meta'] ) ? $contact['meta'] : array();
+			if ( ! empty( $meta['merged_email_aliases'] ) && is_array( $meta['merged_email_aliases'] ) ) {
+				$contact_emails = array_merge( $contact_emails, $meta['merged_email_aliases'] );
+			}
+			if ( ! empty( $meta['contactpanda_contact_channels'] ) && is_array( $meta['contactpanda_contact_channels'] ) ) {
+				foreach ( $meta['contactpanda_contact_channels'] as $channel ) {
+					if ( is_array( $channel ) && 'email' === ( $channel['type'] ?? '' ) ) {
+						$contact_emails[] = $channel['value'] ?? '';
+					}
+				}
+			}
 			if ( $user_id ) {
 				$user = get_user_by( 'id', $user_id );
 				if ( $user ) $contact_emails = array_merge( $contact_emails, array( $user->user_email, get_user_meta( $user->ID, 'billing_email', true ) ) );
