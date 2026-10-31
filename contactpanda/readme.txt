@@ -4,7 +4,7 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.9.2
+Stable tag: 0.9.3
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -17,6 +17,12 @@ ContactPanda Basic provides an independent contact and company database for Word
 Optional integrations are detected at runtime and remain hidden when their source plugin is unavailable. ContactPanda Basic remains fully usable without a paid ContactPanda extension.
 
 == Changelog ==
+
+= 0.9.3 =
+* Makes ContactPanda the canonical owner of VAT IDs for people and companies without creating artificial company records.
+* Restores complete private and business registration in Basic and provides a built-in customer portal without a required WordPress page.
+* Adds compatibility APIs for tax and shop extensions while preserving historical WooCommerce orders and invoices.
+* Improves the responsive people list, updater product icons, and German administration labels.
 
 = 0.9.2 =
 * Adds a standard newsletter signup block with one-line and two-line layouts.

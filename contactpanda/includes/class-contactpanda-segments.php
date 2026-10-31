@@ -368,7 +368,10 @@ final class ContactPanda_Basic_Segments {
 		if ( 'marketable' === $field ) return ContactPanda_Plugin::extension_is_marketable( $contact ) ? 'yes' : 'no';
 		if ( 'has_account' === $field ) return $user ? 'yes' : 'no';
 		if ( 'user_role' === $field ) return $user ? (array) $user->roles : array();
-		if ( 'uid' === $field ) return $user ? ( get_user_meta( $user_id, 'billing_vat', true ) ?: get_user_meta( $user_id, 'b2b_uid', true ) ) : self::inline_meta( $contact, array( 'vat_id', 'uid' ) );
+		if ( 'uid' === $field ) {
+			$value = self::inline_meta( $contact, array( 'vat_id', 'uid' ) );
+			return $value ?: ( $user ? ( get_user_meta( $user_id, 'billing_vat', true ) ?: get_user_meta( $user_id, 'b2b_uid', true ) ) : '' );
+		}
 		if ( 'email_confirmed' === $field ) {
 			$value = self::inline_meta( $contact, array( 'email_confirmed', 'contactpanda_email_verified' ) );
 			if ( '' === (string) $value && $user ) $value = get_user_meta( $user_id, 'contactpanda_email_verified', true );

@@ -176,7 +176,7 @@ msgstr ""
 msgid "Placeholders such as {campaign_name}, {campaign_id} and {subject_variant} are resolved separately for every delivery."
 msgstr ""
 
-"Project-Id-Version: ContactPanda 0.9.1\n"
+"Project-Id-Version: ContactPanda 0.9.3\n"
 "Report-Msgid-Bugs-To: https://kultur3.com/\n"
 "POT-Creation-Date: 2026-10-23 14:30+0200\n"
 "PO-Revision-Date: 2026-10-23 14:30+0200\n"
@@ -931,6 +931,15 @@ msgstr ""
 
 #: contactpanda/includes/class-contactpanda-plugin.php:1512
 msgid "All"
+msgstr ""
+
+msgid "Total"
+msgstr ""
+
+msgid "ContactPanda could not save the VAT ID."
+msgstr ""
+
+msgid "This VAT ID belongs to the company itself. It is not stored on or derived from a contact person. EU validation only runs when requested."
 msgstr ""
 
 msgid "Panda – Newsletter signup"
@@ -2180,6 +2189,9 @@ msgstr ""
 
 #: contactpanda/includes/class-contactpanda-plugin.php:679 contactpanda/includes/class-contactpanda-my-account.php:158
 msgid "Order total"
+msgstr ""
+
+msgid "Total"
 msgstr ""
 
 #: contactpanda/includes/class-contactpanda-plugin.php:679 contactpanda/includes/class-contactpanda-plugin.php:1535 contactpanda/includes/class-contactpanda-plugin.php:2531 contactpanda/includes/class-contactpanda-my-account.php:157
@@ -6824,7 +6836,7 @@ msgstr ""
 msgid "The secure ContactPanda update package could not be downloaded. Please try again."
 msgstr ""
 
-msgid "Customer account registration requires ContactPanda Plus."
+msgid "Customer account registration is disabled."
 msgstr ""
 
 msgid "vCard import requires ContactPanda Plus."
@@ -7546,7 +7558,16 @@ msgstr ""
 msgid "Changing the email address requires confirmation through the new address. Newsletter consent is not changed by this."
 msgstr ""
 
-msgid "Choose the WordPress page that contains the ContactPanda customer portal block or shortcode. The portal works without WooCommerce."
+msgid "ContactPanda provides a theme-compatible portal automatically. Choose a page only if you want to embed the portal at a custom address."
+msgstr ""
+
+msgid "Built-in customer portal"
+msgstr ""
+
+msgid "View customer portal"
+msgstr ""
+
+msgid "Optional custom portal page"
 msgstr ""
 
 msgid "Communication"

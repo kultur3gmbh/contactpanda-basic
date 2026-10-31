@@ -21,6 +21,7 @@ final class ContactPanda_Customer_Portal {
 		add_action( 'admin_post_contactpanda_portal_privacy_request', array( __CLASS__, 'privacy_request' ) );
 		add_action( 'admin_post_nopriv_contactpanda_portal_privacy_request', array( __CLASS__, 'privacy_request' ) );
 		add_action( 'template_redirect', array( __CLASS__, 'confirm_email_change' ) );
+		add_action( 'template_redirect', array( __CLASS__, 'render_virtual_portal' ), 20 );
 		add_action( 'fusion_builder_before_init', array( __CLASS__, 'register_avada_element' ) );
 	}
 
@@ -297,17 +298,39 @@ final class ContactPanda_Customer_Portal {
 	public static function portal_url() {
 		$settings = (array) get_option( ContactPanda_Registration::GENERAL_OPTION, array() );
 		$page_id = absint( $settings['portal_page_id'] ?? 0 );
-		$url = $page_id ? get_permalink( $page_id ) : '';
+		$url = $page_id && 'publish' === get_post_status( $page_id ) ? get_permalink( $page_id ) : '';
 		if ( ! $url && self::is_portal_page() ) {
 			$url = get_permalink( get_queried_object_id() );
 		}
-		return apply_filters( 'contactpanda_customer_portal_url', $url ?: home_url( '/' ) );
+		return apply_filters( 'contactpanda_customer_portal_url', $url ?: self::virtual_portal_url() );
 	}
 
 	public static function is_configured() {
+		return true;
+	}
+
+	private static function virtual_portal_url() {
+		return add_query_arg( 'contactpanda_portal', '1', home_url( '/' ) );
+	}
+
+	/** Render the customer portal without requiring a dedicated WordPress page. */
+	public static function render_virtual_portal() {
+		$virtual = isset( $_GET['contactpanda_portal'] ) ? sanitize_key( wp_unslash( $_GET['contactpanda_portal'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- public read-only endpoint.
+		if ( is_admin() || '1' !== $virtual ) {
+			return;
+		}
 		$settings = (array) get_option( ContactPanda_Registration::GENERAL_OPTION, array() );
 		$page_id = absint( $settings['portal_page_id'] ?? 0 );
-		return ( $page_id && 'publish' === get_post_status( $page_id ) ) || self::is_portal_page();
+		if ( $page_id && 'publish' === get_post_status( $page_id ) ) {
+			wp_safe_redirect( get_permalink( $page_id ) );
+			exit;
+		}
+		status_header( 200 );
+		nocache_headers();
+		get_header();
+		echo '<main id="primary" class="site-main contactpanda-virtual-portal"><div class="contactpanda-virtual-portal-inner">' . self::render() . '</div></main>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render() returns escaped portal markup.
+		get_footer();
+		exit;
 	}
 
 	public static function tab_url( $tab, $args = array() ) {
@@ -427,6 +450,8 @@ final class ContactPanda_Customer_Portal {
 	}
 
 	public static function is_portal_page() {
+		$virtual = isset( $_GET['contactpanda_portal'] ) ? sanitize_key( wp_unslash( $_GET['contactpanda_portal'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- public read-only endpoint.
+		if ( '1' === $virtual ) return true;
 		$settings = (array) get_option( ContactPanda_Registration::GENERAL_OPTION, array() );
 		if ( ! empty( $settings['portal_page_id'] ) && is_page( absint( $settings['portal_page_id'] ) ) ) return true;
 		global $post;

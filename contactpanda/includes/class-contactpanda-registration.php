@@ -7,13 +7,9 @@ final class ContactPanda_Registration {
 	const GENERAL_OPTION = 'contactpanda_general_settings';
 	const NOTICE_PREFIX = 'contactpanda_registration_notice_';
 
-	/**
-	 * Customer and business account registration is intentionally not part of
-	 * the WordPress.org plugin. Commerce extensions provide their own account
-	 * registration without unlocking dormant premium functionality in Basic.
-	 */
+	/** Customer and business account registration is a free Basic capability. */
 	public static function customer_registration_enabled() {
-		return false;
+		return true;
 	}
 
 	public static function boot() {
@@ -169,7 +165,7 @@ final class ContactPanda_Registration {
 	private static function defaults() {
 		$default_role = get_role( 'customer' ) ? 'customer' : 'subscriber';
 		return array(
-			'enabled'              => 0,
+			'enabled'              => 1,
 			'business_enabled'     => 1,
 			'newsletter_enabled'   => 1,
 			'require_email_verify' => 1,
@@ -603,7 +599,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		$settings = self::general_settings();
 		echo '<form method="post" action="options.php">';
 		settings_fields( 'contactpanda_general' );
-		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Customer portal', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Choose the WordPress page that contains the ContactPanda customer portal block or shortcode. The portal works without WooCommerce.', 'contactpanda' ) . '</p><label class="contactpanda-setting-row"><span><strong>' . esc_html__( 'Portal page', 'contactpanda' ) . '</strong></span>';
+		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Customer portal', 'contactpanda' ) . '</h2><p>' . esc_html__( 'ContactPanda provides a theme-compatible portal automatically. Choose a page only if you want to embed the portal at a custom address.', 'contactpanda' ) . '</p><div class="contactpanda-setting-row"><strong>' . esc_html__( 'Built-in customer portal', 'contactpanda' ) . '</strong><p><a class="button" href="' . esc_url( ContactPanda_Customer_Portal::portal_url() ) . '" target="_blank" rel="noopener">' . esc_html__( 'View customer portal', 'contactpanda' ) . '</a></p></div><label class="contactpanda-setting-row"><span><strong>' . esc_html__( 'Optional custom portal page', 'contactpanda' ) . '</strong></span>';
 		wp_dropdown_pages( array( 'name' => self::GENERAL_OPTION . '[portal_page_id]', 'selected' => absint( $settings['portal_page_id'] ?? 0 ), 'show_option_none' => __( 'Select a page', 'contactpanda' ), 'option_none_value' => 0 ) );
 		echo '</label><p class="description"><code>[contactpanda_customer_portal]</code></p>';
 		submit_button( __( 'Save portal settings', 'contactpanda' ) );
@@ -2142,7 +2138,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 
 	public static function handle_registration() {
 		if ( ! self::customer_registration_enabled() ) {
-			wp_die( esc_html__( 'Customer account registration requires ContactPanda Plus.', 'contactpanda' ), '', array( 'response' => 403 ) );
+			wp_die( esc_html__( 'Customer account registration is disabled.', 'contactpanda' ), '', array( 'response' => 403 ) );
 		}
 		$redirect = isset( $_POST['redirect_to'] ) ? wp_validate_redirect( wp_unslash( $_POST['redirect_to'] ), home_url( '/' ) ) : home_url( '/' );
 		if ( ! isset( $_POST['contactpanda_registration_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['contactpanda_registration_nonce'] ) ), 'contactpanda_register' ) ) {
@@ -2191,6 +2187,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		}
 
 		self::save_profile( $user_id, $data, $settings );
+		$data['vat_verified'] = $vat_verified;
 		$stored = false;
 		if ( ContactPanda_Store::standalone() ) {
 			$stored = ContactPanda_Store::sync_registration( $user_id, $data );
@@ -2483,6 +2480,18 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			if ( $page_url ) return $page_url;
 		}
 		return $url;
+	}
+
+	/** Public registration destination for extensions such as PandaWoo. */
+	public static function public_registration_url() {
+		if ( ! self::customer_registration_enabled() ) {
+			return '';
+		}
+		$settings = self::settings();
+		if ( empty( $settings['enabled'] ) ) {
+			return '';
+		}
+		return $settings['registration_page_id'] ? get_permalink( $settings['registration_page_id'] ) : self::virtual_registration_url();
 	}
 
 	private static function virtual_registration_url() {

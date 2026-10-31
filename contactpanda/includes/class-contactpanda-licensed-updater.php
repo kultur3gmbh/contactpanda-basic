@@ -74,7 +74,16 @@ final class ContactPanda_Licensed_Updater {
 			'requires'     => sanitize_text_field( $data['requires'] ?? '' ),
 			'requires_php' => sanitize_text_field( $data['requires_php'] ?? '' ),
 			'tested'       => sanitize_text_field( $data['tested'] ?? '' ),
+			'icons'        => $this->icons(),
 		);
+	}
+
+	private function icons() {
+		if ( ! defined( 'CONTACTPANDA_URL' ) ) {
+			return array();
+		}
+		$url = esc_url_raw( CONTACTPANDA_URL . 'assets/images/contactpanda-basic-dashboard-simple.png' );
+		return array( '1x' => $url, '2x' => $url );
 	}
 
 	public function clear_update_cache( $upgrader, $options ) {
@@ -132,6 +141,7 @@ final class ContactPanda_Licensed_Updater {
 			'requires_php'  => sanitize_text_field( $data['requires_php'] ?? '' ),
 			'tested'        => sanitize_text_field( $data['tested'] ?? '' ),
 			'download_link' => esc_url_raw( $data['package'] ?? '' ),
+			'icons'         => $this->icons(),
 			'sections'      => array( 'changelog' => wp_kses_post( $data['changelog'] ?? '' ) ),
 		);
 	}

@@ -93,12 +93,49 @@ for portal_contract in \
 	"class-contactpanda-identity.php" \
 	"class-contactpanda-customer-portal.php" \
 	"contactpanda_customer_portal_tabs" \
-	"contactpanda_portal_profile_saved"; do
+	"contactpanda_portal_profile_saved" \
+	"contactpanda_portal', '1'" \
+	"render_virtual_portal"; do
 	if ! grep -Rqs "$portal_contract" contactpanda; then
 		echo "Missing customer portal contract: $portal_contract" >&2
 		status=1
 	fi
 done
+
+for registration_contract in \
+	"add_shortcode( 'contactpanda_registration'" \
+	"public static function public_registration_url" \
+	"contactpanda/customer_registration_created" \
+	"contactpanda/business_registration_created"; do
+	if ! grep -Fqs "$registration_contract" contactpanda/includes/class-contactpanda-registration.php; then
+		echo "Missing Basic registration contract: $registration_contract" >&2
+		status=1
+	fi
+done
+
+if ! grep -A2 -F "function customer_registration_enabled()" contactpanda/includes/class-contactpanda-registration.php | grep -Fq "return true;"; then
+	echo "Customer and business registration must remain available in ContactPanda Basic." >&2
+	status=1
+fi
+
+for vat_contract in \
+	"function contactpanda_get_person_vat_id" \
+	"function contactpanda_get_company_vat_id" \
+	"function contactpanda_get_user_vat_id" \
+	"contactpanda_person_vat_id" \
+	"contactpanda_company_vat_id" \
+	"contactpanda_vat_id_updated" \
+	"migrate_legacy_vat_ids"; do
+	if ! grep -Rqs "$vat_contract" contactpanda; then
+		echo "Missing canonical VAT ownership contract: $vat_contract" >&2
+		status=1
+	fi
+done
+
+if grep -A80 -F "public static function sync_registration" contactpanda/includes/class-contactpanda-store.php | grep -Fq "create_company( array( 'name' => ''"; then
+	echo "A VAT ID must never create an empty company record." >&2
+	status=1
+fi
 
 if [[ "$status" -ne 0 ]]; then
   exit "$status"

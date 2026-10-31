@@ -176,7 +176,7 @@ msgstr "Anteil für Variante B (%)"
 msgid "Placeholders such as {campaign_name}, {campaign_id} and {subject_variant} are resolved separately for every delivery."
 msgstr "Platzhalter wie {campaign_name}, {campaign_id} und {subject_variant} werden für jeden Versand einzeln aufgelöst."
 
-"Project-Id-Version: ContactPanda 0.9.1\n"
+"Project-Id-Version: ContactPanda 0.9.3\n"
 "Report-Msgid-Bugs-To: https://kultur3.com/\n"
 "POT-Creation-Date: 2026-10-23 14:30+0200\n"
 "PO-Revision-Date: 2026-10-23 14:30+0200\n"
@@ -2163,6 +2163,9 @@ msgstr "Bestellung #%s"
 #: contactpanda/includes/class-contactpanda-plugin.php:679 contactpanda/includes/class-contactpanda-my-account.php:158
 msgid "Order total"
 msgstr "Bestellsumme"
+
+msgid "Total"
+msgstr "Summe"
 
 #: contactpanda/includes/class-contactpanda-plugin.php:679 contactpanda/includes/class-contactpanda-plugin.php:1535 contactpanda/includes/class-contactpanda-plugin.php:2531 contactpanda/includes/class-contactpanda-my-account.php:157
 msgid "Orders"
@@ -6806,8 +6809,8 @@ msgstr "Das sichere ContactPanda-Aktualisierungspaket ist für diese Installatio
 msgid "The secure ContactPanda update package could not be downloaded. Please try again."
 msgstr "Das sichere ContactPanda-Aktualisierungspaket konnte nicht heruntergeladen werden. Bitte versuchen Sie es erneut."
 
-msgid "Customer account registration requires ContactPanda Plus."
-msgstr "Die Kundenkonto-Registrierung erfordert ContactPanda Plus."
+msgid "Customer account registration is disabled."
+msgstr "Die Kundenkontoregistrierung ist deaktiviert."
 
 msgid "vCard import requires ContactPanda Plus."
 msgstr "Der vCard-Import erfordert ContactPanda Plus."
@@ -7528,8 +7531,17 @@ msgstr "Eine neue Newsletter-Anmeldung erfordert eine separate Double-Opt-in-Bes
 msgid "Changing the email address requires confirmation through the new address. Newsletter consent is not changed by this."
 msgstr "Die Änderung der E-Mail-Adresse muss über die neue Adresse bestätigt werden. Die Newsletter-Einwilligung wird dadurch nicht verändert."
 
-msgid "Choose the WordPress page that contains the ContactPanda customer portal block or shortcode. The portal works without WooCommerce."
-msgstr "Wählen Sie die WordPress-Seite, die den ContactPanda-Kundenportal-Block oder -Shortcode enthält. Das Portal funktioniert ohne WooCommerce."
+msgid "ContactPanda provides a theme-compatible portal automatically. Choose a page only if you want to embed the portal at a custom address."
+msgstr "ContactPanda stellt automatisch ein zum Theme passendes Portal bereit. Wählen Sie nur dann eine Seite aus, wenn Sie das Portal unter einer eigenen Adresse einbetten möchten."
+
+msgid "Built-in customer portal"
+msgstr "Integriertes Kundenportal"
+
+msgid "View customer portal"
+msgstr "Kundenportal anzeigen"
+
+msgid "Optional custom portal page"
+msgstr "Optionale eigene Portalseite"
 
 msgid "Communication"
 msgstr "Kommunikation"
@@ -8253,6 +8265,15 @@ msgstr "Importierte Vorlagen sind schreibgeschützt. Erstellen Sie eine bearbeit
 
 msgid "You are not allowed to manage these settings."
 msgstr "Sie dürfen diese Einstellungen nicht verwalten."
+
+msgid "Total"
+msgstr "Summe"
+
+msgid "ContactPanda could not save the VAT ID."
+msgstr "ContactPanda konnte die UID-Nummer nicht speichern."
+
+msgid "This VAT ID belongs to the company itself. It is not stored on or derived from a contact person. EU validation only runs when requested."
+msgstr "Diese UID-Nummer gehört zum Unternehmen selbst. Sie wird weder bei einer Kontaktperson gespeichert noch von ihr abgeleitet. Die EU-Prüfung erfolgt nur auf Anforderung."
 
 msgid "Panda – Newsletter signup"
 msgstr "Panda – Newsletter-Anmeldung"

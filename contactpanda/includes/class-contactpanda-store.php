@@ -27,6 +27,70 @@ final class ContactPanda_Store {
 		return $result;
 	}
 
+	/**
+	 * Copy legacy WooCommerce/user VAT metadata into the canonical owner fields.
+	 *
+	 * The migration only fills empty fields and never rewrites source metadata,
+	 * orders, invoices, or already classified ContactPanda records. Company VAT
+	 * IDs are recovered from the historic primary-contact storage convention;
+	 * unlinked people retain personal ownership of their VAT ID.
+	 */
+	public static function migrate_legacy_vat_ids() {
+		if ( ! self::standalone() || get_option( 'contactpanda_vat_owner_migration_093', false ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$tables = ContactPanda_Schema::table_names();
+		$keys   = (array) apply_filters( 'contactpanda_vat_user_meta_keys', array( 'billing_vat', 'b2b_uid' ), false, false );
+		$keys   = array_values( array_unique( array_filter( array_map( 'sanitize_key', $keys ) ) ) );
+		if ( empty( $keys ) ) {
+			update_option( 'contactpanda_vat_owner_migration_093', current_time( 'mysql' ), false );
+			return;
+		}
+
+		$legacy_vat = static function ( $user_id ) use ( $keys ) {
+			foreach ( $keys as $key ) {
+				$value = strtoupper( preg_replace( '/[^A-Z0-9]/', '', (string) get_user_meta( $user_id, $key, true ) ) );
+				if ( '' !== $value ) return $value;
+			}
+			return '';
+		};
+		$status_for = static function ( $user_id, $vat_id ) {
+			$verified = (string) get_user_meta( $user_id, 'contactpanda_vat_verified_hash', true );
+			return $verified && hash_equals( $verified, hash( 'sha256', $vat_id ) ) ? 'valid' : 'unverified';
+		};
+
+		$companies = (array) $wpdb->get_results(
+			"SELECT co.id, c.wp_user_id FROM `{$tables['companies']}` co INNER JOIN `{$tables['company_contacts']}` cc ON cc.company_id=co.id AND cc.is_primary_company=1 INNER JOIN `{$tables['contacts']}` c ON c.id=cc.contact_id WHERE (co.vat_id IS NULL OR co.vat_id='') AND c.wp_user_id>0 AND co.deleted_at IS NULL",
+			ARRAY_A
+		); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- exact internal table names.
+		foreach ( $companies as $company ) {
+			$vat_id = $legacy_vat( absint( $company['wp_user_id'] ) );
+			if ( '' === $vat_id ) continue;
+			self::update_company( absint( $company['id'] ), 'vat_id', $vat_id );
+			self::update_company( absint( $company['id'] ), 'vat_status', $status_for( absint( $company['wp_user_id'] ), $vat_id ) );
+		}
+
+		$people = (array) $wpdb->get_results(
+			"SELECT c.id, c.wp_user_id FROM `{$tables['contacts']}` c WHERE (c.vat_id IS NULL OR c.vat_id='') AND c.wp_user_id>0 AND c.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM `{$tables['company_contacts']}` cc WHERE cc.contact_id=c.id)",
+			ARRAY_A
+		); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- exact internal table names.
+		foreach ( $people as $person ) {
+			$vat_id = $legacy_vat( absint( $person['wp_user_id'] ) );
+			if ( '' === $vat_id ) continue;
+			self::update_contact(
+				absint( $person['id'] ),
+				array(
+					'vat_id'     => $vat_id,
+					'vat_status' => $status_for( absint( $person['wp_user_id'] ), $vat_id ),
+				)
+			);
+		}
+
+		update_option( 'contactpanda_vat_owner_migration_093', current_time( 'mysql' ), false );
+	}
+
 	public static function search_contacts( $search = '', $limit = 50, $offset = 0 ) {
 		global $wpdb;
 		$tables = ContactPanda_Schema::table_names();
@@ -219,10 +283,24 @@ final class ContactPanda_Store {
 		global $wpdb;
 		$table = ContactPanda_Schema::table_names()['contacts'];
 		$core = array();
-		$map = array( 'first_name' => 'first_name', 'last_name' => 'last_name', 'position' => 'position', 'user_id' => 'wp_user_id' );
+		$map = array(
+			'first_name'      => 'first_name',
+			'last_name'       => 'last_name',
+			'position'        => 'position',
+			'user_id'         => 'wp_user_id',
+			'vat_id'          => 'vat_id',
+			'vat_status'      => 'vat_status',
+			'vat_verified_at' => 'vat_verified_at',
+		);
 		foreach ( $map as $input => $column ) {
 			if ( array_key_exists( $input, $data ) ) {
-				$core[ $column ] = 'user_id' === $input ? absint( $data[ $input ] ) : sanitize_text_field( $data[ $input ] );
+				if ( 'user_id' === $input ) {
+					$core[ $column ] = absint( $data[ $input ] );
+				} elseif ( 'vat_verified_at' === $input ) {
+					$core[ $column ] = empty( $data[ $input ] ) ? null : sanitize_text_field( $data[ $input ] );
+				} else {
+					$core[ $column ] = sanitize_text_field( $data[ $input ] );
+				}
 			}
 		}
 		if ( array_key_exists( 'email', $data ) ) {
@@ -415,9 +493,10 @@ final class ContactPanda_Store {
 	public static function update_company( $id, $field, $value ) {
 		global $wpdb;
 		$tables = ContactPanda_Schema::table_names();
-		$map = array( 'name' => 'name', 'domain' => 'website', 'phone' => 'phone_number', 'industry' => 'industry', 'street' => 'street', 'address_2' => 'address_2', 'postcode' => 'postcode', 'city' => 'city', 'country' => 'country' );
+		$map = array( 'name' => 'name', 'domain' => 'website', 'phone' => 'phone_number', 'industry' => 'industry', 'street' => 'street', 'address_2' => 'address_2', 'postcode' => 'postcode', 'city' => 'city', 'country' => 'country', 'uid' => 'vat_id', 'vat_id' => 'vat_id', 'vat_status' => 'vat_status', 'vat_verified_at' => 'vat_verified_at' );
 		if ( isset( $map[ $field ] ) ) {
-			return false !== $wpdb->update( $tables['companies'], array( $map[ $field ] => $value, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => absint( $id ) ) );
+			$stored_value = 'vat_verified_at' === $field && empty( $value ) ? null : sanitize_text_field( $value );
+			return false !== $wpdb->update( $tables['companies'], array( $map[ $field ] => $stored_value, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => absint( $id ) ) );
 		}
 		return self::set_company_meta( $id, $field, $value );
 	}
@@ -1056,7 +1135,18 @@ final class ContactPanda_Store {
 		$contact = self::contact_by_email( $data['email'] );
 		$contact_id = $contact ? (int) $contact['id'] : self::create_contact( array_merge( $data, array( 'user_id' => $user_id, 'source' => 'registration', 'optin_status' => 'unconfirmed' ) ) );
 		if ( is_wp_error( $contact_id ) ) return $contact_id;
-		self::update_contact( $contact_id, array( 'user_id' => $user_id, 'position' => $data['position'], 'primary_phone' => $data['phone'], 'anrede' => $data['salutation'] ?? '' ) );
+		self::update_contact(
+			$contact_id,
+			array(
+				'user_id'         => $user_id,
+				'position'        => $data['position'],
+				'primary_phone'   => $data['phone'],
+				'anrede'          => $data['salutation'] ?? '',
+				'vat_id'          => empty( $data['company'] ) ? ( $data['vat_id'] ?? '' ) : '',
+				'vat_status'      => empty( $data['company'] ) && ! empty( $data['vat_verified'] ) ? 'valid' : ( empty( $data['company'] ) && ! empty( $data['vat_id'] ) ? 'unverified' : 'unchecked' ),
+				'vat_verified_at' => empty( $data['company'] ) && ! empty( $data['vat_verified'] ) ? current_time( 'mysql' ) : '',
+			)
+		);
 		self::update_contact_address(
 			$contact_id,
 			array(
@@ -1069,7 +1159,12 @@ final class ContactPanda_Store {
 			$company_id = self::company_by_name( $data['company'], true );
 			if ( $company_id && ! self::company( $company_id ) ) return $contact_id;
 			if ( ! $company_id ) $company_id = self::create_company( array( 'name' => $data['company'], 'industry' => $data['industry'], 'website' => $data['website'], 'vat_id' => $data['vat_id'] ) );
-			if ( $company_id ) { self::update_company_profile( $company_id, $data ); self::link_company_contact( $company_id, $contact_id, $data['position'] ?? '', true ); }
+			if ( $company_id ) {
+				self::update_company_profile( $company_id, $data );
+				self::update_company( $company_id, 'vat_status', ! empty( $data['vat_verified'] ) ? 'valid' : ( empty( $data['vat_id'] ) ? 'unchecked' : 'unverified' ) );
+				self::update_company( $company_id, 'vat_verified_at', ! empty( $data['vat_verified'] ) ? current_time( 'mysql' ) : '' );
+				self::link_company_contact( $company_id, $contact_id, $data['position'] ?? '', true );
+			}
 		}
 		return $contact_id;
 	}

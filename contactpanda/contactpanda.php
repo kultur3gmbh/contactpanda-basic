@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
- * Version: 0.9.2
+ * Version: 0.9.3
  * Update URI: https://github.com/kultur3gmbh/contactpanda-basic
  * Author: Kultur3 GmbH
  * Text Domain: contactpanda
@@ -13,12 +13,27 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.9.2' );
-define( 'CONTACTPANDA_ASSET_VERSION', '0.9.2-20261031-1' );
+define( 'CONTACTPANDA_VERSION', '0.9.3' );
+define( 'CONTACTPANDA_ASSET_VERSION', '0.9.3-20261031-1' );
 define( 'CONTACTPANDA_EXTENSION_API_VERSION', '1.0' );
 define( 'CONTACTPANDA_FILE', __FILE__ );
 define( 'CONTACTPANDA_PATH', plugin_dir_path( __FILE__ ) );
 define( 'CONTACTPANDA_URL', plugin_dir_url( __FILE__ ) );
+
+/** Read a person's canonical VAT ID without depending on WooCommerce user meta. */
+function contactpanda_get_person_vat_id( $contact_id ) {
+	return class_exists( 'ContactPanda_Plugin' ) ? ContactPanda_Plugin::get_person_vat_id( $contact_id ) : '';
+}
+
+/** Read a company's canonical VAT ID without routing it through a contact person. */
+function contactpanda_get_company_vat_id( $company_id ) {
+	return class_exists( 'ContactPanda_Plugin' ) ? ContactPanda_Plugin::get_company_vat_id( $company_id ) : '';
+}
+
+/** Resolve the canonical VAT ID applicable to a connected WordPress customer. */
+function contactpanda_get_user_vat_id( $user_id ) {
+	return class_exists( 'ContactPanda_Plugin' ) ? ContactPanda_Plugin::get_user_vat_id( $user_id ) : '';
+}
 
 /**
  * Sanitize a CSS color shared by every ContactPanda family member.
@@ -83,6 +98,7 @@ add_action(
 				'plugin'     => plugin_basename( CONTACTPANDA_FILE ),
 				'version'    => CONTACTPANDA_VERSION,
 				'enabled'    => 'CONTACTPANDA_GITHUB_UPDATES',
+				'icon'       => CONTACTPANDA_URL . 'assets/images/contactpanda-basic-dashboard-simple.png',
 			)
 		);
 	},
@@ -135,6 +151,7 @@ add_action( 'plugins_loaded', 'contactpanda_boot_events_module', 30 );
 add_action( 'plugins_loaded', array( 'ContactPanda_Registration', 'boot' ), 30 );
 add_action( 'plugins_loaded', array( 'ContactPanda_Customer_Portal', 'boot' ), 31 );
 add_action( 'plugins_loaded', array( 'ContactPanda_MCP', 'boot' ), 32 );
+add_action( 'admin_init', array( 'ContactPanda_Store', 'migrate_legacy_vat_ids' ), 25 );
 
 /**
  * The reduced newsletter is part of free ContactPanda. Paid capabilities are

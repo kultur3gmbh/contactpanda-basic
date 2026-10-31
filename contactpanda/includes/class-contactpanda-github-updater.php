@@ -218,7 +218,7 @@ final class ContactPanda_GitHub_Updater {
 		unset( $transient->response[ $plugin ], $transient->no_update[ $plugin ] );
 		$release = $this->release();
 		if ( is_wp_error( $release ) ) return $transient;
-		$item = (object) array( 'id' => 'https://github.com/kultur3gmbh/' . $this->config['repo'], 'slug' => $this->config['slug'], 'plugin' => $plugin, 'new_version' => $release['version'], 'url' => 'https://github.com/kultur3gmbh/' . $this->config['repo'] . '/releases', 'package' => $this->compatible( $release ) ? $this->package_url( $release ) : '', 'requires' => $release['requires'], 'requires_php' => $release['requires_php'], 'requires_basic' => $release['requires_basic'] ?? '', 'tested' => $release['tested'], 'contactpanda_github' => true );
+		$item = (object) array( 'id' => 'https://github.com/kultur3gmbh/' . $this->config['repo'], 'slug' => $this->config['slug'], 'plugin' => $plugin, 'new_version' => $release['version'], 'url' => 'https://github.com/kultur3gmbh/' . $this->config['repo'] . '/releases', 'package' => $this->compatible( $release ) ? $this->package_url( $release ) : '', 'requires' => $release['requires'], 'requires_php' => $release['requires_php'], 'requires_basic' => $release['requires_basic'] ?? '', 'tested' => $release['tested'], 'icons' => $this->icons(), 'contactpanda_github' => true );
 		$installed = $transient->checked[ $plugin ] ?? $this->config['version'];
 		$key = version_compare( $release['version'], $installed, '>' ) ? 'response' : 'no_update';
 		if ( ! isset( $transient->{$key} ) || ! is_array( $transient->{$key} ) ) $transient->{$key} = array();
@@ -235,7 +235,12 @@ final class ContactPanda_GitHub_Updater {
 		if ( 'plugin_information' !== $action || ( $args->slug ?? '' ) !== $this->config['slug'] || ! $this->enabled() ) return $result;
 		$release = $this->release();
 		if ( is_wp_error( $release ) ) return $release;
-		return (object) array( 'name' => $this->config['name'], 'slug' => $this->config['slug'], 'version' => $release['version'], 'author' => 'Kultur3 GmbH', 'requires' => $release['requires'], 'requires_php' => $release['requires_php'], 'tested' => $release['tested'], 'download_link' => $this->compatible( $release ) ? $this->package_url( $release ) : '', 'sections' => array( 'description' => esc_html( $this->compatible( $release ) ? __( 'Published GitHub release for the ContactPanda test phase. Automatic updates require administrator opt-in in the WordPress Plugins screen.', 'contactpanda' ) : $this->error( 'compatibility' )->get_error_message() ) ) );
+		return (object) array( 'name' => $this->config['name'], 'slug' => $this->config['slug'], 'version' => $release['version'], 'author' => 'Kultur3 GmbH', 'requires' => $release['requires'], 'requires_php' => $release['requires_php'], 'tested' => $release['tested'], 'download_link' => $this->compatible( $release ) ? $this->package_url( $release ) : '', 'icons' => $this->icons(), 'sections' => array( 'description' => esc_html( $this->compatible( $release ) ? __( 'Published GitHub release for the ContactPanda test phase. Automatic updates require administrator opt-in in the WordPress Plugins screen.', 'contactpanda' ) : $this->error( 'compatibility' )->get_error_message() ) ) );
+	}
+
+	private function icons() {
+		$url = esc_url_raw( $this->config['icon'] ?? '' );
+		return $url ? array( '1x' => $url, '2x' => $url ) : array();
 	}
 
 	public function download( $reply, $package, $upgrader, $extra ) {

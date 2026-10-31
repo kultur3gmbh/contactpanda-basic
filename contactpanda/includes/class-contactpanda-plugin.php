@@ -59,6 +59,40 @@ final class ContactPanda_Plugin {
 		return $translated;
 	}
 
+	/** Public extension API: canonical VAT ID owned by a person. */
+	public static function get_person_vat_id( $contact_id ) {
+		$contact = self::contact( absint( $contact_id ) );
+		return $contact ? self::person_vat_id( $contact, self::contact_user( $contact ) ) : '';
+	}
+
+	/** Public extension API: canonical VAT ID owned by a company. */
+	public static function get_company_vat_id( $company_id ) {
+		$company = self::company( absint( $company_id ) );
+		$value = $company ? self::normalize_vat( self::value( $company, array( 'vat_id', 'uid' ), self::meta( $company, array( 'vat_id', 'uid' ) ) ) ) : '';
+		return (string) apply_filters( 'contactpanda_company_vat_id', $value, $company );
+	}
+
+	/** Public extension API: VAT ID currently applicable to a WordPress customer. */
+	public static function get_user_vat_id( $user_id ) {
+		$user_id = absint( $user_id );
+		$user = $user_id ? get_userdata( $user_id ) : false;
+		$value = '';
+		if ( $user && ContactPanda_Store::standalone() ) {
+			$contact = ContactPanda_Store::contact_by_user_id( $user_id );
+			if ( $contact ) {
+				$map = ContactPanda_Store::company_map();
+				$companies = $map[ absint( $contact['id'] ) ] ?? array();
+				foreach ( $companies as $company ) {
+					$value = self::normalize_vat( self::value( $company, array( 'vat_id', 'uid' ) ) );
+					if ( '' !== $value ) break;
+				}
+				if ( '' === $value ) $value = self::person_vat_id( $contact, $user );
+			}
+		}
+		if ( '' === $value && $user ) $value = self::normalize_vat( get_user_meta( $user_id, 'billing_vat', true ) ?: get_user_meta( $user_id, 'b2b_uid', true ) );
+		return (string) apply_filters( 'contactpanda_user_vat_id', $value, $user_id );
+	}
+
 	public static function menu() {
 		$companies_enabled = self::companies_available();
 		$capability = self::access_capability();
@@ -443,17 +477,19 @@ final class ContactPanda_Plugin {
 			if ( '' !== $value && ! self::valid_vat_format( $value ) ) {
 				wp_send_json_error( array( 'message' => __( 'The VAT ID does not have a valid EU format.', 'contactpanda' ) ), 400 );
 			}
-			$user = self::company_primary_user( $company_id );
-			if ( ! $user ) {
-				wp_send_json_error( array( 'message' => __( 'The primary contact does not have a WordPress user account.', 'contactpanda' ) ), 400 );
+			$company = self::company( $company_id );
+			$verified = $company && 'valid' === sanitize_key( self::value( $company, array( 'vat_status' ) ) ) && $value === self::normalize_vat( self::value( $company, array( 'vat_id', 'uid' ) ) );
+			$status = $verified ? 'valid' : ( $value ? 'unverified' : 'unchecked' );
+			$verified_at = $verified ? self::value( $company, array( 'vat_verified_at' ) ) : '';
+			if ( ContactPanda_Store::standalone() ) {
+				$result = ContactPanda_Store::update_company( $company_id, 'uid', $value );
+				ContactPanda_Store::update_company( $company_id, 'vat_status', $status );
+				ContactPanda_Store::update_company( $company_id, 'vat_verified_at', $verified_at );
+			} else {
+				$result = self::execute_ability( 'groundhogg-companies/update-company', array( 'id' => $company_id, 'vat_id' => $value, 'meta' => array( 'vat_id' => $value, 'vat_status' => $status, 'vat_verified_at' => $verified_at ) ) );
 			}
-			$verified = '' !== $value && hash_equals( (string) get_user_meta( $user->ID, 'contactpanda_vat_verified_hash', true ), hash( 'sha256', $value ) );
-			update_user_meta( $user->ID, 'billing_vat', $value );
-			update_user_meta( $user->ID, 'b2b_uid', $value );
-			if ( ! $verified ) {
-				delete_user_meta( $user->ID, 'contactpanda_vat_verified_hash' );
-				delete_user_meta( $user->ID, 'contactpanda_vat_verified_at' );
-			}
+			if ( false === $result ) wp_send_json_error( array( 'message' => __( 'ContactPanda could not save the VAT ID.', 'contactpanda' ) ), 500 );
+			do_action( 'contactpanda_vat_id_updated', 'company', $company_id, $value, $verified );
 			wp_send_json_success( array( 'value' => $value, 'display' => '' !== $value ? $value : '—', 'verified' => $verified ) );
 		}
 
@@ -508,17 +544,17 @@ final class ContactPanda_Plugin {
 				wp_send_json_error( array( 'message' => __( 'The VAT ID does not have a valid EU format.', 'contactpanda' ) ), 400 );
 			}
 			$contact = self::contact( $contact_id );
-			$user = $contact ? self::contact_user( $contact ) : false;
-			if ( ! $user ) {
-				wp_send_json_error( array( 'message' => __( 'This person does not have a linked WordPress user account.', 'contactpanda' ) ), 400 );
+			$verified = $contact && 'valid' === sanitize_key( self::value( $contact, array( 'vat_status' ) ) ) && $value === self::normalize_vat( self::value( $contact, array( 'vat_id', 'uid' ), self::meta( $contact, array( 'vat_id', 'uid' ) ) ) );
+			$status = $verified ? 'valid' : ( $value ? 'unverified' : 'unchecked' );
+			$verified_at = $verified ? self::value( $contact, array( 'vat_verified_at' ) ) : '';
+			if ( ContactPanda_Store::standalone() ) {
+				$result = ContactPanda_Store::update_contact( $contact_id, array( 'vat_id' => $value, 'vat_status' => $status, 'vat_verified_at' => $verified_at ) );
+			} else {
+				$result = self::execute_ability( 'groundhogg/update-contact', array( 'id' => $contact_id, 'meta' => array( 'vat_id' => $value, 'vat_status' => $status, 'vat_verified_at' => $verified_at ) ) );
 			}
-			$verified = '' !== $value && hash_equals( (string) get_user_meta( $user->ID, 'contactpanda_vat_verified_hash', true ), hash( 'sha256', $value ) );
-			update_user_meta( $user->ID, 'billing_vat', $value );
-			update_user_meta( $user->ID, 'b2b_uid', $value );
-			if ( ! $verified ) {
-				delete_user_meta( $user->ID, 'contactpanda_vat_verified_hash' );
-				delete_user_meta( $user->ID, 'contactpanda_vat_verified_at' );
-			}
+			if ( false === $result ) wp_send_json_error( array( 'message' => __( 'ContactPanda could not save the VAT ID.', 'contactpanda' ) ), 500 );
+			self::sync_person_vat_to_user( $contact, $value, $verified, $verified_at );
+			do_action( 'contactpanda_vat_id_updated', 'person', $contact_id, $value, $verified );
 			wp_send_json_success( array( 'value' => $value, 'display' => '' !== $value ? $value : '—', 'verified' => $verified ) );
 		}
 		if ( in_array( $field, array( 'first_name', 'last_name', 'email' ), true ) && '' === trim( $value ) ) {
@@ -1183,7 +1219,7 @@ final class ContactPanda_Plugin {
 			if ( ! array_filter( $address ) && $user && class_exists( 'WC_Customer' ) ) { try { $address = self::customer_address( new WC_Customer( $user->ID ), 'billing' ); } catch ( Throwable $e ) {} }
 			$company = isset( $company_map[ $id ][0] ) ? self::value( $company_map[ $id ][0], array( 'name', 'company_name', 'get_name' ) ) : self::meta( $contact, array( 'company_name', 'company', 'billing_company' ) );
 			if ( ! $company && $user ) $company = get_user_meta( $user->ID, 'billing_company', true );
-			$uid = $user ? ( get_user_meta( $user->ID, 'billing_vat', true ) ?: get_user_meta( $user->ID, 'b2b_uid', true ) ) : self::meta( $contact, array( 'vat_id', 'uid' ) );
+			$uid = self::person_vat_id( $contact, $user );
 			$tags = is_array( $contact ) && isset( $contact['tags'] ) ? self::user_managed_tags( (array) $contact['tags'] ) : array();
 			$tag_names = array(); foreach ( $tags as $tag ) { $name = self::value( $tag, array( 'name', 'tag_name', 'get_name' ) ); if ( $name ) $tag_names[] = $name; }
 			$roles = array(); if ( $user ) foreach ( (array) $user->roles as $role ) $roles[] = isset( $role_labels[ $role ] ) ? $role_labels[ $role ] : $role;
@@ -1840,18 +1876,10 @@ final class ContactPanda_Plugin {
 		$xml = wp_remote_retrieve_body( $response );
 		if ( preg_match( '/<(?:[A-Za-z0-9_-]+:)?valid>\s*(true|false)\s*<\/(?:[A-Za-z0-9_-]+:)?valid>/i', $xml, $match ) ) {
 			if ( 'true' === strtolower( $match[1] ) ) {
-				$user = self::vat_user_from_request();
-				if ( $user ) {
-					update_user_meta( $user->ID, 'contactpanda_vat_verified_hash', hash( 'sha256', $vat ) );
-					update_user_meta( $user->ID, 'contactpanda_vat_verified_at', current_time( 'mysql' ) );
-				}
+				self::store_vat_validation_from_request( $vat, true );
 				wp_send_json_success( array( 'message' => __( 'The VAT ID is valid according to EU VIES.', 'contactpanda' ), 'status' => 'valid', 'verified' => true ) );
 			}
-			$user = self::vat_user_from_request();
-			if ( $user ) {
-				delete_user_meta( $user->ID, 'contactpanda_vat_verified_hash' );
-				delete_user_meta( $user->ID, 'contactpanda_vat_verified_at' );
-			}
+			self::store_vat_validation_from_request( $vat, false );
 			wp_send_json_error( array( 'message' => __( 'The VAT ID is not valid according to EU VIES.', 'contactpanda' ), 'status' => 'invalid' ), 422 );
 		}
 		wp_send_json_error( array( 'message' => __( 'EU VIES did not return a usable response.', 'contactpanda' ) ), 503 );
@@ -2347,7 +2375,7 @@ final class ContactPanda_Plugin {
 		}
 			echo '<th rowspan="2" class="' . esc_attr( self::column_class( 'marketing' ) ) . '"><span class="screen-reader-text">' . esc_html__( 'Email confirmation and marketing status', 'contactpanda' ) . '</span></th></tr><tr class="contactpanda-order-subheadings">';
 			echo self::sortable_heading( __( 'Number', 'contactpanda' ), 'order_count', $orderby, $order, $customer_filter, $search, 'orders' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes dynamic values.
-			echo self::sortable_heading( __( 'Order total', 'contactpanda' ), 'order_total', $orderby, $order, $customer_filter, $search, 'orders' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes dynamic values.
+			echo self::sortable_heading( __( 'Total', 'contactpanda' ), 'order_total', $orderby, $order, $customer_filter, $search, 'orders' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes dynamic values.
 			echo '</tr></thead><tbody>';
 		foreach ( $contacts as $contact ) {
 			$id = absint( self::value( $contact, array( 'id', 'ID' ) ) );
@@ -2469,11 +2497,8 @@ final class ContactPanda_Plugin {
 				$customer = false;
 			}
 		}
-		$uid = $user ? (string) get_user_meta( $user->ID, 'billing_vat', true ) : '';
-		if ( '' === $uid && $user ) {
-			$uid = (string) get_user_meta( $user->ID, 'b2b_uid', true );
-		}
-		$uid_verified = $user && '' !== $uid && hash_equals( (string) get_user_meta( $user->ID, 'contactpanda_vat_verified_hash', true ), hash( 'sha256', self::normalize_vat( $uid ) ) );
+		$uid = self::person_vat_id( $contact, $user );
+		$uid_verified = '' !== $uid && 'valid' === sanitize_key( self::value( $contact, array( 'vat_status' ), self::meta( $contact, array( 'vat_status' ) ) ) );
 
 		$navigation = self::people_detail_navigation( $id );
 		echo '<header class="contactpanda-heading contactpanda-company-heading"><div class="contactpanda-avatar">' . esc_html( strtoupper( substr( $first_name ?: $last_name ?: 'P', 0, 1 ) ) ) . '</div><div><p class="contactpanda-eyebrow">' . ( $readonly ? esc_html__( 'View person', 'contactpanda' ) : esc_html__( 'Edit person', 'contactpanda' ) ) . '</p><h1>' . esc_html( $name ?: sprintf( __( 'Person #%d', 'contactpanda' ), $id ) ) . '</h1><p>' . esc_html( sprintf( ContactPanda_Store::standalone() ? __( 'ContactPanda ID %d', 'contactpanda' ) : __( 'Groundhogg ID %d', 'contactpanda' ), $id ) ) . '</p></div>';
@@ -3863,12 +3888,8 @@ final class ContactPanda_Plugin {
 		$contacts = self::contacts( $company );
 		$orders = self::orders( $contacts );
 		$billing = $orders ? self::billing( $orders[0] ) : array();
-		$uid_user = self::primary_user( $company, $contacts );
-		$uid = $uid_user ? (string) get_user_meta( $uid_user->ID, 'billing_vat', true ) : '';
-		if ( '' === $uid && $uid_user ) {
-			$uid = (string) get_user_meta( $uid_user->ID, 'b2b_uid', true );
-		}
-		$uid_verified = $uid_user && '' !== $uid && hash_equals( (string) get_user_meta( $uid_user->ID, 'contactpanda_vat_verified_hash', true ), hash( 'sha256', self::normalize_vat( $uid ) ) );
+		$uid = self::normalize_vat( self::value( $company, array( 'vat_id', 'uid' ), self::meta( $company, array( 'vat_id', 'uid' ) ) ) );
+		$uid_verified = '' !== $uid && 'valid' === sanitize_key( self::value( $company, array( 'vat_status' ), self::meta( $company, array( 'vat_status' ) ) ) );
 
 		echo '<a class="contactpanda-back" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-firmen' ) ) . __( '">← Companies overview</a>', 'contactpanda' );
 		echo '<header class="contactpanda-heading contactpanda-company-heading"><div class="contactpanda-avatar">' . esc_html( strtoupper( substr( $name, 0, 1 ) ) ) . '</div><div><p class="contactpanda-eyebrow">' . ( $readonly ? esc_html__( 'View company', 'contactpanda' ) : esc_html__( 'Edit company', 'contactpanda' ) ) . '</p><h1>' . esc_html( $name ) . '</h1><p>' . esc_html( sprintf( ContactPanda_Store::standalone() ? __( 'ContactPanda ID %d', 'contactpanda' ) : __( 'Groundhogg ID %d', 'contactpanda' ), $id ) ) . '</p></div>';
@@ -3895,7 +3916,7 @@ final class ContactPanda_Plugin {
 			self::editable_field( __( 'Description', 'contactpanda' ), self::value( $company, array( 'description', 'get_description' ) ), 'description', $id, true );
 			self::uid_field( __( 'VAT ID', 'contactpanda' ), $uid, $id, 'company', $uid_verified );
 		}
-		echo __( '<p class="description contactpanda-uid-help">Linked to German Market (billing_vat) and B2B Market (b2b_uid) for the primary contact. EU validation only runs when requested.</p>', 'contactpanda' );
+		echo '<p class="description contactpanda-uid-help">' . esc_html__( 'This VAT ID belongs to the company itself. It is not stored on or derived from a contact person. EU validation only runs when requested.', 'contactpanda' ) . '</p>';
 		echo '</section>';
 		do_action( 'contactpanda_render_company_custom_fields', $id, $company, $readonly, 'sidebar' );
 		echo __( '<section class="contactpanda-card"><h2>Billing address</h2>', 'contactpanda' );
@@ -4690,6 +4711,31 @@ final class ContactPanda_Plugin {
 		return $company ? self::primary_user( $company, self::contacts( $company ) ) : false;
 	}
 
+	/** Return the VAT ID owned by a person, with legacy user metadata as a read-only fallback. */
+	private static function person_vat_id( $contact, $user = false ) {
+		$value = self::normalize_vat( self::value( $contact, array( 'vat_id', 'uid' ), self::meta( $contact, array( 'vat_id', 'uid' ) ) ) );
+		if ( '' !== $value ) return (string) apply_filters( 'contactpanda_person_vat_id', $value, $contact, $user );
+		if ( $user ) {
+			$value = self::normalize_vat( get_user_meta( $user->ID, 'billing_vat', true ) ?: get_user_meta( $user->ID, 'b2b_uid', true ) );
+		}
+		return (string) apply_filters( 'contactpanda_person_vat_id', $value, $contact, $user );
+	}
+
+	/** Mirror a person's canonical VAT ID only to integrations attached to the same WordPress user. */
+	private static function sync_person_vat_to_user( $contact, $value, $verified = false, $verified_at = '' ) {
+		$user = $contact ? self::contact_user( $contact ) : false;
+		if ( ! $user ) return;
+		$keys = (array) apply_filters( 'contactpanda_vat_user_meta_keys', array( 'billing_vat', 'b2b_uid' ), $user, $contact );
+		foreach ( array_unique( array_filter( array_map( 'sanitize_key', $keys ) ) ) as $key ) update_user_meta( $user->ID, $key, $value );
+		if ( $verified && $value ) {
+			update_user_meta( $user->ID, 'contactpanda_vat_verified_hash', hash( 'sha256', self::normalize_vat( $value ) ) );
+			update_user_meta( $user->ID, 'contactpanda_vat_verified_at', $verified_at ?: current_time( 'mysql' ) );
+		} else {
+			delete_user_meta( $user->ID, 'contactpanda_vat_verified_hash' );
+			delete_user_meta( $user->ID, 'contactpanda_vat_verified_at' );
+		}
+	}
+
 	private static function normalize_vat( $vat ) {
 		$vat = strtoupper( sanitize_text_field( $vat ) );
 		return preg_replace( '/[^A-Z0-9]/', '', $vat );
@@ -4839,6 +4885,38 @@ final class ContactPanda_Plugin {
 			return $contact ? self::contact_user( $contact ) : false;
 		}
 		return false;
+	}
+
+	/** Persist a VIES result on the person or company that owns the VAT ID. */
+	private static function store_vat_validation_from_request( $vat, $valid ) {
+		$company_id = isset( $_POST['company_id'] ) ? absint( $_POST['company_id'] ) : 0;
+		$contact_id = isset( $_POST['contact_id'] ) ? absint( $_POST['contact_id'] ) : 0;
+		$status = $valid ? 'valid' : 'invalid';
+		$verified_at = $valid ? current_time( 'mysql' ) : '';
+		if ( $company_id ) {
+			if ( ContactPanda_Store::standalone() ) {
+				ContactPanda_Store::update_company( $company_id, 'uid', $vat );
+				ContactPanda_Store::update_company( $company_id, 'vat_status', $status );
+				ContactPanda_Store::update_company( $company_id, 'vat_verified_at', $verified_at );
+			} else {
+				self::execute_ability( 'groundhogg-companies/update-company', array( 'id' => $company_id, 'vat_id' => $vat, 'meta' => array( 'vat_id' => $vat, 'vat_status' => $status, 'vat_verified_at' => $verified_at ) ) );
+			}
+			do_action( 'contactpanda_vat_id_updated', 'company', $company_id, $vat, $valid );
+			return;
+		}
+		if ( $contact_id ) {
+			$contact = self::contact( $contact_id );
+			if ( ContactPanda_Store::standalone() ) {
+				ContactPanda_Store::update_contact( $contact_id, array( 'vat_id' => $vat, 'vat_status' => $status, 'vat_verified_at' => $verified_at ) );
+			} else {
+				self::execute_ability( 'groundhogg/update-contact', array( 'id' => $contact_id, 'meta' => array( 'vat_id' => $vat, 'vat_status' => $status, 'vat_verified_at' => $verified_at ) ) );
+			}
+			self::sync_person_vat_to_user( $contact, $vat, $valid, $verified_at );
+			do_action( 'contactpanda_vat_id_updated', 'person', $contact_id, $vat, $valid );
+			return;
+		}
+		$user = self::vat_user_from_request();
+		if ( $user ) self::sync_person_vat_to_user( array( 'user_id' => $user->ID, 'email' => $user->user_email ), $vat, $valid, $verified_at );
 	}
 
 	private static function guard_ajax() {
