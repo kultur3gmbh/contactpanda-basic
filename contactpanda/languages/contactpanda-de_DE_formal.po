@@ -8253,6 +8253,21 @@ msgstr "Importierte Vorlagen sind schreibgeschützt. Erstellen Sie eine bearbeit
 
 msgid "You are not allowed to manage these settings."
 msgstr "Sie dürfen diese Einstellungen nicht verwalten."
+
+msgid "Panda – Newsletter signup"
+msgstr "Panda – Newsletter-Anmeldung"
+
+msgid "Layout"
+msgstr "Layout"
+
+msgid "Rows"
+msgstr "Zeilen"
+
+msgid "One line"
+msgstr "Einzeilig"
+
+msgid "Two lines"
+msgstr "Zweizeilig"
 msgid "Telephone"
 msgstr "Telefon"
 

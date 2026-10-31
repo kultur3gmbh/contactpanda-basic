@@ -7,9 +7,13 @@ final class ContactPanda_Registration {
 	const GENERAL_OPTION = 'contactpanda_general_settings';
 	const NOTICE_PREFIX = 'contactpanda_registration_notice_';
 
-	/** Customer and business account registration is supplied by Plus. */
+	/**
+	 * Customer and business account registration is intentionally not part of
+	 * the WordPress.org plugin. Commerce extensions provide their own account
+	 * registration without unlocking dormant premium functionality in Basic.
+	 */
 	public static function customer_registration_enabled() {
-		return (bool) apply_filters( 'contactpanda_customer_registration_enabled', false );
+		return false;
 	}
 
 	public static function boot() {
@@ -30,6 +34,7 @@ final class ContactPanda_Registration {
 			add_action( 'template_redirect', array( __CLASS__, 'render_virtual_registration' ) );
 		}
 		add_shortcode( 'contactpanda_newsletter_signup', array( __CLASS__, 'newsletter_shortcode' ) );
+		add_action( 'init', array( __CLASS__, 'register_newsletter_block' ) );
 		add_action( 'admin_post_nopriv_contactpanda_newsletter_signup', array( __CLASS__, 'handle_newsletter_signup' ) );
 		add_action( 'admin_post_contactpanda_newsletter_signup', array( __CLASS__, 'handle_newsletter_signup' ) );
 		add_action( 'admin_post_nopriv_contactpanda_pending_resend', array( __CLASS__, 'handle_pending_resend' ) );
@@ -1639,7 +1644,34 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		return ob_get_clean();
 	}
 
-	public static function newsletter_shortcode() {
+	public static function register_newsletter_block() {
+		wp_register_script(
+			'contactpanda-newsletter-signup-block',
+			CONTACTPANDA_URL . 'assets/contactpanda-newsletter-signup-block.js',
+			array( 'wp-blocks', 'wp-block-editor', 'wp-components', 'wp-element', 'wp-i18n', 'wp-server-side-render' ),
+			CONTACTPANDA_ASSET_VERSION,
+			true
+		);
+		register_block_type(
+			'contactpanda/newsletter-signup',
+			array(
+				'api_version'     => 2,
+				'editor_script'   => 'contactpanda-newsletter-signup-block',
+				'render_callback' => array( __CLASS__, 'newsletter_block' ),
+				'attributes'      => array(
+					'layout' => array( 'type' => 'string', 'default' => 'one-line' ),
+				),
+			)
+		);
+	}
+
+	public static function newsletter_block( $attributes = array() ) {
+		return self::newsletter_shortcode( array( 'layout' => $attributes['layout'] ?? 'one-line' ) );
+	}
+
+	public static function newsletter_shortcode( $atts = array() ) {
+		$atts = shortcode_atts( array( 'layout' => 'one-line' ), $atts, 'contactpanda_newsletter_signup' );
+		$layout = 'two-line' === sanitize_key( $atts['layout'] ) ? 'two-line' : 'one-line';
 		$settings = self::settings();
 		if ( empty( $settings['newsletter_enabled'] ) ) {
 			return current_user_can( 'manage_options' ) ? '<div class="contactpanda-registration-notice is-error">' . esc_html__( 'The separate ContactPanda newsletter signup is not enabled.', 'contactpanda' ) . '</div>' : '';
@@ -1658,7 +1690,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		}
 		$general = self::general_settings();
 		$theme_class = ! empty( $general['theme_styles'] ) ? ' contactpanda-use-theme-styles contactpanda-theme-' . sanitize_html_class( (string) $general['theme_stylesheet'] ) : '';
-		echo '<form class="contactpanda-registration-form contactpanda-newsletter-signup' . esc_attr( $theme_class ) . '" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_newsletter_signup"><input type="hidden" name="redirect_to" value="' . esc_url( self::current_url() ) . '">';
+		echo '<form class="contactpanda-registration-form contactpanda-newsletter-signup contactpanda-newsletter-layout-' . esc_attr( $layout ) . esc_attr( $theme_class ) . '" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_newsletter_signup"><input type="hidden" name="redirect_to" value="' . esc_url( self::current_url() ) . '">';
 		wp_nonce_field( 'contactpanda_newsletter_signup', 'contactpanda_newsletter_nonce' );
 		echo '<div class="contactpanda-registration-trap" aria-hidden="true"><label>Website<input type="text" name="contactpanda_website" tabindex="-1" autocomplete="off"></label></div><section class="contactpanda-form-section"><h3>' . esc_html__( 'Newsletter signup', 'contactpanda' ) . '</h3><div class="contactpanda-form-grid contactpanda-newsletter-fields">';
 		self::input( 'first_name', __( 'First name', 'contactpanda' ), 'text', true, 'given-name' );

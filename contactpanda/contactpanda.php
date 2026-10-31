@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
- * Version: 0.9.1
+ * Version: 0.9.2
  * Update URI: https://github.com/kultur3gmbh/contactpanda-basic
  * Author: Kultur3 GmbH
  * Text Domain: contactpanda
@@ -13,8 +13,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.9.1' );
-define( 'CONTACTPANDA_ASSET_VERSION', '0.9.1-20261031-1' );
+define( 'CONTACTPANDA_VERSION', '0.9.2' );
+define( 'CONTACTPANDA_ASSET_VERSION', '0.9.2-20261031-1' );
 define( 'CONTACTPANDA_EXTENSION_API_VERSION', '1.0' );
 define( 'CONTACTPANDA_FILE', __FILE__ );
 define( 'CONTACTPANDA_PATH', plugin_dir_path( __FILE__ ) );
@@ -66,7 +66,6 @@ require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-licensed-updater.p
 require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-registration.php';
 require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-identity.php';
 require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-customer-portal.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-my-account.php';
 require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-newsletters.php';
 require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-newsletter-campaigns.php';
 require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-segments.php';
@@ -135,7 +134,6 @@ function contactpanda_boot_events_module() {
 add_action( 'plugins_loaded', 'contactpanda_boot_events_module', 30 );
 add_action( 'plugins_loaded', array( 'ContactPanda_Registration', 'boot' ), 30 );
 add_action( 'plugins_loaded', array( 'ContactPanda_Customer_Portal', 'boot' ), 31 );
-add_action( 'plugins_loaded', array( 'ContactPanda_My_Account', 'boot' ), 31 );
 add_action( 'plugins_loaded', array( 'ContactPanda_MCP', 'boot' ), 32 );
 
 /**

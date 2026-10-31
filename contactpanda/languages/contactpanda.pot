@@ -933,6 +933,21 @@ msgstr ""
 msgid "All"
 msgstr ""
 
+msgid "Panda – Newsletter signup"
+msgstr ""
+
+msgid "Layout"
+msgstr ""
+
+msgid "Rows"
+msgstr ""
+
+msgid "One line"
+msgstr ""
+
+msgid "Two lines"
+msgstr ""
+
 #: contactpanda/includes/class-contactpanda-plugin.php:2645
 #, php-format
 msgid "All filtered people (%d)"
