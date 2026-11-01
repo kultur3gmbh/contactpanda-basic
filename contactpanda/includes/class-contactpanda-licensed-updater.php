@@ -113,6 +113,7 @@ final class ContactPanda_Licensed_Updater {
 	/** Remove both the product response and WordPress' combined update result. */
 	public function clear_metadata_cache() {
 		delete_site_transient( $this->cache_key() );
+		delete_site_transient( $this->failure_key() );
 		delete_site_transient( 'update_plugins' );
 		$this->metadata = null;
 	}
@@ -203,25 +204,36 @@ final class ContactPanda_Licensed_Updater {
 	private function metadata( $refresh = false ) {
 		if ( $refresh ) {
 			delete_site_transient( $this->cache_key() );
+			delete_site_transient( $this->failure_key() );
 			$this->metadata = null;
 		}
 		if ( null !== $this->metadata ) {
 			return $this->metadata;
 		}
 
-		/*
-		 * WordPress already caches the combined plugin update result in the
-		 * update_plugins site transient. A second persistent cache here caused
-		 * an explicit "Check again" request to keep returning the previous
-		 * protected family release for up to ten minutes. Keep metadata only for
-		 * the current request so a rebuilt WordPress update list always reaches
-		 * the license server immediately.
-		 */
+		$cached = get_site_transient( $this->cache_key() );
+		if ( ! $refresh && is_array( $cached ) ) return $this->metadata = $cached;
+		$failure = (array) get_site_transient( $this->failure_key() );
+		if ( ! $refresh && ! empty( $failure['until'] ) && time() < absint( $failure['until'] ) ) {
+			return $this->metadata = new WP_Error( 'contactpanda_update_backoff', __( 'The update service is temporarily unavailable. ContactPanda will try again automatically.', 'contactpanda' ) );
+		}
 		$this->metadata = ContactPanda_License::product_update( $this->config['product'], $this->config['entitlement'], $this->config['version'], $this->config['channel'] );
+		if ( is_wp_error( $this->metadata ) ) {
+			$count = min( 6, 1 + absint( $failure['count'] ?? 0 ) );
+			$delay = min( HOUR_IN_SECONDS, 60 * ( 2 ** ( $count - 1 ) ) );
+			set_site_transient( $this->failure_key(), array( 'count' => $count, 'until' => time() + $delay ), $delay );
+			return $this->metadata;
+		}
+		delete_site_transient( $this->failure_key() );
+		set_site_transient( $this->cache_key(), $this->metadata, 2 * MINUTE_IN_SECONDS );
 		return $this->metadata;
 	}
 
 	private function cache_key() {
 		return 'contactpanda_update_' . md5( $this->config['product'] . '|' . $this->config['channel'] . '|' . $this->config['version'] );
+	}
+
+	private function failure_key() {
+		return $this->cache_key() . '_failure';
 	}
 }

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
- * Version: 0.9.3
+ * Version: 0.9.4
  * Update URI: https://github.com/kultur3gmbh/contactpanda-basic
  * Author: Kultur3 GmbH
  * Text Domain: contactpanda
@@ -13,8 +13,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.9.3' );
-define( 'CONTACTPANDA_ASSET_VERSION', '0.9.3-20261031-1' );
+define( 'CONTACTPANDA_VERSION', '0.9.4' );
+define( 'CONTACTPANDA_ASSET_VERSION', '0.9.4-20261101-1' );
 define( 'CONTACTPANDA_EXTENSION_API_VERSION', '1.0' );
 define( 'CONTACTPANDA_FILE', __FILE__ );
 define( 'CONTACTPANDA_PATH', plugin_dir_path( __FILE__ ) );
@@ -62,29 +62,27 @@ function contactpanda_sanitize_css_color( $value, $fallback = '' ) {
 	return sprintf( 'rgba(%d, %d, %d, %s)', $red, $green, $blue, '' === $alpha_value ? '0' : $alpha_value );
 }
 
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-plugin.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-modules.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-license.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-company-profile.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-system-emails.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-capabilities.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-schema.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-identity-store.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-newsletter-schema.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-store.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-trash.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-data-tools.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-custom-fields.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-events.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-github-updater.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-licensed-updater.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-registration.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-identity.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-customer-portal.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-newsletters.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-newsletter-campaigns.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-segments.php';
-require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-mcp.php';
+require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-runtime.php';
+
+/** Load family classes only when WordPress actually invokes them. */
+function contactpanda_autoload( $class ) {
+	$map = array(
+		'ContactPanda_Plugin' => 'class-contactpanda-plugin.php', 'ContactPanda_Modules' => 'class-contactpanda-modules.php',
+		'ContactPanda_License' => 'class-contactpanda-license.php', 'ContactPanda_Company_Profile' => 'class-contactpanda-company-profile.php',
+		'ContactPanda_System_Emails' => 'class-contactpanda-system-emails.php', 'ContactPanda_Capabilities' => 'class-contactpanda-capabilities.php',
+		'ContactPanda_Schema' => 'class-contactpanda-schema.php', 'ContactPanda_Identity_Store' => 'class-contactpanda-identity-store.php',
+		'ContactPanda_Newsletter_Schema' => 'class-contactpanda-newsletter-schema.php', 'ContactPanda_Store' => 'class-contactpanda-store.php',
+		'ContactPanda_Trash' => 'class-contactpanda-trash.php', 'ContactPanda_Data_Tools' => 'class-contactpanda-data-tools.php',
+		'ContactPanda_Custom_Fields' => 'class-contactpanda-custom-fields.php', 'ContactPanda_Events' => 'class-contactpanda-events.php',
+		'ContactPanda_GitHub_Updater' => 'class-contactpanda-github-updater.php', 'ContactPanda_Licensed_Updater' => 'class-contactpanda-licensed-updater.php',
+		'ContactPanda_Registration' => 'class-contactpanda-registration.php', 'ContactPanda_Identity' => 'class-contactpanda-identity.php',
+		'ContactPanda_Customer_Portal' => 'class-contactpanda-customer-portal.php', 'ContactPanda_Basic_Newsletters' => 'class-contactpanda-newsletters.php',
+		'ContactPanda_Basic_Newsletter_Campaigns' => 'class-contactpanda-newsletter-campaigns.php', 'ContactPanda_Basic_Segments' => 'class-contactpanda-segments.php',
+		'ContactPanda_MCP' => 'class-contactpanda-mcp.php', 'ContactPanda_My_Account' => 'class-contactpanda-my-account.php',
+	);
+	if ( isset( $map[ $class ] ) ) require_once CONTACTPANDA_PATH . 'includes/' . $map[ $class ];
+}
+spl_autoload_register( 'contactpanda_autoload' );
 
 add_action(
 	'plugins_loaded',
@@ -136,21 +134,53 @@ function contactpanda_register_family_updaters() {
 }
 add_action( 'plugins_loaded', 'contactpanda_register_family_updaters', 22 );
 
-add_action( 'plugins_loaded', array( 'ContactPanda_Plugin', 'boot' ), 30 );
-add_action( 'plugins_loaded', array( 'ContactPanda_License', 'boot' ), 30 );
-add_action( 'plugins_loaded', array( 'ContactPanda_Company_Profile', 'boot' ), 30 );
-add_action( 'plugins_loaded', array( 'ContactPanda_System_Emails', 'boot' ), 31 );
-add_action( 'plugins_loaded', array( 'ContactPanda_Capabilities', 'boot' ), 29 );
-add_action( 'plugins_loaded', array( 'ContactPanda_Trash', 'boot' ), 30 );
-add_action( 'plugins_loaded', array( 'ContactPanda_Data_Tools', 'boot' ), 30 );
-add_action( 'plugins_loaded', array( 'ContactPanda_Custom_Fields', 'boot' ), 30 );
+function contactpanda_boot_context() {
+	// Mail framing and entitlement state can affect any request. All other large
+	// administration classes stay unloaded on ordinary front-end page views.
+	ContactPanda_System_Emails::boot();
+	if ( ContactPanda_Runtime::is_backoffice() ) {
+		ContactPanda_Plugin::boot();
+		ContactPanda_License::boot();
+		ContactPanda_Company_Profile::boot();
+		ContactPanda_Capabilities::boot();
+		ContactPanda_Trash::boot();
+		ContactPanda_Data_Tools::boot();
+		ContactPanda_Custom_Fields::boot();
+		ContactPanda_Registration::boot();
+		ContactPanda_Customer_Portal::boot();
+		ContactPanda_MCP::boot();
+		return;
+	}
+
+	// Public callbacks are registered without parsing their large classes. PHP's
+	// autoloader resolves the implementation only if the feature is used.
+	add_shortcode( 'contactpanda_registration', array( 'ContactPanda_Registration', 'shortcode' ) );
+	add_shortcode( 'contactpanda_newsletter_signup', array( 'ContactPanda_Registration', 'newsletter_shortcode' ) );
+	add_shortcode( 'contactpanda_customer_portal', array( 'ContactPanda_Customer_Portal', 'shortcode' ) );
+	add_action( 'admin_post_nopriv_contactpanda_register', array( 'ContactPanda_Registration', 'handle_registration' ) );
+	add_action( 'admin_post_nopriv_contactpanda_newsletter_signup', array( 'ContactPanda_Registration', 'handle_newsletter_signup' ) );
+	add_filter( 'register_url', array( 'ContactPanda_Registration', 'registration_url' ) );
+	add_filter( 'authenticate', array( 'ContactPanda_Registration', 'guard_login' ), 40, 3 );
+	add_action( 'panda_seasons_contact_registered', array( 'ContactPanda_Plugin', 'handle_extension_contact_registered' ), 10, 3 );
+	if ( isset( $_GET['contactpanda_registration'] ) ) add_action( 'template_redirect', array( 'ContactPanda_Registration', 'render_virtual_registration' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- public route selector.
+	if ( isset( $_GET['contactpanda_portal'] ) ) add_action( 'template_redirect', array( 'ContactPanda_Customer_Portal', 'render_virtual_portal' ), 20 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- public route selector.
+	if ( isset( $_GET['cp_contact'], $_GET['cp_token'] ) ) add_action( 'template_redirect', array( 'ContactPanda_Customer_Portal', 'confirm_email_change' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- signed public route.
+}
+add_action( 'plugins_loaded', 'contactpanda_boot_context', 29 );
+
+/** Register the two public dynamic blocks without loading their renderers. */
+function contactpanda_register_public_blocks() {
+	if ( ContactPanda_Runtime::is_backoffice() ) return;
+	wp_register_script( 'contactpanda-newsletter-signup-block', CONTACTPANDA_URL . 'assets/contactpanda-newsletter-signup-block.js', array( 'wp-blocks', 'wp-block-editor', 'wp-components', 'wp-element', 'wp-i18n', 'wp-server-side-render' ), CONTACTPANDA_ASSET_VERSION, true );
+	register_block_type( 'contactpanda/newsletter-signup', array( 'api_version' => 2, 'editor_script' => 'contactpanda-newsletter-signup-block', 'render_callback' => array( 'ContactPanda_Registration', 'newsletter_block' ), 'attributes' => array( 'layout' => array( 'type' => 'string', 'default' => 'one-line' ) ) ) );
+	wp_register_script( 'contactpanda-portal-block', CONTACTPANDA_URL . 'assets/contactpanda-portal-block.js', array( 'wp-blocks', 'wp-element', 'wp-i18n', 'wp-server-side-render' ), CONTACTPANDA_ASSET_VERSION, true );
+	register_block_type( 'contactpanda/customer-portal', array( 'api_version' => 2, 'editor_script' => 'contactpanda-portal-block', 'render_callback' => array( 'ContactPanda_Customer_Portal', 'block' ), 'attributes' => array( 'defaultTab' => array( 'type' => 'string', 'default' => 'profile' ) ) ) );
+}
+add_action( 'init', 'contactpanda_register_public_blocks', 9 );
 function contactpanda_boot_events_module() {
 	if ( apply_filters( 'contactpanda_events_enabled', false ) ) ContactPanda_Events::boot();
 }
 add_action( 'plugins_loaded', 'contactpanda_boot_events_module', 30 );
-add_action( 'plugins_loaded', array( 'ContactPanda_Registration', 'boot' ), 30 );
-add_action( 'plugins_loaded', array( 'ContactPanda_Customer_Portal', 'boot' ), 31 );
-add_action( 'plugins_loaded', array( 'ContactPanda_MCP', 'boot' ), 32 );
 add_action( 'admin_init', array( 'ContactPanda_Store', 'migrate_legacy_vat_ids' ), 25 );
 
 /**
@@ -158,6 +188,7 @@ add_action( 'admin_init', array( 'ContactPanda_Store', 'migrate_legacy_vat_ids' 
  * checked at the individual action or editor control that requires them.
  */
 function contactpanda_boot_newsletter_module() {
+	if ( ! ContactPanda_Runtime::is_backoffice() ) return;
 	$enabled = ContactPanda_License::newsletter_entitled();
 	$existing_newsletter = ContactPanda_Modules::get( 'newsletter' );
 	$existing_segments   = ContactPanda_Modules::get( 'segments' );
