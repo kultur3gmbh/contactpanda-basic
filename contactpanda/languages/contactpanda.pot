@@ -933,6 +933,27 @@ msgstr ""
 msgid "All"
 msgstr ""
 
+msgid "Installed versions, available updates, entitlement results, and optional privacy-safe runtime measurements."
+msgstr ""
+
+msgid "Up to date"
+msgstr ""
+
+msgid "Not entitled or no protected release"
+msgstr ""
+
+msgid "Update available"
+msgstr ""
+
+msgid "License status"
+msgstr ""
+
+msgid "License and update service"
+msgstr ""
+
+msgid "ContactPanda runtime"
+msgstr ""
+
 msgid "Total"
 msgstr ""
 

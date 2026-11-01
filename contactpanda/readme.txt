@@ -4,7 +4,7 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.9.4
+Stable tag: 0.9.5
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -17,6 +17,10 @@ ContactPanda Basic provides an independent contact and company database for Word
 Optional integrations are detected at runtime and remain hidden when their source plugin is unavailable. ContactPanda Basic remains fully usable without a paid ContactPanda extension.
 
 == Changelog ==
+
+= 0.9.5 =
+* Caches dashboard totals and initializes large administration modules only when their screens or actions need them.
+* Adds central Site Health diagnostics for family versions, protected updates, licenses, and optional privacy-safe runtime measurements.
 
 = 0.9.4 =
 * Adds context-aware lazy loading for administration, public, REST, AJAX, and cron requests.

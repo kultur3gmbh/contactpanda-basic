@@ -307,6 +307,11 @@ final class ContactPanda_License {
 		return esc_url_raw( apply_filters( 'contactpanda_license_endpoint', $base, $action ) );
 	}
 
+	/** Expose only the service URL for read-only diagnostics; never license secrets. */
+	public static function diagnostic_endpoint() {
+		return self::endpoint( 'updates/check' );
+	}
+
 	/**
 	 * Request signed update metadata for a licensed product.
 	 *

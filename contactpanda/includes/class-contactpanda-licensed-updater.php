@@ -236,4 +236,29 @@ final class ContactPanda_Licensed_Updater {
 	private function failure_key() {
 		return $this->cache_key() . '_failure';
 	}
+
+	/** Read-only status used by the shared Site Health diagnosis. */
+	public static function diagnostics() {
+		$result = array();
+		foreach ( self::$instances as $plugin => $instance ) {
+			$data = $instance->metadata();
+			$available = '';
+			$reason = __( 'Up to date', 'contactpanda' );
+			if ( is_wp_error( $data ) ) {
+				$reason = $data->get_error_code() . ': ' . $data->get_error_message();
+			} elseif ( empty( $data['available'] ) ) {
+				$reason = sanitize_text_field( $data['reason'] ?? __( 'Not entitled or no protected release', 'contactpanda' ) );
+			} else {
+				$available = sanitize_text_field( $data['version'] ?? '' );
+				$reason = version_compare( $available, $instance->config['version'], '>' ) ? __( 'Update available', 'contactpanda' ) : __( 'Up to date', 'contactpanda' );
+			}
+			$result[ $plugin ] = array(
+				'name'      => $instance->config['name'],
+				'installed' => $instance->config['version'],
+				'available' => $available,
+				'reason'    => $reason,
+			);
+		}
+		return $result;
+	}
 }

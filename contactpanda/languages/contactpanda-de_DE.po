@@ -8266,6 +8266,27 @@ msgstr "Importierte Vorlagen sind schreibgeschützt. Erstellen Sie eine bearbeit
 msgid "You are not allowed to manage these settings."
 msgstr "Sie dürfen diese Einstellungen nicht verwalten."
 
+msgid "Installed versions, available updates, entitlement results, and optional privacy-safe runtime measurements."
+msgstr "Installierte Versionen, verfügbare Updates, Berechtigungsergebnisse und optionale datenschutzfreundliche Laufzeitmessungen."
+
+msgid "Up to date"
+msgstr "Aktuell"
+
+msgid "Not entitled or no protected release"
+msgstr "Keine Berechtigung oder keine geschützte Veröffentlichung"
+
+msgid "Update available"
+msgstr "Update verfügbar"
+
+msgid "License status"
+msgstr "Lizenzstatus"
+
+msgid "License and update service"
+msgstr "Lizenz- und Update-Dienst"
+
+msgid "ContactPanda runtime"
+msgstr "ContactPanda-Laufzeit"
+
 msgid "Total"
 msgstr "Summe"
 

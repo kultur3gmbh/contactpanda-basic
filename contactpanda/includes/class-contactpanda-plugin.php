@@ -1935,11 +1935,21 @@ final class ContactPanda_Plugin {
 			return;
 		}
 
+		$cache_key = 'contactpanda_dashboard_counts_' . ( ContactPanda_Store::standalone() ? 'standalone' : 'groundhogg' );
+		$cached_counts = get_transient( $cache_key );
+		if ( ! is_array( $cached_counts ) ) {
+			$cached_counts = array(
+				'people'     => self::dashboard_people_count(),
+				'companies'  => self::companies_available() ? self::dashboard_company_count() : 0,
+				'duplicates' => self::dashboard_duplicate_count(),
+			);
+			set_transient( $cache_key, $cached_counts, 5 * MINUTE_IN_SECONDS );
+		}
 		$contact_cards = array(
-			array( __( 'People', 'contactpanda' ), self::dashboard_people_count(), admin_url( 'admin.php?page=contactpanda-people' ), 'groups' ),
+			array( __( 'People', 'contactpanda' ), absint( $cached_counts['people'] ?? 0 ), admin_url( 'admin.php?page=contactpanda-people' ), 'groups' ),
 		);
-		if ( self::companies_available() ) $contact_cards[] = array( __( 'Companies', 'contactpanda' ), self::dashboard_company_count(), admin_url( 'admin.php?page=contactpanda-firmen' ), 'building' );
-		$contact_cards[] = array( __( 'Potential duplicates', 'contactpanda' ), self::dashboard_duplicate_count(), admin_url( 'admin.php?page=contactpanda-settings&tab=other&other_section=duplicates' ), 'admin-page' );
+		if ( self::companies_available() ) $contact_cards[] = array( __( 'Companies', 'contactpanda' ), absint( $cached_counts['companies'] ?? 0 ), admin_url( 'admin.php?page=contactpanda-firmen' ), 'building' );
+		$contact_cards[] = array( __( 'Potential duplicates', 'contactpanda' ), absint( $cached_counts['duplicates'] ?? 0 ), admin_url( 'admin.php?page=contactpanda-settings&tab=other&other_section=duplicates' ), 'admin-page' );
 
 		$communication_cards = array();
 		$last_mailing = false;

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
- * Version: 0.9.4
+ * Version: 0.9.5
  * Update URI: https://github.com/kultur3gmbh/contactpanda-basic
  * Author: Kultur3 GmbH
  * Text Domain: contactpanda
@@ -13,8 +13,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.9.4' );
-define( 'CONTACTPANDA_ASSET_VERSION', '0.9.4-20261101-1' );
+define( 'CONTACTPANDA_VERSION', '0.9.5' );
+define( 'CONTACTPANDA_ASSET_VERSION', '0.9.5-20261101-1' );
 define( 'CONTACTPANDA_EXTENSION_API_VERSION', '1.0' );
 define( 'CONTACTPANDA_FILE', __FILE__ );
 define( 'CONTACTPANDA_PATH', plugin_dir_path( __FILE__ ) );
@@ -63,6 +63,8 @@ function contactpanda_sanitize_css_color( $value, $fallback = '' ) {
 }
 
 require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-runtime.php';
+ContactPanda_Runtime::begin_profile();
+add_filter( 'debug_information', array( 'ContactPanda_Runtime', 'site_health_info' ) );
 
 /** Load family classes only when WordPress actually invokes them. */
 function contactpanda_autoload( $class ) {
@@ -141,14 +143,14 @@ function contactpanda_boot_context() {
 	if ( ContactPanda_Runtime::is_backoffice() ) {
 		ContactPanda_Plugin::boot();
 		ContactPanda_License::boot();
-		ContactPanda_Company_Profile::boot();
 		ContactPanda_Capabilities::boot();
 		ContactPanda_Trash::boot();
 		ContactPanda_Data_Tools::boot();
-		ContactPanda_Custom_Fields::boot();
 		ContactPanda_Registration::boot();
-		ContactPanda_Customer_Portal::boot();
-		ContactPanda_MCP::boot();
+		if ( ContactPanda_Runtime::needs_module( array( 'contactpanda-settings' ), array( 'contactpanda_save_company_profile', 'contactpanda_import_woocommerce_company_profile' ) ) ) ContactPanda_Company_Profile::boot();
+		if ( ContactPanda_Runtime::needs_module( array( 'contactpanda-settings', 'contactpanda-people', 'contactpanda-firmen' ), array( 'contactpanda_save_custom_', 'contactpanda_delete_custom_', 'contactpanda_export_companies' ) ) ) ContactPanda_Custom_Fields::boot();
+		if ( ContactPanda_Runtime::needs_module( array( 'contactpanda-settings' ), array( 'contactpanda_portal_' ) ) ) ContactPanda_Customer_Portal::boot();
+		if ( ContactPanda_Runtime::needs_module( array( 'contactpanda-settings' ), array( 'contactpanda_mcp' ) ) ) ContactPanda_MCP::boot();
 		return;
 	}
 
