@@ -60,6 +60,27 @@
 		[/^(open|öffnen)( .+)?$/i, 'external'], [/^(edit|bearbeiten)( .+)?$/i, 'edit'],
 		[/^(search|suchen)( .+)?$/i, 'search'], [/^(filter|filtern)( .+)?$/i, 'filter']
 	];
+	/* Detect action words anywhere in descriptive labels. Order matters when a
+	 * label combines actions: publishing or scheduling is more specific than
+	 * saving, and deactivating is more specific than activating. */
+	var largeActionSuffixes = [
+		[/\b(draft|entwurf)\b/i, 'draft'],
+		[/\b(publish|publishing|veröffentlichen|veröffentlichung)\b/i, 'publish'],
+		[/\b(schedule|scheduled|scheduling|planen|geplant)\b/i, 'schedule'],
+		[/\b(deactivate|disable|deaktivieren|sperren)\b/i, 'deactivate'],
+		[/\b(activate|enable|aktivieren|freischalten)\b/i, 'activate'],
+		[/\b(save|saving|saved|speichern|gespeichert)\b/i, 'save'],
+		[/\b(apply|applying|anwenden)\b/i, 'apply'], [/\b(accept|adopt|use)\b|übernehmen/i, 'accept'],
+		[/\b(update|updates|updating|updated|updaten|refresh|sync|fetch|retrieve|reload|aktualisieren|aktualisierung|aktualisierungen|erneuern|synchronisieren|abrufen)\b|neu laden/i, 'refresh'],
+		[/\b(reset|restore|zurücksetzen|wiederherstellen)\b/i, 'reset'],
+		[/\b(test|check|validate|testen|prüfen|validieren)\b/i, 'test'],
+		[/\b(send|sending|versenden|senden)\b/i, 'email'], [/\b(import|importieren)\b/i, 'import'],
+		[/\b(export|exportieren)\b/i, 'export'], [/\b(download|herunterladen)\b/i, 'download'],
+		[/\b(start|run|execute|starten|ausführen)\b/i, 'start'],
+		[/\b(add|create|new|hinzufügen|erstellen|neu)\b/i, 'add'],
+		[/\b(copy|duplicate|kopieren|duplizieren)\b/i, 'duplicate'],
+		[/\b(search|suchen)\b/i, 'search'], [/\b(filter|filtern)\b/i, 'filter']
+	];
 	var largeActionRootSelector = [
 		'.contactpanda-wrap', '.contactpanda-business-wrap', '.contactpanda-pro-wrap', '.contactpanda-dashboard',
 		'.contactpanda-newsletter-page', '.contactpanda-mailing-editor-page', '.contactpanda-mailing-details-page',
@@ -70,7 +91,7 @@
 	var compactActionContainers = [
 		'td', '.contactpanda-list-action', '.contactpanda-inline-row-action', '.contactpanda-template-actions',
 		'.contactpanda-gallery-row-actions', '.contactpanda-system-email-block-actions', '.cpb-actions', '.cpb-card-actions',
-		'.pandawoo-template-actions', '.pandawoo-inline-actions', '.pandawoo-pro-license-actions', '.panda-seasons-actions',
+		'.pandawoo-template-actions', '.pandawoo-pro-license-actions', '.panda-seasons-actions',
 		'.panda-seasons-composer__door-actions', '.panda-seasons-composer__layer-actions', '.cpls-actions', '.cpls-row-actions'
 	].join(',');
 
@@ -79,6 +100,25 @@
 		var matches = [];
 		if (root.nodeType === 1 && root.matches(selector)) matches.push(root);
 		return matches.concat(Array.prototype.slice.call(root.querySelectorAll(selector)));
+	}
+
+	function proxyInputAction(control, label) {
+		if (control.tagName !== 'INPUT') return control;
+		var proxy = document.createElement('button');
+		proxy.type = 'button';
+		proxy.className = control.className;
+		proxy.textContent = label;
+		proxy.disabled = control.disabled;
+		Array.prototype.slice.call(control.attributes).forEach(function (attribute) {
+			if (attribute.name.indexOf('data-') === 0 || attribute.name.indexOf('aria-') === 0 || attribute.name === 'title') proxy.setAttribute(attribute.name, attribute.value);
+		});
+		control.dataset.contactpandaLargeActionReady = '1';
+		control.hidden = true;
+		control.tabIndex = -1;
+		control.setAttribute('aria-hidden', 'true');
+		control.parentNode.insertBefore(proxy, control);
+		proxy.addEventListener('click', function () { if (!control.disabled) control.click(); });
+		return proxy;
 	}
 
 	function parseColor(value) {
@@ -371,16 +411,19 @@
 		if (control.matches('.button-small,.button-link,.button-link-delete,[data-contactpanda-action-mode="icon"]') || control.closest(compactActionContainers)) return;
 		var label = (control.value || control.textContent || control.getAttribute('aria-label') || control.getAttribute('title') || '').trim().replace(/\s+/g, ' ');
 		var action = control.dataset.contactpandaAction || '';
+		if (!action) largeActionSuffixes.some(function (entry) { if (entry[0].test(label)) { action = entry[1]; return true; } return false; });
 		if (!action) largeActionLabels.some(function (entry) { if (entry[0].test(label)) { action = entry[1]; return true; } return false; });
 		var definition = actionDefinitions[action];
-		if (!definition || !label) return;
+		if (!label) return;
+		if (definition) control = proxyInputAction(control, label);
 		control.dataset.contactpandaLargeActionReady = '1';
-		control.dataset.contactpandaActionReady = '1';
-		control.dataset.contactpandaAction = action;
-		control.classList.add('contactpanda-large-action', 'contactpanda-large-action-' + action.replace(/([A-Z])/g, '-$1').toLowerCase());
+		control.classList.add('contactpanda-large-action');
 		if (control.classList.contains('button-primary') || action === 'publish') control.classList.add('is-primary');
 		if (control.disabled || control.getAttribute('aria-disabled') === 'true') control.classList.add('is-disabled');
-		if (control.tagName === 'INPUT') return;
+		if (!definition) return;
+		control.dataset.contactpandaActionReady = '1';
+		control.dataset.contactpandaAction = action;
+		control.classList.add('contactpanda-large-action-' + action.replace(/([A-Z])/g, '-$1').toLowerCase());
 		Array.prototype.slice.call(control.children).forEach(function (child) {
 			if (child.classList.contains('dashicons') || child.classList.contains('contactpanda-action-icon')) child.remove();
 		});
