@@ -4,7 +4,7 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.9.6
+Stable tag: 0.9.7
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -17,6 +17,10 @@ ContactPanda Basic provides an independent contact and company database for Word
 Optional integrations are detected at runtime and remain hidden when their source plugin is unavailable. ContactPanda Basic remains fully usable without a paid ContactPanda extension.
 
 == Changelog ==
+
+= 0.9.7 =
+* Adds a one-time protected-update bridge for PandaWoo Pro 0.6.x installations covered by a ContactPanda All-in Suite license.
+* Hands update ownership back to PandaWoo Pro automatically from version 0.7.2 onward.
 
 = 0.9.6 =
 * Standardizes large labelled actions across the Panda family with neutral-grey styling, consistent icons, responsive wrapping, and the concise “Save draft” label.

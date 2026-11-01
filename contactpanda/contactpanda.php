@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
- * Version: 0.9.6
+ * Version: 0.9.7
  * Update URI: https://github.com/kultur3gmbh/contactpanda-basic
  * Author: Kultur3 GmbH
  * Text Domain: contactpanda
@@ -13,8 +13,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.9.6' );
-define( 'CONTACTPANDA_ASSET_VERSION', '0.9.6-20261101-1' );
+define( 'CONTACTPANDA_VERSION', '0.9.7' );
+define( 'CONTACTPANDA_ASSET_VERSION', '0.9.7-20261101-1' );
 define( 'CONTACTPANDA_EXTENSION_API_VERSION', '1.0' );
 define( 'CONTACTPANDA_FILE', __FILE__ );
 define( 'CONTACTPANDA_PATH', plugin_dir_path( __FILE__ ) );
@@ -117,6 +117,16 @@ function contactpanda_register_family_updaters() {
 		array( 'constant' => 'CONTACTPANDA_PLUS_FILE', 'version' => 'CONTACTPANDA_PLUS_VERSION', 'product' => 'contactpanda-plus', 'entitlement' => 'plus', 'slug' => 'contactpanda-plus', 'name' => 'ContactPanda Plus' ),
 		array( 'constant' => 'CONTACTPANDA_BUSINESS_FILE', 'version' => 'CONTACTPANDA_BUSINESS_VERSION', 'product' => 'contactpanda-business', 'entitlement' => 'business', 'slug' => 'contactpanda-business', 'name' => 'ContactPanda Business' ),
 	);
+
+	/*
+	 * PandaWoo Pro 0.6.x can only ask the license server with a dedicated
+	 * PandaWoo activation. Register one temporary bridge through the existing
+	 * ContactPanda suite activation so those installations can reach 0.7.2.
+	 * Newer PandaWoo releases own their updater and no longer need the bridge.
+	 */
+	if ( defined( 'PANDAWOO_PRO_FILE' ) && defined( 'PANDAWOO_PRO_VERSION' ) && version_compare( PANDAWOO_PRO_VERSION, '0.7.2', '<' ) ) {
+		$products[] = array( 'constant' => 'PANDAWOO_PRO_FILE', 'version' => 'PANDAWOO_PRO_VERSION', 'product' => 'pandawoo-pro', 'entitlement' => 'pandawoo-pro', 'slug' => 'pandawoo-pro', 'name' => 'PandaWoo Pro' );
+	}
 	foreach ( $products as $product ) {
 		if ( ! defined( $product['constant'] ) || ! defined( $product['version'] ) ) {
 			continue;

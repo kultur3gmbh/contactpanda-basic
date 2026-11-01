@@ -12,6 +12,9 @@ foreach (
 		'CONTACTPANDA_BUSINESS_FILE',
 		"'product' => 'contactpanda-plus'",
 		"'product' => 'contactpanda-business'",
+		'PANDAWOO_PRO_FILE',
+		"'product' => 'pandawoo-pro'",
+		"version_compare( PANDAWOO_PRO_VERSION, '0.7.2', '<' )",
 	)
 	as $contract
 ) {
