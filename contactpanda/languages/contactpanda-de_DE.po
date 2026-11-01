@@ -7456,8 +7456,8 @@ msgstr "Diese Ausnahme erteilt oder reaktiviert keine Zustimmung. Abgemeldete, g
 msgid "Create campaign"
 msgstr "Kampagne erstellen"
 
-msgid "Save as draft"
-msgstr "Als Entwurf speichern"
+msgid "Save draft"
+msgstr "Entwurf speichern"
 
 msgid "Email content width"
 msgstr "Inhaltsbreite der E-Mail"

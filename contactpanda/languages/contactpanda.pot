@@ -7504,7 +7504,7 @@ msgstr ""
 msgid "Create campaign"
 msgstr ""
 
-msgid "Save as draft"
+msgid "Save draft"
 msgstr ""
 
 msgid "Email content width"
