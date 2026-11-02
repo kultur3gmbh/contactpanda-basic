@@ -79,6 +79,12 @@
 		[/\b(start|run|execute|starten|ausführen)\b/i, 'start'],
 		[/\b(add|create|new|hinzufügen|erstellen|neu)\b/i, 'add'],
 		[/\b(copy|duplicate|kopieren|duplizieren)\b/i, 'duplicate'],
+		[/\b(delete|trash|löschen|papierkorb)\b/i, 'delete'],
+		[/\b(confirm|approve|bestätigen|genehmigen)\b/i, 'confirm'],
+		[/\b(cancel|close|abbrechen|schließen)\b/i, 'cancel'],
+		[/\b(disconnect|separate|trennen)\b/i, 'deactivate'],
+		[/\b(preview|view|show|anzeigen|ansehen|vorschau)\b/i, 'view'],
+		[/\b(print|drucken)\b/i, 'print'], [/\b(open|öffnen)\b/i, 'external'],
 		[/\b(search|suchen)\b/i, 'search'], [/\b(filter|filtern)\b/i, 'filter']
 	];
 	var largeActionRootSelector = [
@@ -105,19 +111,29 @@
 	function proxyInputAction(control, label) {
 		if (control.tagName !== 'INPUT') return control;
 		var proxy = document.createElement('button');
-		proxy.type = 'button';
+		var inputType = (control.getAttribute('type') || 'submit').toLowerCase();
+		proxy.type = inputType === 'reset' ? 'reset' : inputType === 'submit' ? 'submit' : 'button';
 		proxy.className = control.className;
 		proxy.textContent = label;
 		proxy.disabled = control.disabled;
 		Array.prototype.slice.call(control.attributes).forEach(function (attribute) {
-			if (attribute.name.indexOf('data-') === 0 || attribute.name.indexOf('aria-') === 0 || attribute.name === 'title') proxy.setAttribute(attribute.name, attribute.value);
+			if (attribute.name !== 'type' && attribute.name !== 'value' && attribute.name !== 'class') proxy.setAttribute(attribute.name, attribute.value);
 		});
+		if (control.name) proxy.name = control.name;
+		if (control.value) proxy.value = control.value;
+		proxy.dataset.contactpandaLargeActionReady = '1';
 		control.dataset.contactpandaLargeActionReady = '1';
-		control.hidden = true;
-		control.tabIndex = -1;
-		control.setAttribute('aria-hidden', 'true');
-		control.parentNode.insertBefore(proxy, control);
-		proxy.addEventListener('click', function () { if (!control.disabled) control.click(); });
+		if (proxy.type === 'button') {
+			control.classList.add('contactpanda-large-action-source');
+			control.hidden = true;
+			control.style.setProperty('display', 'none', 'important');
+			control.tabIndex = -1;
+			control.setAttribute('aria-hidden', 'true');
+			control.parentNode.insertBefore(proxy, control);
+			proxy.addEventListener('click', function () { if (!control.disabled) control.click(); });
+		} else {
+			control.parentNode.replaceChild(proxy, control);
+		}
 		return proxy;
 	}
 
@@ -408,7 +424,7 @@
 
 	function largeActionIcon(control) {
 		if (!control || control.dataset.contactpandaLargeActionReady === '1') return;
-		if (control.matches('.button-small,.button-link,.button-link-delete,[data-contactpanda-action-mode="icon"]') || control.closest(compactActionContainers)) return;
+		if (control.matches('.button-small,.button-link,.button-link-delete,[data-contactpanda-action-mode="icon"]') || control.closest(compactActionContainers + ',.wp-picker-container,.contactpanda-unified-color,.media-modal,.wp-editor-wrap,.mce-toolbar,.components-toolbar')) return;
 		var label = (control.value || control.textContent || control.getAttribute('aria-label') || control.getAttribute('title') || '').trim().replace(/\s+/g, ' ');
 		var action = control.dataset.contactpandaAction || '';
 		if (!action) largeActionSuffixes.some(function (entry) { if (entry[0].test(label)) { action = entry[1]; return true; } return false; });
@@ -434,8 +450,8 @@
 	}
 
 	function enhanceLargeActions(root) {
-		findAll(root, 'button.button,a.button,input.button,[data-contactpanda-action-mode="labelled"]').forEach(function (control) {
-			if (control.closest(largeActionRootSelector)) largeActionIcon(control);
+		findAll(root, 'button.button,a.button,input.button,input[type="submit"],input[type="button"],input[type="reset"],button[type="submit"],[data-contactpanda-action-mode="labelled"]').forEach(function (control) {
+			largeActionIcon(control);
 		});
 	}
 

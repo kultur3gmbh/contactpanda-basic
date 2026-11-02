@@ -281,3 +281,11 @@ body.contactpanda-modal-open{overflow:hidden}.contactpanda-mailing-modal{z-index
 .contactpanda-large-action>.dashicons,.contactpanda-large-action>.contactpanda-action-icon{flex:0 0 18px;width:18px;height:18px;margin:0!important;font-size:18px;line-height:18px}
 .contactpanda-newsletter-editor-actions,.contactpanda-form-dialog-actions,.contactpanda-flow-toolbar-actions,.contactpanda-mailing-submit-actions,.contactpanda-system-email-test,.contactpanda-trash-toolbar,.cpb-page-actions,.pandawoo-page-actions,.panda-seasons-page-actions,.cpls-list-toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 @media(max-width:782px){.contactpanda-newsletter-editor-actions,.contactpanda-form-dialog-actions,.contactpanda-flow-toolbar-actions,.contactpanda-mailing-submit-actions,.contactpanda-system-email-test,.contactpanda-trash-toolbar,.cpb-page-actions,.pandawoo-page-actions,.panda-seasons-page-actions,.cpls-list-toolbar{align-items:stretch;flex-direction:column}.contactpanda-large-action{width:100%!important}}
+.contactpanda-large-action-source[hidden]{display:none!important}
+.contactpanda-large-action>.dashicons,.contactpanda-large-action>.contactpanda-action-icon{display:inline-grid!important;place-items:center!important;align-self:center!important;flex:0 0 18px;width:18px;height:18px;margin:0!important;font-size:18px;line-height:1!important}
+.contactpanda-large-action>.dashicons:before{display:block;line-height:1!important}
+.contactpanda-large-action{max-width:100%!important;font-family:inherit!important;font-size:13px!important}
+.contactpanda-large-action>.dashicons,.contactpanda-large-action>.contactpanda-action-icon{position:relative!important;top:0!important;transform:none;vertical-align:middle!important}
+.contactpanda-large-action>.dashicons:before{display:block!important;line-height:1!important}
+.contactpanda-large-action>.contactpanda-action-icon-file-output{transform:scaleX(-1)!important}
+.contactpanda-action-labelled>.dashicons,.contactpanda-action-labelled>.contactpanda-action-icon{display:inline-grid!important;place-items:center!important;line-height:1!important;flex:0 0 20px!important}
