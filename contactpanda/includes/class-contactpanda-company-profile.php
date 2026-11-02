@@ -44,19 +44,9 @@ final class ContactPanda_Company_Profile {
 		);
 	}
 
-	/**
-	 * Read the shared profile without losing values saved by earlier Pro builds.
-	 *
-	 * The legacy option remains untouched and is used only as a one-way fallback.
-	 */
+	/** Read the shared website-responsibility profile. */
 	public static function get() {
 		$stored = get_option( self::OPTION, array() );
-		if ( ! is_array( $stored ) || empty( array_filter( $stored ) ) ) {
-			$legacy = get_option( 'contactpanda_pro_company_profile', array() );
-			if ( is_array( $legacy ) ) {
-				$stored = $legacy;
-			}
-		}
 		return wp_parse_args( is_array( $stored ) ? $stored : array(), self::defaults() );
 	}
 

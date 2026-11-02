@@ -2,8 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
- * Version: 0.9.9
- * Update URI: https://github.com/kultur3gmbh/contactpanda-basic
+ * Version: 0.9.11
  * Author: Kultur3 GmbH
  * Text Domain: contactpanda
  * Domain Path: /languages
@@ -13,8 +12,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.9.9' );
-define( 'CONTACTPANDA_ASSET_VERSION', '0.9.9-20261102-1' );
+define( 'CONTACTPANDA_VERSION', '0.9.11' );
+define( 'CONTACTPANDA_ASSET_VERSION', '0.9.11-20261102-1' );
 define( 'CONTACTPANDA_EXTENSION_API_VERSION', '1.0' );
 define( 'CONTACTPANDA_FILE', __FILE__ );
 define( 'CONTACTPANDA_PATH', plugin_dir_path( __FILE__ ) );
@@ -70,13 +69,12 @@ add_filter( 'debug_information', array( 'ContactPanda_Runtime', 'site_health_inf
 function contactpanda_autoload( $class ) {
 	$map = array(
 		'ContactPanda_Plugin' => 'class-contactpanda-plugin.php', 'ContactPanda_Modules' => 'class-contactpanda-modules.php',
-		'ContactPanda_License' => 'class-contactpanda-license.php', 'ContactPanda_Company_Profile' => 'class-contactpanda-company-profile.php',
+		'ContactPanda_Company_Profile' => 'class-contactpanda-company-profile.php',
 		'ContactPanda_System_Emails' => 'class-contactpanda-system-emails.php', 'ContactPanda_Capabilities' => 'class-contactpanda-capabilities.php',
 		'ContactPanda_Schema' => 'class-contactpanda-schema.php', 'ContactPanda_Identity_Store' => 'class-contactpanda-identity-store.php',
 		'ContactPanda_Newsletter_Schema' => 'class-contactpanda-newsletter-schema.php', 'ContactPanda_Store' => 'class-contactpanda-store.php',
 		'ContactPanda_Trash' => 'class-contactpanda-trash.php', 'ContactPanda_Data_Tools' => 'class-contactpanda-data-tools.php',
 		'ContactPanda_Custom_Fields' => 'class-contactpanda-custom-fields.php', 'ContactPanda_Events' => 'class-contactpanda-events.php',
-		'ContactPanda_GitHub_Updater' => 'class-contactpanda-github-updater.php', 'ContactPanda_Licensed_Updater' => 'class-contactpanda-licensed-updater.php',
 		'ContactPanda_Registration' => 'class-contactpanda-registration.php', 'ContactPanda_Identity' => 'class-contactpanda-identity.php',
 		'ContactPanda_Customer_Portal' => 'class-contactpanda-customer-portal.php', 'ContactPanda_Basic_Newsletters' => 'class-contactpanda-newsletters.php',
 		'ContactPanda_Basic_Newsletter_Campaigns' => 'class-contactpanda-newsletter-campaigns.php', 'ContactPanda_Basic_Segments' => 'class-contactpanda-segments.php',
@@ -86,73 +84,12 @@ function contactpanda_autoload( $class ) {
 }
 spl_autoload_register( 'contactpanda_autoload' );
 
-add_action(
-	'plugins_loaded',
-	static function () {
-		new ContactPanda_GitHub_Updater(
-			array(
-				'slug'       => 'contactpanda',
-				'name'       => 'ContactPanda Basic',
-				'repo'       => 'contactpanda-basic',
-				'zip_prefix' => 'contactpanda-basic',
-				'plugin'     => plugin_basename( CONTACTPANDA_FILE ),
-				'version'    => CONTACTPANDA_VERSION,
-				'enabled'    => 'CONTACTPANDA_GITHUB_UPDATES',
-				'icon'       => CONTACTPANDA_URL . 'assets/images/contactpanda-basic-dashboard-simple.png',
-			)
-		);
-	},
-	20
-);
-
-/**
- * Register every active paid family member through one shared update client.
- *
- * Older extension releases may still register themselves. The updater registry
- * deduplicates those calls, which makes rolling family updates safe regardless
- * of plugin load order.
- */
-function contactpanda_register_family_updaters() {
-	$products = array(
-		array( 'constant' => 'CONTACTPANDA_PLUS_FILE', 'version' => 'CONTACTPANDA_PLUS_VERSION', 'product' => 'contactpanda-plus', 'entitlement' => 'plus', 'slug' => 'contactpanda-plus', 'name' => 'ContactPanda Plus' ),
-		array( 'constant' => 'CONTACTPANDA_BUSINESS_FILE', 'version' => 'CONTACTPANDA_BUSINESS_VERSION', 'product' => 'contactpanda-business', 'entitlement' => 'business', 'slug' => 'contactpanda-business', 'name' => 'ContactPanda Business' ),
-	);
-
-	/*
-	 * PandaWoo Pro 0.6.x can only ask the license server with a dedicated
-	 * PandaWoo activation. Register one temporary bridge through the existing
-	 * ContactPanda suite activation so those installations can reach 0.7.2.
-	 * Newer PandaWoo releases own their updater and no longer need the bridge.
-	 */
-	if ( defined( 'PANDAWOO_PRO_FILE' ) && defined( 'PANDAWOO_PRO_VERSION' ) && version_compare( PANDAWOO_PRO_VERSION, '0.7.2', '<' ) ) {
-		$products[] = array( 'constant' => 'PANDAWOO_PRO_FILE', 'version' => 'PANDAWOO_PRO_VERSION', 'product' => 'pandawoo-pro', 'entitlement' => 'pandawoo-pro', 'slug' => 'pandawoo-pro', 'name' => 'PandaWoo Pro' );
-	}
-	foreach ( $products as $product ) {
-		if ( ! defined( $product['constant'] ) || ! defined( $product['version'] ) ) {
-			continue;
-		}
-		new ContactPanda_Licensed_Updater(
-			array(
-				'product'     => $product['product'],
-				'entitlement' => $product['entitlement'],
-				'plugin'      => plugin_basename( constant( $product['constant'] ) ),
-				'slug'        => $product['slug'],
-				'name'        => $product['name'],
-				'version'     => constant( $product['version'] ),
-				'channel'     => defined( 'CONTACTPANDA_UPDATE_CHANNEL' ) ? CONTACTPANDA_UPDATE_CHANNEL : 'stable',
-			)
-		);
-	}
-}
-add_action( 'plugins_loaded', 'contactpanda_register_family_updaters', 22 );
-
 function contactpanda_boot_context() {
 	// Mail framing and entitlement state can affect any request. All other large
 	// administration classes stay unloaded on ordinary front-end page views.
 	ContactPanda_System_Emails::boot();
 	if ( ContactPanda_Runtime::is_backoffice() ) {
 		ContactPanda_Plugin::boot();
-		ContactPanda_License::boot();
 		ContactPanda_Capabilities::boot();
 		ContactPanda_Trash::boot();
 		ContactPanda_Data_Tools::boot();
@@ -201,7 +138,7 @@ add_action( 'admin_init', array( 'ContactPanda_Store', 'migrate_legacy_vat_ids' 
  */
 function contactpanda_boot_newsletter_module() {
 	if ( ! ContactPanda_Runtime::is_backoffice() ) return;
-	$enabled = ContactPanda_License::newsletter_entitled();
+	$enabled = true;
 	$existing_newsletter = ContactPanda_Modules::get( 'newsletter' );
 	$existing_segments   = ContactPanda_Modules::get( 'segments' );
 	ContactPanda_Modules::register(
@@ -291,18 +228,10 @@ function contactpanda_admin_ui_assets( $hook ) {
 add_action( 'admin_enqueue_scripts', 'contactpanda_admin_ui_assets', 5 );
 
 function contactpanda_newsletter_admin_assets( $hook ) {
-	if ( ! ContactPanda_License::newsletter_entitled() ) {
-		return;
-	}
 	if ( in_array( $hook, array( 'contactpanda_page_contactpanda-campaigns', 'contactpanda_page_contactpanda-settings' ), true ) ) {
 		wp_enqueue_style( 'contactpanda', CONTACTPANDA_URL . 'assets/contactpanda-admin.css', array(), CONTACTPANDA_ASSET_VERSION );
 	}
 	if ( 'contactpanda_page_contactpanda-settings' === $hook ) {
-		wp_enqueue_script( 'contactpanda-system-emails', CONTACTPANDA_URL . 'assets/contactpanda-system-emails.js', array( 'contactpanda-admin-ui' ), CONTACTPANDA_ASSET_VERSION, true );
-		wp_localize_script( 'contactpanda-system-emails', 'CONTACTPANDA_SYSTEM_EMAILS', array( 'i18n' => array(
-			'header' => __( 'Header', 'contactpanda' ), 'footer' => __( 'Footer', 'contactpanda' ), 'image' => __( 'Image', 'contactpanda' ), 'text' => __( 'Text', 'contactpanda' ), 'separator' => __( 'Separator', 'contactpanda' ),
-			'addElement' => __( 'Add element', 'contactpanda' ), 'remove' => __( 'Remove', 'contactpanda' ), 'moveUp' => __( 'Move up', 'contactpanda' ), 'moveDown' => __( 'Move down', 'contactpanda' ), 'content' => __( 'Content', 'contactpanda' ),
-		) ) );
 	}
 	if ( 'contactpanda_page_contactpanda-campaigns' === $hook ) {
 		wp_enqueue_style( 'contactpanda-newsletter-campaigns', CONTACTPANDA_URL . 'assets/contactpanda-newsletter-campaigns.css', array( 'contactpanda' ), CONTACTPANDA_ASSET_VERSION );
@@ -321,8 +250,3 @@ function contactpanda_newsletter_admin_assets( $hook ) {
 add_action( 'admin_enqueue_scripts', 'contactpanda_newsletter_admin_assets', 20 );
 
 register_activation_hook( __FILE__, array( 'ContactPanda_Registration', 'activate' ) );
-
-function contactpanda_deactivate_license_schedule() {
-	wp_clear_scheduled_hook( ContactPanda_License::CHECK_HOOK );
-}
-register_deactivation_hook( __FILE__, 'contactpanda_deactivate_license_schedule' );

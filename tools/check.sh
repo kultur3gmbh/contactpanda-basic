@@ -16,12 +16,6 @@ if command -v php >/dev/null 2>&1; then
 	php tests/order-summary-query.php || status=1
   php tests/groundhogg-migration-source.php || status=1
   php tests/marketing-status-icons.php || status=1
-  php tests/github-updater.php || status=1
-  php tests/github-updater.php --plus || status=1
-	php tests/licensed-updater.php || status=1
-	php tests/family-updaters.php || status=1
-	php tests/license-update-entitlements.php || status=1
-	php tests/vcard-import.php || status=1
 	php tests/events.php || status=1
 	php tests/events-current-api.php || status=1
 	php tests/events-unavailable.php || status=1
@@ -41,7 +35,7 @@ if command -v php >/dev/null 2>&1; then
 elif command -v python3 >/dev/null 2>&1; then
   echo "PHP CLI is unavailable; running the offline structural fallback."
   python3 tools/check_php_structure.py contactpanda tests || status=1
-	echo "SKIPPED: PHP trash, WooCommerce import and order summary, Groundhogg migration, marketing status icon, updater, vCard, event-adapter, release contract, and administrator UI behavior tests require PHP CLI."
+	echo "SKIPPED: PHP trash, WooCommerce import and order summary, Groundhogg migration, marketing status icon, event-adapter, release contract, and administrator UI behavior tests require PHP CLI."
 else
   echo "PHP or Python 3 is required for source validation." >&2
   status=1
@@ -87,6 +81,16 @@ done
 if [[ -e contactpanda/includes/class-contactpanda-woocommerce.php || -e contactpanda/assets/contactpanda-checkout.css ]]; then
   echo "WooCommerce cart and checkout presentation belongs to ContactPanda Plus, not Basic." >&2
   status=1
+fi
+
+if grep -Rq "api.github.com/repos\|pre_set_site_transient_update_plugins\|ContactPanda_License\|ContactPanda_Licensed_Updater" contactpanda --include='*.php'; then
+	echo "The WordPress.org Basic package must not contain an external updater or paid licensing client." >&2
+	status=1
+fi
+
+if [[ -e contactpanda/assets/contactpanda-system-emails.js ]] || grep -Rq "contactpanda_save_system_email_template\|contactpanda_test_system_email_template" contactpanda --include='*.php'; then
+	echo "The paid visual system-email composer belongs to ContactPanda Plus, not Basic." >&2
+	status=1
 fi
 
 for portal_contract in \

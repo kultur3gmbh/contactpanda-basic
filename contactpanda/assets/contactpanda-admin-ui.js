@@ -88,7 +88,7 @@
 		[/\b(search|suchen)\b/i, 'search'], [/\b(filter|filtern)\b/i, 'filter']
 	];
 	var largeActionRootSelector = [
-		'.contactpanda-wrap', '.contactpanda-business-wrap', '.contactpanda-pro-wrap', '.contactpanda-dashboard',
+		'.contactpanda-wrap', '.contactpanda-business-wrap', '.contactpanda-dashboard',
 		'.contactpanda-newsletter-page', '.contactpanda-mailing-editor-page', '.contactpanda-mailing-details-page',
 		'.contactpanda-form-editor-page', '.contactpanda-flow-composer-page', '.contactpanda-helpdesk', '.contactpanda-tags-page',
 		'.pandawoo-pro-admin', '.pandawoo-page', '.pandawoo-page-shell', '.panda-seasons-dashboard',
@@ -456,7 +456,7 @@
 	}
 
 	function enhance(root) {
-		findAll(root, '.contactpanda-wrap input[type="color"],.contactpanda-business-wrap input[type="color"],.contactpanda-pro-wrap input[type="color"]').forEach(enhanceColorPicker);
+		findAll(root, '.contactpanda-wrap input[type="color"],.contactpanda-business-wrap input[type="color"],.pandawoo-pro-admin input[type="color"],.pandawoo-page input[type="color"],.pandawoo-page-shell input[type="color"],.panda-seasons-dashboard input[type="color"],.panda-seasons-free-dashboard input[type="color"],.panda-seasons-templates-page input[type="color"],.panda-seasons-preview-page input[type="color"],.cpls-wrap input[type="color"]').forEach(enhanceColorPicker);
 		findAll(root, '.contactpanda-image-picker-source,.contactpanda-newsletter-logo-setting').forEach(enhanceStaticImagePicker);
 		enhanceLargeActions(root || document);
 		enhanceListActions(root || document);

@@ -21,3 +21,12 @@ jobs:
       - name: Validate source
         run: ./tools/check.sh
 
+  plugin-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run WordPress Plugin Check
+        uses: wordpress/plugin-check-action@v1
+        with:
+          build-dir: './contactpanda'
+

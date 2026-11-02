@@ -28,13 +28,11 @@ final class ContactPanda_Plugin {
 		add_action( 'wp_ajax_contactpanda_manage_contact_tag', array( __CLASS__, 'manage_contact_tag' ) );
 		add_action( 'wp_ajax_contactpanda_preview_broadcast', array( __CLASS__, 'preview_broadcast' ) );
 		add_action( 'wp_ajax_contactpanda_preview_order', array( __CLASS__, 'preview_order' ) );
-		add_action( 'wp_ajax_contactpanda_update_user_roles', array( __CLASS__, 'update_user_roles' ) );
 		add_action( 'wp_ajax_contactpanda_create_user_account', array( __CLASS__, 'create_user_account' ) );
 		add_action( 'wp_ajax_contactpanda_update_customer_address', array( __CLASS__, 'update_customer_address' ) );
 		add_action( 'wp_ajax_contactpanda_validate_vat', array( __CLASS__, 'validate_vat' ) );
 		add_action( 'admin_post_contactpanda_tag_action', array( __CLASS__, 'handle_tag_action' ) );
 		add_action( 'admin_post_contactpanda_export_contacts', array( __CLASS__, 'export_contacts' ) );
-		add_action( 'admin_post_contactpanda_export_contacts_vcard', array( __CLASS__, 'export_contacts_vcard' ) );
 		add_action( 'admin_post_contactpanda_print_contacts', array( __CLASS__, 'print_contacts' ) );
 		add_action( 'admin_post_contactpanda_assign_missing_salutations', array( __CLASS__, 'assign_missing_salutations' ) );
 		add_action( 'admin_post_contactpanda_add_contact_note', array( __CLASS__, 'handle_add_contact_note' ) );
@@ -1079,42 +1077,6 @@ final class ContactPanda_Plugin {
 		exit;
 	}
 
-	public static function export_contacts_vcard() {
-		self::guard_contact_output();
-		if ( ! class_exists( 'ContactPanda_Data_Tools' ) || ! ContactPanda_Data_Tools::vcard_enabled() ) {
-			wp_die( esc_html__( 'vCard export requires ContactPanda Plus.', 'contactpanda' ), '', array( 'response' => 403 ) );
-		}
-		$rows = self::contact_output_rows( self::contacts_for_output() );
-		$log  = (array) get_option( 'contactpanda_export_log', array() );
-		$user = wp_get_current_user();
-		$log[] = array( 'created_at' => current_time( 'mysql' ), 'user' => $user->display_name, 'entity' => 'people-vcard', 'count' => count( $rows ) );
-		update_option( 'contactpanda_export_log', array_slice( $log, -100 ), false );
-		nocache_headers();
-		header( 'Content-Type: text/vcard; charset=UTF-8' );
-		header( 'Content-Disposition: attachment; filename="contactpanda-contacts-' . current_time( 'Y-m-d' ) . '.vcf"' );
-		foreach ( $rows as $row ) {
-			$first   = self::vcard_escape( $row['first_name'] ?? '' );
-			$last    = self::vcard_escape( $row['last_name'] ?? '' );
-			$email   = sanitize_email( $row['email'] ?? '' );
-			$phone   = self::vcard_escape( $row['phone'] ?? '' );
-			$company = self::vcard_escape( $row['company'] ?? '' );
-			$address = array_map( array( __CLASS__, 'vcard_escape' ), array( $row['address_1'] ?? '', $row['address_2'] ?? '', $row['city'] ?? '', $row['state'] ?? '', $row['postcode'] ?? '', $row['country'] ?? '' ) );
-			echo "BEGIN:VCARD\r\nVERSION:3.0\r\n";
-			echo 'N:' . $last . ';' . $first . ";;;\r\n";
-			echo 'FN:' . self::vcard_escape( trim( ( $row['first_name'] ?? '' ) . ' ' . ( $row['last_name'] ?? '' ) ) ) . "\r\n";
-			if ( $company ) echo 'ORG:' . $company . "\r\n";
-			if ( $email ) echo 'EMAIL;TYPE=INTERNET:' . $email . "\r\n";
-			if ( $phone ) echo 'TEL:' . $phone . "\r\n";
-			if ( array_filter( $address ) ) echo 'ADR:;' . $address[1] . ';' . $address[0] . ';' . $address[2] . ';' . $address[3] . ';' . $address[4] . ';' . $address[5] . "\r\n";
-			echo "END:VCARD\r\n";
-		}
-		exit;
-	}
-
-	private static function vcard_escape( $value ) {
-		return str_replace( array( "\\", ";", ",", "\r", "\n" ), array( "\\\\", "\\;", "\\,", '', "\\n" ), (string) $value );
-	}
-
 	public static function print_contacts() {
 		self::guard_contact_output();
 		$contacts = self::contacts_for_output();
@@ -1144,6 +1106,15 @@ final class ContactPanda_Plugin {
 		}
 		echo '</tbody></table><script>window.addEventListener("load",function(){window.print();});</script></body></html>';
 		exit;
+	}
+
+	/**
+	 * Provide the current, capability-checked contact export selection to an
+	 * installed extension without exposing Basic's query implementation.
+	 */
+	public static function extension_contacts_for_export() {
+		self::guard_contact_output();
+		return self::contact_output_rows( self::contacts_for_output() );
 	}
 
 	private static function guard_contact_output() {
@@ -1637,25 +1608,6 @@ final class ContactPanda_Plugin {
 		);
 	}
 
-	public static function update_user_roles() {
-		self::guard_user_admin_ajax();
-		$contact_id = isset( $_POST['contact_id'] ) ? absint( $_POST['contact_id'] ) : 0;
-		$user_id = isset( $_POST['user_id'] ) ? absint( $_POST['user_id'] ) : 0;
-		$contact = self::contact( $contact_id );
-		$user = $user_id ? get_user_by( 'id', $user_id ) : false;
-		$linked_id = $contact ? absint( self::value( $contact, array( 'user_id', 'get_user_id' ) ) ) : 0;
-		if ( ! $contact || ! $user || $linked_id !== $user_id || ! current_user_can( 'edit_user', $user_id ) ) {
-			wp_send_json_error( array( 'message' => __( 'The user account cannot be edited.', 'contactpanda' ) ), 403 );
-		}
-		$roles = isset( $_POST['roles'] ) ? array_map( 'sanitize_key', (array) wp_unslash( $_POST['roles'] ) ) : array();
-		$result = self::set_user_roles( $user, $roles );
-		if ( is_wp_error( $result ) ) {
-			wp_send_json_error( array( 'message' => $result->get_error_message() ), 400 );
-		}
-		self::log_contact_activity( $contact_id, 'user_roles', __( 'WordPress roles changed', 'contactpanda' ), sprintf( __( 'WordPress roles changed to: %1$s. Edited by: %2$s.', 'contactpanda' ), implode( ', ', $roles ), wp_get_current_user()->display_name ) );
-		wp_send_json_success( array( 'message' => __( 'The WordPress roles were saved.', 'contactpanda' ) ) );
-	}
-
 	public static function create_user_account() {
 		self::guard_user_admin_ajax();
 		$contact_id = isset( $_POST['contact_id'] ) ? absint( $_POST['contact_id'] ) : 0;
@@ -1687,12 +1639,7 @@ final class ContactPanda_Plugin {
 			if ( ! $username || username_exists( $username ) ) {
 				wp_send_json_error( array( 'message' => __( 'Please enter an available, valid username.', 'contactpanda' ) ), 400 );
 			}
-			$roles = isset( $_POST['roles'] ) ? array_map( 'sanitize_key', (array) wp_unslash( $_POST['roles'] ) ) : array( 'customer' );
-			$valid_roles = array_keys( self::editable_roles() );
-			$roles = array_values( array_intersect( array_unique( $roles ), $valid_roles ) );
-			if ( ! $roles ) {
-				wp_send_json_error( array( 'message' => __( 'Please select at least one permitted role.', 'contactpanda' ) ), 400 );
-			}
+			$default_role = self::default_user_role();
 			$user_id = wp_insert_user(
 				array(
 					'user_login'   => $username,
@@ -1701,20 +1648,13 @@ final class ContactPanda_Plugin {
 					'first_name'   => self::value( $contact, array( 'first_name', 'get_first_name' ) ),
 					'last_name'    => self::value( $contact, array( 'last_name', 'get_last_name' ) ),
 					'display_name' => trim( self::value( $contact, array( 'first_name', 'get_first_name' ) ) . ' ' . self::value( $contact, array( 'last_name', 'get_last_name' ) ) ),
-					'role'         => $roles[0],
+					'role'         => $default_role,
 				)
 			);
 			if ( is_wp_error( $user_id ) ) {
 				wp_send_json_error( array( 'message' => $user_id->get_error_message() ), 400 );
 			}
 			$created_user = true;
-			$user = get_user_by( 'id', $user_id );
-			$role_result = self::set_user_roles( $user, $roles );
-			if ( is_wp_error( $role_result ) ) {
-				require_once ABSPATH . 'wp-admin/includes/user.php';
-				wp_delete_user( $user_id );
-				wp_send_json_error( array( 'message' => $role_result->get_error_message() ), 400 );
-			}
 			$send_invite = isset( $_POST['send_invite'] ) && '1' === (string) $_POST['send_invite'];
 		}
 
@@ -1953,7 +1893,7 @@ final class ContactPanda_Plugin {
 
 		$communication_cards = array();
 		$last_mailing = false;
-		if ( class_exists( 'ContactPanda_Newsletter_Schema' ) && class_exists( 'ContactPanda_License' ) && ContactPanda_License::newsletter_entitled() ) {
+		if ( class_exists( 'ContactPanda_Newsletter_Schema' ) ) {
 			global $wpdb;
 			ContactPanda_Newsletter_Schema::maybe_upgrade();
 			$tables = ContactPanda_Newsletter_Schema::table_names();
@@ -2098,13 +2038,11 @@ final class ContactPanda_Plugin {
 			'imported'  => __( 'Imported', 'contactpanda' ),
 		);
 		$status = $status_labels[ $mailing['status'] ] ?? $mailing['status'];
-		$stats = array(
+		$stats = (array) apply_filters( 'contactpanda_dashboard_last_mailing_stats', array(
 			__( 'Recipients', 'contactpanda' )   => absint( $mailing['total_recipients'] ),
 			__( 'Sent', 'contactpanda' )         => absint( $mailing['sent_count'] ),
-			__( 'Opened', 'contactpanda' )       => absint( $mailing['opened_count'] ),
-			__( 'Clicked', 'contactpanda' )      => absint( $mailing['clicked_count'] ),
 			__( 'Unsubscribed', 'contactpanda' ) => absint( $mailing['unsubscribed_count'] ),
-		);
+		), $mailing );
 		echo '<a class="contactpanda-dashboard-last-mailing" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-campaigns&campaign_id=' . absint( $mailing['id'] ) ) ) . '"><header><div><h3>' . esc_html( $mailing['name'] ) . '</h3><p>' . esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $date ) ) . '</p></div><span class="contactpanda-status-badge">' . esc_html( $status ) . '</span></header><div class="contactpanda-dashboard-mailing-stats">';
 		foreach ( $stats as $label => $value ) echo '<span><strong>' . esc_html( number_format_i18n( $value ) ) . '</strong><small>' . esc_html( $label ) . '</small></span>';
 		echo '</div></a></section>';
@@ -2170,7 +2108,7 @@ final class ContactPanda_Plugin {
 	private static function render_dashboard_upgrades() {
 		if ( ! current_user_can( 'manage_options' ) ) return;
 		$offers = array();
-		if ( ! ContactPanda_License::entitled( 'plus' ) ) {
+		if ( ! defined( 'CONTACTPANDA_PLUS_VERSION' ) ) {
 			$offers[] = array(
 				'product'     => 'plus',
 				'name'        => 'ContactPanda Plus',
@@ -2183,7 +2121,7 @@ final class ContactPanda_Plugin {
 				'button'      => __( 'Upgrade to ContactPanda Plus now', 'contactpanda' ),
 			);
 		}
-		if ( ! ContactPanda_License::entitled( 'business' ) ) {
+		if ( ! defined( 'CONTACTPANDA_BUSINESS_VERSION' ) ) {
 			$offers[] = array(
 				'product'     => 'business',
 				'name'        => 'ContactPanda Business',
@@ -4060,14 +3998,24 @@ final class ContactPanda_Plugin {
 			echo '<p class="contactpanda-muted">' . esc_html__( 'No mailing with a reliable recipient assignment was found for this person.', 'contactpanda' ) . '</p>';
 			return;
 		}
-		echo '<table class="widefat contactpanda-table contactpanda-broadcast-table"><thead><tr><th>' . esc_html__( 'Mailing', 'contactpanda' ) . '</th><th>' . esc_html__( 'Source', 'contactpanda' ) . '</th><th>' . esc_html__( 'Sent', 'contactpanda' ) . '</th><th>' . esc_html__( 'Delivered', 'contactpanda' ) . '</th><th>' . esc_html__( 'Opened', 'contactpanda' ) . '</th><th>' . esc_html__( 'Clicked', 'contactpanda' ) . '</th></tr></thead><tbody>';
+		$headers = (array) apply_filters( 'contactpanda_person_broadcast_headers', array(
+			'source'    => __( 'Source', 'contactpanda' ),
+			'sent'      => __( 'Sent', 'contactpanda' ),
+			'delivered' => __( 'Delivered', 'contactpanda' ),
+		) );
+		echo '<table class="widefat contactpanda-table contactpanda-broadcast-table"><thead><tr><th>' . esc_html__( 'Mailing', 'contactpanda' ) . '</th>';
+		foreach ( $headers as $label ) echo '<th>' . esc_html( $label ) . '</th>';
+		echo '</tr></thead><tbody>';
 		foreach ( $page_items as $broadcast ) {
 			if ( ! empty( $broadcast['detail_url'] ) ) echo '<tr><td><a href="' . esc_url( $broadcast['detail_url'] ) . '"><strong>' . esc_html( $broadcast['title'] ) . '</strong></a></td>';
 			else echo '<tr><td><button type="button" class="button-link contactpanda-preview-broadcast" data-contact="' . esc_attr( $contact_id ) . '" data-broadcast="' . esc_attr( $broadcast['id'] ) . '"><strong>' . esc_html( $broadcast['title'] ) . '</strong></button></td>';
-			echo '<td><span class="contactpanda-mini-badge">' . esc_html( $broadcast['source'] ?? __( 'Groundhogg', 'contactpanda' ) ) . '</span></td><td>' . esc_html( $broadcast['date'] ) . '</td>';
-			echo '<td>' . self::yes_no_badge( ! isset( $broadcast['delivered'] ) || $broadcast['delivered'] ) . '</td>';
-			echo '<td>' . self::yes_no_badge( $broadcast['opened'] ) . '</td>';
-			echo '<td>' . self::yes_no_badge( $broadcast['clicked'] ) . '</td></tr>';
+			$cells = (array) apply_filters( 'contactpanda_person_broadcast_cells', array(
+				'source'    => '<span class="contactpanda-mini-badge">' . esc_html( $broadcast['source'] ?? __( 'Groundhogg', 'contactpanda' ) ) . '</span>',
+				'sent'      => esc_html( $broadcast['date'] ),
+				'delivered' => self::yes_no_badge( ! isset( $broadcast['delivered'] ) || $broadcast['delivered'] ),
+			), $broadcast );
+			foreach ( $cells as $cell ) echo '<td>' . wp_kses_post( $cell ) . '</td>';
+			echo '</tr>';
 		}
 		echo '</tbody></table>';
 		if ( $pages > 1 ) {
@@ -4121,7 +4069,7 @@ final class ContactPanda_Plugin {
 			echo '<label><input type="checkbox" name="columns[]" value="' . esc_attr( $key ) . '"' . checked( in_array( $key, $default_columns, true ), true, false ) . '> ' . esc_html( $label ) . '</label>';
 		}
 		echo '</div></fieldset><div class="contactpanda-modal-message" aria-live="polite"></div><div class="contactpanda-modal-actions"><button type="submit" class="button button-primary contactpanda-submit-output">' . esc_html__( 'Export CSV', 'contactpanda' ) . '</button>';
-		if ( class_exists( 'ContactPanda_Data_Tools' ) && ContactPanda_Data_Tools::vcard_enabled() ) echo '<button type="submit" class="button contactpanda-export-vcard">' . esc_html__( 'Export vCard', 'contactpanda' ) . '</button>';
+		do_action( 'contactpanda_render_contact_export_extensions' );
 		echo '<button type="button" class="button contactpanda-close-output">' . esc_html__( 'Cancel', 'contactpanda' ) . '</button></div></form></div></div>';
 	}
 
@@ -4439,17 +4387,12 @@ final class ContactPanda_Plugin {
 		return $result;
 	}
 
-	private static function render_role_picker( $roles, $selected_roles ) {
-		$selected_roles = array_values( array_intersect( array_map( 'sanitize_key', (array) $selected_roles ), array_keys( $roles ) ) );
-		echo '<div class="contactpanda-role-picker" data-role-picker><div class="contactpanda-token-entry"><div class="contactpanda-token-field">';
-		foreach ( $selected_roles as $role ) {
-			echo '<span class="contactpanda-role-token" data-role="' . esc_attr( $role ) . '">' . esc_html( $roles[ $role ] ) . '<button type="button" class="button-link contactpanda-remove-role" aria-label="' . esc_attr( sprintf( __( 'Remove role %s', 'contactpanda' ), $roles[ $role ] ) ) . '">&times;</button></span>';
-		}
-		echo __( '<input type="text" class="contactpanda-token-input contactpanda-role-input" placeholder="Search WordPress roles" aria-label="Search WordPress roles" autocomplete="off"></div><div class="contactpanda-token-suggestions contactpanda-role-suggestions" role="listbox" hidden>', 'contactpanda' );
-		foreach ( $roles as $role => $label ) {
-			echo '<button type="button" class="button-link contactpanda-token-suggestion contactpanda-role-suggestion" role="option" data-role="' . esc_attr( $role ) . '" data-name="' . esc_attr( $label ) . '">' . esc_html( $label ) . '</button>';
-		}
-		echo __( '</div></div><div class="contactpanda-role-picker-message" aria-live="polite"></div></div>', 'contactpanda' );
+	/** Return the safe role assigned by Basic; Plus may alter it afterwards. */
+	private static function default_user_role() {
+		global $wp_roles;
+		$preferred = get_role( 'customer' ) ? 'customer' : get_option( 'default_role', 'subscriber' );
+		$preferred = sanitize_key( apply_filters( 'contactpanda_default_wordpress_user_role', $preferred ) );
+		return isset( $wp_roles->roles[ $preferred ] ) ? $preferred : 'subscriber';
 	}
 
 	private static function render_user_account_controls( $contact_id, $contact, $user, $readonly ) {
@@ -4474,15 +4417,11 @@ final class ContactPanda_Plugin {
 				$labels[] = isset( $roles[ $role ] ) ? $roles[ $role ] : $role;
 			}
 			echo '<div class="contactpanda-user-roles"><span>' . esc_html__( 'Customer / WordPress roles', 'contactpanda' ) . '</span><strong>' . esc_html( implode( ', ', $labels ) ?: __( 'No role', 'contactpanda' ) ) . '</strong>';
-			if ( ! $readonly && $linked_id ) {
-				echo __( '<button type="button" class="button button-small contactpanda-open-roles">Edit customer roles</button>', 'contactpanda' );
-			}
 			echo '</div>';
-		}
-		if ( ! $readonly && $user && $linked_id ) {
-			echo '<div class="contactpanda-consent-modal contactpanda-roles-modal" hidden><div class="contactpanda-modal-panel" data-contact="' . esc_attr( $contact_id ) . '" data-user="' . esc_attr( $user->ID ) . __( '"><h2>Edit customer roles</h2><p>Multiple WordPress roles are supported. Start typing and select a suggested role. Changes immediately affect this user account\'s permissions.</p>', 'contactpanda' );
-			self::render_role_picker( $roles, (array) $user->roles );
-			echo __( '<div class="contactpanda-modal-message"></div><div class="contactpanda-modal-actions"><button type="button" class="button button-primary contactpanda-save-roles">Save roles</button><button type="button" class="button contactpanda-close-roles">Cancel</button></div></div></div>', 'contactpanda' );
+			do_action( 'contactpanda_render_user_role_controls', $contact_id, $contact, $user, $readonly );
+			if ( ! $readonly && class_exists( 'ContactPanda_Registration' ) ) {
+				ContactPanda_Registration::render_plus_promotion( 'roles' );
+			}
 		}
 		if ( ! $readonly && ( ! $user || ! $linked_id ) ) {
 			$base = sanitize_user( strtolower( trim( self::value( $contact, array( 'first_name' ) ) . '.' . self::value( $contact, array( 'last_name' ) ) ) ), true );
@@ -4493,7 +4432,6 @@ final class ContactPanda_Plugin {
 				echo '<p>' . sprintf( wp_kses( __( 'The existing account <strong>%1$s</strong> with the same email address will be linked to this %2$s.', 'contactpanda' ), array( 'strong' => array() ) ), esc_html( $user->user_login ), esc_html( $source_label ) ) . '</p>';
 			} else {
 				echo __( '<p>An account with a secure random password will be created. This does not grant marketing consent.</p><label>Username<input type="text" class="contactpanda-account-username" value="', 'contactpanda' ) . esc_attr( $base ) . '"></label>';
-				self::render_role_picker( $roles, array( 'customer' ) );
 				echo __( '<label class="contactpanda-confirm"><input type="checkbox" class="contactpanda-account-invite" checked> <span>Send an invitation to set the password.</span></label>', 'contactpanda' );
 			}
 			echo '<div class="contactpanda-modal-message"></div><div class="contactpanda-modal-actions"><button type="button" class="button button-primary contactpanda-save-user-account">' . ( $user ? __( 'Link', 'contactpanda' ) : __( 'Create account', 'contactpanda' ) ) . __( '</button><button type="button" class="button contactpanda-close-user-account">Cancel</button></div></div></div>', 'contactpanda' );
@@ -4505,31 +4443,6 @@ final class ContactPanda_Plugin {
 		if ( ! current_user_can( 'manage_options' ) || ! current_user_can( 'promote_users' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Only administrators may manage user accounts and roles.', 'contactpanda' ) ), 403 );
 		}
-	}
-
-	private static function set_user_roles( $user, $roles ) {
-		$roles = array_values( array_unique( array_map( 'sanitize_key', (array) $roles ) ) );
-		$allowed = self::editable_roles();
-		if ( ! $roles || array_diff( $roles, array_keys( $allowed ) ) ) {
-			return new WP_Error( 'contactpanda_invalid_roles', __( 'Please select at least one permitted role.', 'contactpanda' ) );
-		}
-		if ( is_multisite() && is_super_admin( $user->ID ) && ! is_super_admin() ) {
-			return new WP_Error( 'contactpanda_super_admin', __( 'This super administrator account cannot be changed.', 'contactpanda' ) );
-		}
-		if ( get_current_user_id() === (int) $user->ID && in_array( 'administrator', (array) $user->roles, true ) && ! in_array( 'administrator', $roles, true ) ) {
-			return new WP_Error( 'contactpanda_self_admin', __( 'You cannot remove your own administrator role here.', 'contactpanda' ) );
-		}
-		if ( in_array( 'administrator', (array) $user->roles, true ) && ! in_array( 'administrator', $roles, true ) ) {
-			$admins = get_users( array( 'role' => 'administrator', 'fields' => 'ID' ) );
-			if ( count( $admins ) <= 1 ) {
-				return new WP_Error( 'contactpanda_last_admin', __( 'The role of the last administrator cannot be removed.', 'contactpanda' ) );
-			}
-		}
-		$user->set_role( array_shift( $roles ) );
-		foreach ( $roles as $role ) {
-			$user->add_role( $role );
-		}
-		return true;
 	}
 
 	private static function log_contact_activity( $contact_id, $type, $summary, $content ) {

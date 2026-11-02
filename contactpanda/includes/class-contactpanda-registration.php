@@ -163,7 +163,6 @@ final class ContactPanda_Registration {
 	}
 
 	private static function defaults() {
-		$default_role = get_role( 'customer' ) ? 'customer' : 'subscriber';
 		return array(
 			'enabled'              => 1,
 			'business_enabled'     => 1,
@@ -173,13 +172,12 @@ final class ContactPanda_Registration {
 			'require_vat'          => 0,
 			'allow_marketing'      => 1,
 			'replace_registration' => 0,
-			'allowed_roles'        => array( $default_role ),
 			'registration_page_id' => 0,
 			'privacy_page_id'      => absint( get_option( 'wp_page_for_privacy_policy' ) ),
 			'terms_page_id'        => 0,
 			'admin_email'          => sanitize_email( get_option( 'admin_email' ) ),
 			'success_page_id'      => 0,
-			'submission_message'   => __( 'Thank you. Please check your inbox and confirm your email address. Your requested customer role will only be assigned after approval.', 'contactpanda' ),
+			'submission_message'   => __( 'Thank you. Please check your inbox and confirm your email address. Your business registration will be activated after approval.', 'contactpanda' ),
 			'customer_submission_message' => __( 'Thank you. Please check your inbox and confirm your email address.', 'contactpanda' ),
 			'confirmation_subject' => __( 'Confirm your registration at {site_name}', 'contactpanda' ),
 			'confirmation_message' => __( 'Hello {first_name},
@@ -188,7 +186,7 @@ please confirm your email address by opening this link:
 {confirmation_link}
 
 The link is valid for 24 hours.', 'contactpanda' ),
-			'verified_message'     => __( 'Your email address has been confirmed. Your requested customer role is still awaiting approval.', 'contactpanda' ),
+			'verified_message'     => __( 'Your email address has been confirmed. Your business registration is still awaiting approval.', 'contactpanda' ),
 			'customer_verified_message' => __( 'Your email address has been confirmed. You can now sign in.', 'contactpanda' ),
 			'verified_page_id'     => 0,
 			'verified_delay'       => 5,
@@ -210,24 +208,12 @@ The link is valid for 24 hours.', 'contactpanda' ),
 	}
 
 	private static function settings() {
-		$settings = (array) get_option( self::OPTION, array() );
-		if ( empty( $settings['allowed_roles'] ) && ! empty( $settings['approved_role'] ) ) {
-			$settings['allowed_roles'] = array( sanitize_key( $settings['approved_role'] ) );
-		}
-		return wp_parse_args( $settings, self::defaults() );
+		return wp_parse_args( (array) get_option( self::OPTION, array() ), self::defaults() );
 	}
 
 	public static function sanitize_settings( $input ) {
 		$input = is_array( $input ) ? $input : array();
 		$defaults = self::defaults();
-		$roles = self::allowed_roles();
-		$requested_roles = isset( $input['allowed_roles'] ) && is_array( $input['allowed_roles'] ) ? array_map( 'sanitize_key', $input['allowed_roles'] ) : array();
-		$allowed_roles = array();
-		foreach ( $requested_roles as $role ) {
-			if ( isset( $roles[ $role ] ) ) {
-				$allowed_roles[] = $role;
-			}
-		}
 		foreach ( array( 'submission_message', 'customer_submission_message', 'confirmation_subject', 'confirmation_message', 'verified_message', 'customer_verified_message', 'newsletter_subject', 'newsletter_message', 'newsletter_success', 'newsletter_verified', 'newsletter_already_registered', 'newsletter_privacy_text', 'newsletter_consent_text', 'newsletter_submit_label', 'newsletter_error' ) as $required_text ) {
 			if ( empty( $input[ $required_text ] ) ) {
 				$input[ $required_text ] = $defaults[ $required_text ];
@@ -242,7 +228,6 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			'require_vat'          => empty( $input['require_vat'] ) ? 0 : 1,
 			'allow_marketing'      => empty( $input['allow_marketing'] ) ? 0 : 1,
 			'replace_registration' => empty( $input['replace_registration'] ) ? 0 : 1,
-			'allowed_roles'        => array_values( array_unique( $allowed_roles ) ),
 			'registration_page_id' => isset( $input['registration_page_id'] ) ? absint( $input['registration_page_id'] ) : 0,
 			'privacy_page_id'      => isset( $input['privacy_page_id'] ) ? absint( $input['privacy_page_id'] ) : 0,
 			'terms_page_id'        => isset( $input['terms_page_id'] ) ? absint( $input['terms_page_id'] ) : 0,
@@ -268,25 +253,20 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		);
 		if ( ! self::customer_registration_enabled() ) {
 			$current = wp_parse_args( (array) get_option( self::OPTION, array() ), $defaults );
-			foreach ( array( 'enabled', 'business_enabled', 'require_email_verify', 'require_approval', 'require_vat', 'allow_marketing', 'replace_registration', 'allowed_roles', 'registration_page_id', 'privacy_page_id', 'terms_page_id', 'admin_email', 'success_page_id', 'submission_message', 'customer_submission_message', 'confirmation_subject', 'confirmation_message', 'verified_message', 'customer_verified_message', 'verified_page_id', 'verified_delay' ) as $key ) {
+			foreach ( array( 'enabled', 'business_enabled', 'require_email_verify', 'require_approval', 'require_vat', 'allow_marketing', 'replace_registration', 'registration_page_id', 'privacy_page_id', 'terms_page_id', 'admin_email', 'success_page_id', 'submission_message', 'customer_submission_message', 'confirmation_subject', 'confirmation_message', 'verified_message', 'customer_verified_message', 'verified_page_id', 'verified_delay' ) as $key ) {
 				$sanitized[ $key ] = $current[ $key ];
 			}
 		}
 		return $sanitized;
 	}
 
-	private static function allowed_roles() {
-		$registry = function_exists( 'wp_roles' ) ? wp_roles() : null;
-		$roles = $registry && isset( $registry->roles ) && is_array( $registry->roles ) ? $registry->roles : array();
-		$result = array();
-		foreach ( $roles as $key => $role ) {
-			$capabilities = isset( $role['capabilities'] ) && is_array( $role['capabilities'] ) ? $role['capabilities'] : array();
-			if ( 'administrator' === $key || ! empty( $capabilities['manage_options'] ) || ! empty( $capabilities['edit_users'] ) || ! empty( $capabilities['activate_plugins'] ) ) {
-				continue;
-			}
-			$result[ $key ] = isset( $role['name'] ) ? translate_user_role( $role['name'] ) : $key;
+	private static function default_registration_role() {
+		$role = get_role( 'customer' ) ? 'customer' : sanitize_key( get_option( 'default_role', 'subscriber' ) );
+		if ( ! get_role( $role ) ) {
+			$role = 'subscriber';
 		}
-		return $result;
+		$filtered = sanitize_key( apply_filters( 'contactpanda_default_wordpress_user_role', $role, 'registration' ) );
+		return $filtered && get_role( $filtered ) ? $filtered : $role;
 	}
 
 	public static function render_settings() {
@@ -474,14 +454,10 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			self::render_newsletter_registration_settings( $settings );
 			return;
 		}
-		$roles = self::allowed_roles();
 		$section = isset( $_GET['registration_section'] ) ? sanitize_key( wp_unslash( $_GET['registration_section'] ) ) : 'customers'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display routing only.
 		if ( ! in_array( $section, array( 'customers', 'business', 'newsletter' ), true ) ) $section = 'customers';
-		if ( isset( $_GET['contactpanda_role_error'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only result flag.
-			echo '<div class="notice notice-error"><p>' . esc_html__( 'The requested role is no longer enabled and was not assigned. Please update the allowed roles before approving this registration.', 'contactpanda' ) . '</p></div>';
-		}
 		if ( isset( $_GET['contactpanda_email_error'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only result flag.
-			echo '<div class="notice notice-error"><p>' . esc_html__( 'The requested role was not assigned because the email address has not yet been confirmed.', 'contactpanda' ) . '</p></div>';
+			echo '<div class="notice notice-error"><p>' . esc_html__( 'The registration was not approved because the email address has not yet been confirmed.', 'contactpanda' ) . '</p></div>';
 		}
 		echo '<nav class="nav-tab-wrapper contactpanda-settings-subtabs">';
 		$registration_sections = array( 'customers' => __( 'General customer registration', 'contactpanda' ), 'business' => __( 'Business customers', 'contactpanda' ), 'newsletter' => __( 'Newsletter signup', 'contactpanda' ) );
@@ -499,15 +475,10 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		self::page_setting( 'success_page_id', __( 'Page after successful submission', 'contactpanda' ), $settings );
 		self::textarea_setting( 'customer_submission_message', __( 'Text after standard customer registration', 'contactpanda' ), __( 'This text is displayed after a standard customer account registration.', 'contactpanda' ), $settings );
 		echo '</div><div class="contactpanda-registration-panel"' . ( 'business' === $section ? '' : ' hidden' ) . '>';
-		self::checkbox_setting( 'business_enabled', __( 'Offer business customer registration', 'contactpanda' ), __( 'Adds a separate business registration with company data, VAT ID validation, and a requested customer role.', 'contactpanda' ), $settings );
+		self::checkbox_setting( 'business_enabled', __( 'Offer business customer registration', 'contactpanda' ), __( 'Adds a separate business registration with company data and VAT ID validation.', 'contactpanda' ), $settings );
 		self::checkbox_setting( 'require_vat', __( 'Require VAT ID', 'contactpanda' ), __( 'A VAT ID is optional unless this setting is enabled. Every entered VAT ID must be successfully validated through EU VIES.', 'contactpanda' ), $settings );
-		echo '<div class="contactpanda-setting-row"><strong>' . esc_html__( 'Roles customers may request', 'contactpanda' ) . '</strong><div class="contactpanda-role-options">';
-		foreach ( $roles as $role => $label ) {
-			echo '<label><input type="checkbox" name="' . esc_attr( self::OPTION ) . '[allowed_roles][]" value="' . esc_attr( $role ) . '"' . checked( in_array( $role, (array) $settings['allowed_roles'], true ), true, false ) . '> ' . esc_html( $label ) . '</label>';
-		}
-		echo '</div><p class="description">' . esc_html__( 'The customer only requests a role. It is assigned exclusively after an administrator approves the registration. Privileged administrative roles are excluded.', 'contactpanda' ) . '</p></div>';
-
 		self::textarea_setting( 'submission_message', __( 'Text after business customer registration', 'contactpanda' ), __( 'This text is displayed after a business customer registration.', 'contactpanda' ), $settings );
+		self::render_plus_promotion( 'registration-roles' );
 		echo '</div><div class="contactpanda-registration-panel"' . ( 'newsletter' === $section ? '' : ' hidden' ) . '>';
 		self::checkbox_setting( 'newsletter_enabled', __( 'Enable separate newsletter signup', 'contactpanda' ), __( 'Provides [contactpanda_newsletter_signup]. The form creates or updates a ContactPanda contact but never creates a WordPress user account.', 'contactpanda' ), $settings );
 		self::render_newsletter_form_settings( $settings );
@@ -1146,11 +1117,10 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			$columns = (array) $wpdb->get_col( "SHOW COLUMNS FROM `{$email_table}`", 0 ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$title_column = in_array( 'subject', $columns, true ) ? 'subject' : ( in_array( 'name', $columns, true ) ? 'name' : 'id' );
 			$sent_column = in_array( 'sent', $columns, true ) ? 'sent' : ( in_array( 'total', $columns, true ) ? 'total' : '0' );
-			$open_column = in_array( 'open', $columns, true ) ? 'open' : ( in_array( 'opens', $columns, true ) ? 'opens' : '0' );
-			$rows = (array) $wpdb->get_results( "SELECT id, `{$title_column}` AS title, {$sent_column} AS sent, {$open_column} AS opened FROM `{$email_table}` ORDER BY id DESC LIMIT 20", ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
-			echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Mailing', 'contactpanda' ) . '</th><th>' . esc_html__( 'Delivered', 'contactpanda' ) . '</th><th>' . esc_html__( 'Opened', 'contactpanda' ) . '</th></tr></thead><tbody>';
-			foreach ( $rows as $row ) echo '<tr><td>' . esc_html( $row['title'] ?: sprintf( __( 'Mailing #%d', 'contactpanda' ), $row['id'] ) ) . '</td><td>' . esc_html( absint( $row['sent'] ) ) . '</td><td>' . esc_html( absint( $row['opened'] ) ) . '</td></tr>';
-			if ( ! $rows ) echo '<tr><td colspan="3">' . esc_html__( 'No previous mailings were found.', 'contactpanda' ) . '</td></tr>';
+			$rows = (array) $wpdb->get_results( "SELECT id, `{$title_column}` AS title, {$sent_column} AS sent FROM `{$email_table}` ORDER BY id DESC LIMIT 20", ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+			echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Mailing', 'contactpanda' ) . '</th><th>' . esc_html__( 'Delivered', 'contactpanda' ) . '</th></tr></thead><tbody>';
+			foreach ( $rows as $row ) echo '<tr><td>' . esc_html( $row['title'] ?: sprintf( __( 'Mailing #%d', 'contactpanda' ), $row['id'] ) ) . '</td><td>' . esc_html( absint( $row['sent'] ) ) . '</td></tr>';
+			if ( ! $rows ) echo '<tr><td colspan="2">' . esc_html__( 'No previous mailings were found.', 'contactpanda' ) . '</td></tr>';
 			echo '</tbody></table>';
 		}
 		self::render_plus_promotion( 'newsletter' ); echo '</section>';
@@ -1158,8 +1128,30 @@ The link is valid for 24 hours.', 'contactpanda' ),
 
 	public static function render_plus_promotion( $context = '' ) {
 		if ( ! current_user_can( 'manage_options' ) || defined( 'CONTACTPANDA_PLUS_VERSION' ) ) return;
-		$url = apply_filters( 'contactpanda_plus_url', 'https://contactpanda.com/', $context );
-		echo '<div class="contactpanda-plus-promotion"><p><strong>' . esc_html__( 'Manage this data centrally in ContactPanda Plus.', 'contactpanda' ) . '</strong> ' . esc_html__( 'Save time and costs, avoid duplicate work, and unlock additional automation, newsletter, and reporting options.', 'contactpanda' ) . '</p><p><a class="button button-primary" href="' . esc_url( $url ) . '" target="_blank" rel="noopener">' . esc_html__( 'Learn about ContactPanda Plus', 'contactpanda' ) . '</a></p></div>';
+		$messages = array(
+			'roles' => array(
+				__( 'Edit WordPress roles with ContactPanda Plus.', 'contactpanda' ),
+				__( 'Plus lets authorized administrators assign and change roles directly from the person record.', 'contactpanda' ),
+			),
+			'registration-roles' => array(
+				__( 'Use flexible customer roles with ContactPanda Plus.', 'contactpanda' ),
+				__( 'Basic assigns a safe standard role. Plus adds controlled role management after registration.', 'contactpanda' ),
+			),
+			'newsletter-reports' => array(
+				__( 'Understand newsletter engagement with ContactPanda Plus.', 'contactpanda' ),
+				__( 'Plus adds privacy-conscious open and click tracking, rates, filters, and graphical reports.', 'contactpanda' ),
+			),
+			'newsletter-advanced' => array(
+				__( 'Plan and optimize mailings with ContactPanda Plus.', 'contactpanda' ),
+				__( 'Plus adds scheduling, A/B tests, UTM parameters, and advanced delivery analysis.', 'contactpanda' ),
+			),
+		);
+		$message = isset( $messages[ $context ] ) ? $messages[ $context ] : array(
+			__( 'Manage this data centrally in ContactPanda Plus.', 'contactpanda' ),
+			__( 'Save time and costs, avoid duplicate work, and unlock additional automation, newsletter, and reporting options.', 'contactpanda' ),
+		);
+		$url = apply_filters( 'contactpanda_plus_url', 'https://mycontactpanda.com/', $context );
+		echo '<div class="contactpanda-plus-promotion"><p><strong>' . esc_html( $message[0] ) . '</strong> ' . esc_html( $message[1] ) . '</p><p><a class="button" href="' . esc_url( $url ) . '" target="_blank" rel="noopener"><span class="dashicons dashicons-external" aria-hidden="true"></span>' . esc_html__( 'Learn about ContactPanda Plus', 'contactpanda' ) . '</a></p></div>';
 	}
 
 	private static function woocommerce_import_form( $mode, $label, $class ) {
@@ -1376,7 +1368,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 	private static function render_automatic_updates() {
 		$plugin = plugin_basename( CONTACTPANDA_FILE );
 		$enabled = in_array( $plugin, (array) get_site_option( 'auto_update_plugins', array() ), true );
-		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Automatic ContactPanda updates', 'contactpanda' ) . '</h2><p>' . esc_html__( 'ContactPanda checks the public GitHub release channel and validates version metadata, compatibility, and the ZIP checksum before WordPress installs an update.', 'contactpanda' ) . '</p>';
+		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Automatic ContactPanda updates', 'contactpanda' ) . '</h2><p>' . esc_html__( 'ContactPanda Basic receives updates through the official WordPress.org update system.', 'contactpanda' ) . '</p>';
 		if ( ! current_user_can( 'update_plugins' ) ) {
 			echo '<p>' . esc_html__( 'Only an administrator who may update plugins can change this setting.', 'contactpanda' ) . '</p></section>';
 			return;
@@ -1517,9 +1509,6 @@ The link is valid for 24 hours.', 'contactpanda' ),
 	}
 
 	private static function render_pending_registrations() {
-		$settings = self::settings();
-		$roles = self::allowed_roles();
-		$configured_roles = array_intersect_key( $roles, array_flip( (array) $settings['allowed_roles'] ) );
 		$users = get_users(
 			array(
 				'meta_key'   => 'contactpanda_business_status',
@@ -1534,19 +1523,14 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			echo '<p class="contactpanda-muted">' . esc_html__( 'There are currently no registrations awaiting approval.', 'contactpanda' ) . '</p></section>';
 			return;
 		}
-		echo '<table class="widefat striped contactpanda-table"><thead><tr><th>' . esc_html__( 'Person', 'contactpanda' ) . '</th><th>' . esc_html__( 'Company', 'contactpanda' ) . '</th><th>' . esc_html__( 'Requested role', 'contactpanda' ) . '</th><th>' . esc_html__( 'VAT ID', 'contactpanda' ) . '</th><th>' . esc_html__( 'Email confirmed', 'contactpanda' ) . '</th><th>' . esc_html__( 'Registered', 'contactpanda' ) . '</th><th>' . esc_html__( 'Actions', 'contactpanda' ) . '</th></tr></thead><tbody>';
+		echo '<table class="widefat striped contactpanda-table"><thead><tr><th>' . esc_html__( 'Person', 'contactpanda' ) . '</th><th>' . esc_html__( 'Company', 'contactpanda' ) . '</th><th>' . esc_html__( 'VAT ID', 'contactpanda' ) . '</th><th>' . esc_html__( 'Email confirmed', 'contactpanda' ) . '</th><th>' . esc_html__( 'Registered', 'contactpanda' ) . '</th><th>' . esc_html__( 'Actions', 'contactpanda' ) . '</th></tr></thead><tbody>';
 		foreach ( $users as $user ) {
-			$requested_role = sanitize_key( get_user_meta( $user->ID, 'contactpanda_requested_role', true ) );
-			$role_label = isset( $roles[ $requested_role ] ) ? $roles[ $requested_role ] : __( 'No longer available', 'contactpanda' );
 			$email_confirmed = (bool) get_user_meta( $user->ID, 'contactpanda_email_verified', true );
-			$role_can_be_approved = isset( $configured_roles[ $requested_role ] );
-			echo '<tr><td><strong>' . esc_html( $user->display_name ) . '</strong><br><a href="mailto:' . esc_attr( $user->user_email ) . '">' . esc_html( $user->user_email ) . '</a></td><td>' . esc_html( get_user_meta( $user->ID, 'billing_company', true ) ) . '</td><td>' . esc_html( $role_label ) . '</td><td>' . esc_html( get_user_meta( $user->ID, 'billing_vat', true ) ) . '</td><td>' . ( get_user_meta( $user->ID, 'contactpanda_email_verified', true ) ? esc_html__( 'Yes', 'contactpanda' ) : esc_html__( 'No', 'contactpanda' ) ) . '</td><td>' . esc_html( get_date_from_gmt( $user->user_registered, get_option( 'date_format' ) ) ) . '</td><td><div class="contactpanda-registration-actions">';
-			if ( $role_can_be_approved && $email_confirmed ) {
+			echo '<tr><td><strong>' . esc_html( $user->display_name ) . '</strong><br><a href="mailto:' . esc_attr( $user->user_email ) . '">' . esc_html( $user->user_email ) . '</a></td><td>' . esc_html( get_user_meta( $user->ID, 'billing_company', true ) ) . '</td><td>' . esc_html( get_user_meta( $user->ID, 'billing_vat', true ) ) . '</td><td>' . ( get_user_meta( $user->ID, 'contactpanda_email_verified', true ) ? esc_html__( 'Yes', 'contactpanda' ) : esc_html__( 'No', 'contactpanda' ) ) . '</td><td>' . esc_html( get_date_from_gmt( $user->user_registered, get_option( 'date_format' ) ) ) . '</td><td><div class="contactpanda-registration-actions">';
+			if ( $email_confirmed ) {
 				self::decision_form( $user->ID, 'approve', __( 'Approve', 'contactpanda' ), 'button-primary' );
 			} elseif ( ! $email_confirmed ) {
 				echo '<span class="contactpanda-muted">' . esc_html__( 'Email confirmation is still pending.', 'contactpanda' ) . '</span>';
-			} else {
-				echo '<span class="contactpanda-muted">' . esc_html__( 'Select this role again in the settings before approval.', 'contactpanda' ) . '</span>';
 			}
 			self::decision_form( $user->ID, 'reject', __( 'Reject', 'contactpanda' ), '' );
 			if ( ! get_user_meta( $user->ID, 'contactpanda_email_verified', true ) ) {
@@ -1587,10 +1571,6 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		}
 		if ( 'business' === $type && empty( $settings['business_enabled'] ) ) {
 			$type = 'customer';
-		}
-		$available_roles = array_intersect_key( self::allowed_roles(), array_flip( (array) $settings['allowed_roles'] ) );
-		if ( 'business' === $type && ! $available_roles ) {
-			return '<div class="contactpanda-registration-notice is-error">' . esc_html__( 'Registration is currently unavailable because no customer role has been configured.', 'contactpanda' ) . '</div>';
 		}
 		wp_enqueue_style( 'contactpanda-registration', CONTACTPANDA_URL . 'assets/contactpanda-registration.css', array(), CONTACTPANDA_ASSET_VERSION );
 		wp_enqueue_script( 'contactpanda-registration', CONTACTPANDA_URL . 'assets/contactpanda-registration.js', array(), CONTACTPANDA_ASSET_VERSION, true );
@@ -1634,7 +1614,6 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		if ( 'business' === $type ) self::form_section_company( $settings );
 		self::form_section_address( 'billing', __( 'Billing address', 'contactpanda' ), $countries, true );
 		self::form_section_shipping( $countries );
-		if ( 'business' === $type ) self::form_section_role( $settings );
 		self::form_section_consent( $settings );
 		echo '<button class="contactpanda-registration-submit" type="submit">' . esc_html( 'business' === $type ? __( 'Submit business registration', 'contactpanda' ) : __( 'Create customer account', 'contactpanda' ) ) . '</button></form>';
 		return ob_get_clean();
@@ -2000,19 +1979,6 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		echo '</div></details>';
 	}
 
-	private static function form_section_role( $settings ) {
-		$roles = self::allowed_roles();
-		$allowed = array_intersect_key( $roles, array_flip( (array) $settings['allowed_roles'] ) );
-		if ( ! $allowed ) {
-			return;
-		}
-		echo '<section class="contactpanda-form-section"><h3>' . esc_html__( 'Requested customer role', 'contactpanda' ) . '</h3><p class="contactpanda-form-help">' . esc_html__( 'Please select the customer group you would like to request. The role is assigned only after approval.', 'contactpanda' ) . '</p><div class="contactpanda-role-request"><label><span>' . esc_html__( 'Customer role', 'contactpanda' ) . ' <em>*</em></span><select name="requested_role" required><option value="">' . esc_html__( 'Please select', 'contactpanda' ) . '</option>';
-		foreach ( $allowed as $role => $label ) {
-			echo '<option value="' . esc_attr( $role ) . '">' . esc_html( $label ) . '</option>';
-		}
-		echo '</select></label></div></section>';
-	}
-
 	private static function form_section_consent( $settings ) {
 		echo '<section class="contactpanda-form-section"><h3>' . esc_html__( 'Confirmations', 'contactpanda' ) . '</h3>';
 		$privacy = self::linked_label( __( 'I have read the privacy policy.', 'contactpanda' ), $settings['privacy_page_id'] );
@@ -2257,7 +2223,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		if ( '' === $data['salutation'] && '' !== $data['first_name'] ) {
 			$data['salutation'] = ContactPanda_Store::suggested_salutation( $data['first_name'] );
 		}
-		$data['requested_role'] = isset( $_POST['requested_role'] ) ? sanitize_key( wp_unslash( $_POST['requested_role'] ) ) : '';
+		$data['requested_role'] = self::default_registration_role();
 		$data['privacy_accepted'] = empty( $_POST['privacy_accepted'] ) ? 0 : 1;
 		$data['terms_accepted'] = empty( $_POST['terms_accepted'] ) ? 0 : 1;
 		$data['marketing_consent'] = empty( $_POST['marketing_consent'] ) ? 0 : 1;
@@ -2302,13 +2268,6 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			$errors[] = __( 'Please enter a VAT ID.', 'contactpanda' );
 		} elseif ( '' !== $data['vat_id'] && ! self::valid_vat_format( $data['vat_id'] ) ) {
 			$errors[] = __( 'Please enter a formally valid EU VAT ID.', 'contactpanda' );
-		}
-		if ( 'business' === $data['registration_type'] ) {
-			$roles = self::allowed_roles();
-			$allowed_roles = array_intersect_key( $roles, array_flip( (array) $settings['allowed_roles'] ) );
-			if ( ! $allowed_roles || ! isset( $allowed_roles[ $data['requested_role'] ] ) ) {
-				$errors[] = __( 'Please select one of the available customer roles.', 'contactpanda' );
-			}
 		}
 		if ( empty( $data['privacy_accepted'] ) ) {
 			$errors[] = __( 'The privacy policy must be acknowledged.', 'contactpanda' );
@@ -2545,19 +2504,11 @@ The link is valid for 24 hours.', 'contactpanda' ),
 				wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&contactpanda_email_error=1' ) );
 				exit;
 			}
-			$settings = self::settings();
-			$roles = self::allowed_roles();
-			$configured_roles = array_intersect_key( $roles, array_flip( (array) $settings['allowed_roles'] ) );
-			$requested_role = sanitize_key( get_user_meta( $user_id, 'contactpanda_requested_role', true ) );
-			if ( ! isset( $configured_roles[ $requested_role ] ) ) {
-				wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&contactpanda_role_error=1' ) );
-				exit;
-			}
-			$user->set_role( $requested_role );
+			$user->set_role( self::default_registration_role() );
 			update_user_meta( $user_id, 'contactpanda_business_status', 'approved' );
 			update_user_meta( $user_id, 'contactpanda_approved_at', current_time( 'mysql', true ) );
 			update_user_meta( $user_id, 'contactpanda_approved_by', get_current_user_id() );
-			class_exists( 'ContactPanda_System_Emails' ) ? ContactPanda_System_Emails::send( $user->user_email, __( 'Your business account has been approved', 'contactpanda' ), wpautop( __( 'Your business account and requested customer role have been approved. You can now sign in.', 'contactpanda' ) ) ) : wp_mail( $user->user_email, __( 'Your business account has been approved', 'contactpanda' ), __( 'Your business account and requested customer role have been approved. You can now sign in.', 'contactpanda' ) );
+			class_exists( 'ContactPanda_System_Emails' ) ? ContactPanda_System_Emails::send( $user->user_email, __( 'Your business account has been approved', 'contactpanda' ), wpautop( __( 'Your business account has been approved. You can now sign in.', 'contactpanda' ) ) ) : wp_mail( $user->user_email, __( 'Your business account has been approved', 'contactpanda' ), __( 'Your business account has been approved. You can now sign in.', 'contactpanda' ) );
 		} else {
 			update_user_meta( $user_id, 'contactpanda_business_status', 'rejected' );
 			update_user_meta( $user_id, 'contactpanda_rejected_at', current_time( 'mysql', true ) );
@@ -2595,17 +2546,13 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			return;
 		}
 		$subject = sprintf( __( 'New business registration: %s', 'contactpanda' ), $user->display_name );
-		$roles = self::allowed_roles();
-		$requested_role = sanitize_key( get_user_meta( $user_id, 'contactpanda_requested_role', true ) );
-		$role_label = isset( $roles[ $requested_role ] ) ? $roles[ $requested_role ] : $requested_role;
 		$message = sprintf( __( 'A new business registration was submitted.
 
 Person: %1$s
 Company: %2$s
 Email: %3$s
-Requested role: %4$s
 
-Review: %5$s', 'contactpanda' ), $user->display_name, get_user_meta( $user_id, 'billing_company', true ), $user->user_email, $role_label, admin_url( 'admin.php?page=contactpanda-settings' ) );
+Review: %4$s', 'contactpanda' ), $user->display_name, get_user_meta( $user_id, 'billing_company', true ), $user->user_email, admin_url( 'admin.php?page=contactpanda-settings' ) );
 		class_exists( 'ContactPanda_System_Emails' ) ? ContactPanda_System_Emails::send( $settings['admin_email'], $subject, wpautop( esc_html( $message ) ) ) : wp_mail( $settings['admin_email'], $subject, $message );
 	}
 

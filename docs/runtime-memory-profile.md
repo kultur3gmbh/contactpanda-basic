@@ -5,7 +5,7 @@ ContactPanda uses a small bootstrap and resolves feature classes only when WordP
 ## Supported profiles
 
 - **Basic:** ordinary public, admin-list, AJAX, REST, and cron requests are designed for a PHP memory limit of **128 MB**. Large imports remain batched and resumable.
-- **Family products:** Plus, Business, the Legacy Bridge, and Panda Seasons are designed for a PHP memory limit of **256 MB**.
+- **Family products:** Plus, Business, and Panda Seasons are designed for a PHP memory limit of **256 MB**.
 
 ## Context rules
 

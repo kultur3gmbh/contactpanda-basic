@@ -4673,8 +4673,8 @@ msgstr "Die Groundhogg-Migration wurde abgeschlossen und ContactPanda ist nun di
 msgid "Automatic ContactPanda updates"
 msgstr "Automatische ContactPanda-Updates"
 
-msgid "ContactPanda checks the public GitHub release channel and validates version metadata, compatibility, and the ZIP checksum before WordPress installs an update."
-msgstr "ContactPanda prüft den öffentlichen GitHub-Release-Kanal sowie Versionsdaten, Kompatibilität und ZIP-Prüfsumme, bevor WordPress ein Update installiert."
+msgid "ContactPanda Basic receives updates through the official WordPress.org update system."
+msgstr "ContactPanda Basic erhält Aktualisierungen über das offizielle Update-System von WordPress.org."
 
 msgid "Only an administrator who may update plugins can change this setting."
 msgstr "Nur ein Administrator mit Berechtigung für Plugin-Updates kann diese Einstellung ändern."
@@ -7591,8 +7591,8 @@ msgstr "Die Newsletter-Anmeldung ist derzeit nicht verfügbar."
 msgid "MCP interface"
 msgstr "MCP-Schnittstelle"
 
-msgid "This central interface provides the available ContactPanda tools from ContactPanda and every active family plugin. Paid actions appear only when the corresponding license is active."
-msgstr "Diese zentrale Schnittstelle stellt die verfügbaren Werkzeuge von ContactPanda und allen aktiven Familien-Plugins bereit. Kostenpflichtige Aktionen erscheinen nur mit der entsprechenden aktiven Lizenz."
+msgid "This central interface provides the available ContactPanda tools from ContactPanda and every active family plugin. Additional actions appear when the corresponding extension is installed and active."
+msgstr "Diese zentrale Schnittstelle stellt die verfügbaren Werkzeuge von ContactPanda und allen aktiven Familien-Plugins bereit. Zusätzliche Aktionen erscheinen, wenn die entsprechende Erweiterung installiert und aktiv ist."
 
 msgid "MCP endpoint"
 msgstr "MCP-Endpunkt"
@@ -8266,6 +8266,48 @@ msgstr "Importierte Vorlagen sind schreibgeschützt. Erstellen Sie eine bearbeit
 msgid "You are not allowed to manage these settings."
 msgstr "Sie dürfen diese Einstellungen nicht verwalten."
 
+msgid "Thank you. Please check your inbox and confirm your email address. Your business registration will be activated after approval."
+msgstr "Vielen Dank. Bitte prüfen Sie Ihren Posteingang und bestätigen Sie Ihre E-Mail-Adresse. Ihre Firmenregistrierung wird nach der Freigabe aktiviert."
+
+msgid "Your email address has been confirmed. Your business registration is still awaiting approval."
+msgstr "Ihre E-Mail-Adresse wurde bestätigt. Ihre Firmenregistrierung wartet noch auf die Freigabe."
+
+msgid "Adds a separate business registration with company data and VAT ID validation."
+msgstr "Ergänzt eine separate Firmenregistrierung mit Firmendaten und UID-Prüfung."
+
+msgid "The registration was not approved because the email address has not yet been confirmed."
+msgstr "Die Registrierung wurde nicht freigegeben, weil die E-Mail-Adresse noch nicht bestätigt wurde."
+
+msgid "Your business account has been approved. You can now sign in."
+msgstr "Ihr Firmenkonto wurde freigegeben. Sie können sich jetzt anmelden."
+
+msgid "A new business registration was submitted.\n\nPerson: %1$s\nCompany: %2$s\nEmail: %3$s\n\nReview: %4$s"
+msgstr "Eine neue Firmenregistrierung wurde übermittelt.\n\nPerson: %1$s\nFirma: %2$s\nE-Mail: %3$s\n\nPrüfung: %4$s"
+
+msgid "Edit WordPress roles with ContactPanda Plus."
+msgstr "WordPress-Rollen mit ContactPanda Plus bearbeiten."
+
+msgid "Plus lets authorized administrators assign and change roles directly from the person record."
+msgstr "Plus ermöglicht berechtigten Administratoren, Rollen direkt im Personendatensatz zuzuweisen und zu ändern."
+
+msgid "Use flexible customer roles with ContactPanda Plus."
+msgstr "Flexible Kundenrollen mit ContactPanda Plus verwenden."
+
+msgid "Basic assigns a safe standard role. Plus adds controlled role management after registration."
+msgstr "Basic weist eine sichere Standardrolle zu. Plus ergänzt die kontrollierte Rollenverwaltung nach der Registrierung."
+
+msgid "Understand newsletter engagement with ContactPanda Plus."
+msgstr "Newsletter-Interaktionen mit ContactPanda Plus verstehen."
+
+msgid "Plus adds privacy-conscious open and click tracking, rates, filters, and graphical reports."
+msgstr "Plus ergänzt datenschutzbewusstes Öffnungs- und Klicktracking, Quoten, Filter und grafische Auswertungen."
+
+msgid "Plan and optimize mailings with ContactPanda Plus."
+msgstr "Aussendungen mit ContactPanda Plus planen und optimieren."
+
+msgid "Plus adds scheduling, A/B tests, UTM parameters, and advanced delivery analysis."
+msgstr "Plus ergänzt Terminierung, A/B-Tests, UTM-Parameter und erweiterte Versandanalysen."
+
 msgid "Installed versions, available updates, entitlement results, and optional privacy-safe runtime measurements."
 msgstr "Installierte Versionen, verfügbare Updates, Berechtigungsergebnisse und optionale datenschutzfreundliche Laufzeitmessungen."
 
@@ -8408,9 +8450,6 @@ msgstr "Automatisierungen"
 
 msgid "Groundhogg migration areas"
 msgstr "Groundhogg-Migrationsbereiche"
-
-msgid "ContactPanda Pro"
-msgstr "ContactPanda Pro"
 
 msgid "ContactPanda Business"
 msgstr "ContactPanda Business"

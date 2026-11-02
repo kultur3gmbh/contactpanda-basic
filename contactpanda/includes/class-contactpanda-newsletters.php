@@ -22,9 +22,6 @@ final class ContactPanda_Basic_Newsletters {
 		add_action( 'contactpanda_newsletter_confirmation_sent', array( __CLASS__, 'schedule_confirmation_reminders' ), 10, 3 );
 		add_action( 'contactpanda_newsletter_confirmation_reminder', array( __CLASS__, 'send_confirmation_reminder' ), 10, 5 );
 		add_action( 'contactpanda_plus_newsletter_confirmation_reminder', array( __CLASS__, 'send_confirmation_reminder' ), 10, 5 );
-		add_action( 'init', array( __CLASS__, 'register_archive_block' ) );
-		add_action( 'fusion_builder_before_init', array( __CLASS__, 'register_avada_archive_element' ) );
-		add_shortcode( 'contactpanda_newsletter_archive', array( __CLASS__, 'newsletter_archive_shortcode' ) );
 	}
 
 	public static function settings_tab( $tabs ) {
@@ -817,14 +814,8 @@ final class ContactPanda_Basic_Newsletters {
 		echo '<button type="submit" name="reapply_defaults" value="1" class="button" onclick="return confirm(' . esc_attr( wp_json_encode( __( 'Reapply the global email appearance? Content blocks remain unchanged.', 'contactpanda' ) ) ) . ');">' . esc_html__( 'Reapply global defaults', 'contactpanda' ) . '</button>';
 		echo '</div></aside></section>';
 		echo '<div class="contactpanda-newsletter-editor-layout"><aside class="contactpanda-card contactpanda-newsletter-palette"><h2>' . esc_html__( 'Content blocks', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Drag a block into the email or double-click it to append it. A single click only selects the block.', 'contactpanda' ) . '</p><div class="contactpanda-block-palette" aria-label="' . esc_attr__( 'Add content block', 'contactpanda' ) . '">';
-		$advanced_newsletter = ContactPanda_License::advanced_newsletter_entitled();
-		$palette = array( 'heading' => 'heading', 'text' => 'text', 'image' => 'format-image', 'button' => 'button', 'divider' => 'minus', 'spacer' => 'image-flip-vertical' );
-		if ( $advanced_newsletter ) $palette = array_merge( $palette, array( 'hero' => 'cover-image', 'social' => 'share', 'gallery' => 'format-gallery', 'video' => 'video-alt3', 'columns' => 'columns', 'phone_button' => 'phone', 'email_button' => 'email-alt', 'whatsapp_button' => 'format-chat' ) );
-		if ( $advanced_newsletter && class_exists( 'WooCommerce' ) ) {
-			$palette['products'] = 'cart';
-		}
-		if ( $advanced_newsletter && apply_filters( 'contactpanda_events_available', false ) ) $palette['events'] = 'calendar-alt';
-		$palette['posts'] = 'admin-post';
+		$palette = array( 'heading' => 'heading', 'text' => 'text', 'image' => 'format-image', 'button' => 'button', 'divider' => 'minus', 'spacer' => 'image-flip-vertical', 'gallery' => 'format-gallery', 'posts' => 'admin-post' );
+		$palette = (array) apply_filters( 'contactpanda_newsletter_block_palette', $palette );
 		foreach ( $palette as $type => $icon ) {
 			echo '<button type="button" draggable="true" class="contactpanda-add-block" data-type="' . esc_attr( $type ) . '"><span class="dashicons dashicons-' . esc_attr( $icon ) . '"></span><span>' . esc_html( self::block_label( $type ) ) . '</span></button>';
 		}
@@ -1614,27 +1605,6 @@ final class ContactPanda_Basic_Newsletters {
 		global $wpdb;
 		$table = ContactPanda_Newsletter_Schema::newsletter_table_names()['templates'];
 		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$table}` WHERE id = %d LIMIT 1", absint( $id ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table name.
-	}
-
-	public static function register_archive_block() {
-		if ( function_exists( 'register_block_type' ) ) register_block_type( 'contactpanda/newsletter-archive', array( 'api_version' => 2, 'title' => __( 'Panda – Newsletter Archive', 'contactpanda' ), 'category' => 'widgets', 'attributes' => array( 'limit' => array( 'type' => 'number', 'default' => 12 ) ), 'render_callback' => array( __CLASS__, 'render_newsletter_archive_block' ) ) );
-	}
-
-	public static function render_newsletter_archive_block( $attributes ) {
-		return self::newsletter_archive_shortcode( array( 'limit' => absint( $attributes['limit'] ?? 12 ) ) );
-	}
-
-	public static function register_avada_archive_element() {
-		if ( ! function_exists( 'fusion_builder_map' ) ) return;
-		fusion_builder_map( array( 'name' => __( 'Panda – Newsletter Archive', 'contactpanda' ), 'shortcode' => 'contactpanda_newsletter_archive', 'icon' => 'fusiona-envelope', 'params' => array( array( 'type' => 'range', 'heading' => __( 'Number of newsletters', 'contactpanda' ), 'param_name' => 'limit', 'value' => 12, 'min' => 1, 'max' => 100, 'step' => 1 ) ) ) );
-	}
-
-	public static function newsletter_archive_shortcode( $atts = array() ) {
-		global $wpdb; $atts = shortcode_atts( array( 'limit' => 12 ), $atts, 'contactpanda_newsletter_archive' ); $limit = min( 100, max( 1, absint( $atts['limit'] ) ) );
-		ContactPanda_Newsletter_Schema::install(); $tables = ContactPanda_Newsletter_Schema::newsletter_table_names();
-		$rows = (array) $wpdb->get_results( $wpdb->prepare( "SELECT c.id,c.name,c.subject,c.completed_at,c.archived_html,t.content_html FROM `{$tables['campaigns']}` c LEFT JOIN `{$tables['templates']}` t ON t.id=c.template_id WHERE (c.sent_count>0 OR c.status IN ('sent','completed')) ORDER BY COALESCE(c.completed_at,c.updated_at) DESC LIMIT %d", $limit ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table names.
-		if ( ! $rows ) return '<div class="contactpanda-newsletter-archive contactpanda-empty">' . esc_html__( 'No published newsletters are available yet.', 'contactpanda' ) . '</div>';
-		$output = '<div class="contactpanda-newsletter-archive">'; foreach ( $rows as $row ) { $html = (string) ( $row['archived_html'] ?: $row['content_html'] ); $output .= '<article class="contactpanda-newsletter-archive-item"><h3>' . esc_html( $row['name'] ?: $row['subject'] ) . '</h3>'; if ( $row['completed_at'] ) $output .= '<time datetime="' . esc_attr( mysql2date( 'c', $row['completed_at'], false ) ) . '">' . esc_html( mysql2date( get_option( 'date_format' ), $row['completed_at'] ) ) . '</time>'; $output .= '<details><summary>' . esc_html__( 'Read newsletter', 'contactpanda' ) . '</summary><div class="contactpanda-newsletter-archive-content">' . wp_kses_post( $html ) . '</div></details></article>'; } return $output . '</div>';
 	}
 
 	private static function guard_request() {

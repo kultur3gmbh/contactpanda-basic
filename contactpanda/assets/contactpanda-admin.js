@@ -103,18 +103,13 @@
 		if (button.classList.contains('contactpanda-preview-order')) return previewRecord(button, 'contactpanda_preview_order', 'order_id', button.dataset.order, tr('order', 'Order'));
 		if (button.classList.contains('contactpanda-preview-event')) return previewRecord(button, 'contactpanda_preview_event', 'event_id', button.dataset.event, tr('event', 'Event'));
 		if (button.classList.contains('contactpanda-close-preview')) return closePreviewFrame();
-		if (button.classList.contains('contactpanda-open-roles')) return toggleLocalModal(button.closest('.contactpanda-master-data').querySelector('.contactpanda-roles-modal'), true);
-		if (button.classList.contains('contactpanda-close-roles')) return toggleLocalModal(button.closest('.contactpanda-roles-modal'), false);
-		if (button.classList.contains('contactpanda-save-roles')) return saveRoles(button);
 		if (button.classList.contains('contactpanda-open-user-account')) return toggleLocalModal(button.closest('.contactpanda-master-data').querySelector('.contactpanda-user-account-modal'), true);
 		if (button.classList.contains('contactpanda-close-user-account')) return toggleLocalModal(button.closest('.contactpanda-user-account-modal'), false);
 		if (button.classList.contains('contactpanda-save-user-account')) return saveUserAccount(button);
 		if (button.classList.contains('contactpanda-tag-suggestion')) return manageTag(button, 'add');
 		if (button.classList.contains('contactpanda-tags-summary')) return openTags(button.closest('.contactpanda-tags-card'));
 		if (button.classList.contains('contactpanda-close-tags')) return closeTags(button.closest('.contactpanda-tags-card'));
-		if (button.classList.contains('contactpanda-role-suggestion')) return addRole(button);
 		if (button.classList.contains('contactpanda-remove-tag')) return manageTag(button, 'remove');
-		if (button.classList.contains('contactpanda-remove-role')) return button.closest('.contactpanda-role-token').remove();
 		if (button.classList.contains('contactpanda-save-address')) return saveAddress(button.closest('.contactpanda-address-form'));
 		if (button.classList.contains('contactpanda-salutation-value')) return openSalutation(button.closest('.contactpanda-salutation-field'));
 		if (button.classList.contains('contactpanda-cancel-salutation')) return closeSalutation(button.closest('.contactpanda-salutation-field'));
@@ -961,10 +956,6 @@
 		}
 	}
 
-	function selectedRoles(modal) {
-		return Array.prototype.slice.call(modal.querySelectorAll('.contactpanda-role-token')).map(function (token) { return token.dataset.role; });
-	}
-
 	function updateTokenSuggestions(input) {
 		var entry = input.closest('.contactpanda-token-entry');
 		var suggestions = entry ? entry.querySelector('.contactpanda-token-suggestions') : null;
@@ -972,9 +963,7 @@
 		var query = input.value.trim().toLocaleLowerCase();
 		var matches = 0;
 		suggestions.querySelectorAll('.contactpanda-token-suggestion').forEach(function (suggestion) {
-			var assigned = suggestion.dataset.tag
-				? !!entry.querySelector('.contactpanda-tag[data-tag="' + suggestion.dataset.tag + '"]')
-				: !!entry.querySelector('.contactpanda-role-token[data-role="' + suggestion.dataset.role + '"]');
+			var assigned = !!entry.querySelector('.contactpanda-tag[data-tag="' + suggestion.dataset.tag + '"]');
 			var visible = !!query && !assigned && suggestion.dataset.name.toLocaleLowerCase().indexOf(query) !== -1 && matches < 10;
 			suggestion.hidden = !visible;
 			if (visible) matches += 1;
@@ -986,55 +975,6 @@
 		var entry = input ? input.closest('.contactpanda-token-entry') : null;
 		var suggestions = entry ? entry.querySelector('.contactpanda-token-suggestions') : null;
 		if (suggestions) suggestions.hidden = true;
-	}
-
-	function addRole(trigger) {
-		var picker = trigger.closest('.contactpanda-role-picker');
-		if (!picker) return;
-		var input = picker.querySelector('.contactpanda-role-input');
-		var message = picker.querySelector('.contactpanda-role-picker-message');
-		var value = trigger.dataset.name || input.value.trim();
-		var option = trigger.classList.contains('contactpanda-role-suggestion') ? trigger : Array.prototype.slice.call(picker.querySelectorAll('.contactpanda-role-suggestion')).find(function (item) {
-			return item.dataset.name.toLocaleLowerCase() === value.toLocaleLowerCase();
-		});
-		if (!option || !option.dataset.role) {
-			message.textContent = tr('selectSuggestedRole', 'Please select a suggested WordPress role.');
-			return;
-		}
-		if (picker.querySelector('.contactpanda-role-token[data-role="' + option.dataset.role + '"]')) {
-			message.textContent = tr('roleAlreadyAssigned', 'This role is already assigned.');
-			input.value = '';
-			return;
-		}
-		var token = document.createElement('span');
-		token.className = 'contactpanda-role-token';
-		token.dataset.role = option.dataset.role;
-		token.appendChild(document.createTextNode(option.dataset.name));
-		var remove = document.createElement('button');
-		remove.type = 'button';
-		remove.className = 'button-link contactpanda-remove-role';
-		remove.setAttribute('aria-label', format(tr('removeRole', 'Remove role %s'), option.dataset.name));
-		remove.innerHTML = '&times;';
-		token.appendChild(remove);
-		picker.querySelector('.contactpanda-token-field').insertBefore(token, input);
-		input.value = '';
-		closeTokenSuggestions(input);
-		message.textContent = '';
-		input.focus();
-	}
-
-	function saveRoles(button) {
-		var modal = button.closest('.contactpanda-roles-modal');
-		var panel = modal.querySelector('.contactpanda-modal-panel');
-		var roles = selectedRoles(modal);
-		if (!roles.length || !window.confirm(tr('confirmSaveRoles', 'Save the selected roles and the resulting permissions for this account?'))) return;
-		var data = new URLSearchParams();
-		data.set('action', 'contactpanda_update_user_roles');
-		data.set('nonce', CONTACTPANDA_CONFIG.nonce);
-		data.set('contact_id', panel.dataset.contact);
-		data.set('user_id', panel.dataset.user);
-		roles.forEach(function (role) { data.append('roles[]', role); });
-		saveAccountRequest(button, modal, data);
 	}
 
 	function saveUserAccount(button) {
@@ -1051,7 +991,6 @@
 		if (mode === 'create') {
 			data.set('username', modal.querySelector('.contactpanda-account-username').value);
 			data.set('send_invite', modal.querySelector('.contactpanda-account-invite').checked ? '1' : '0');
-			selectedRoles(modal).forEach(function (role) { data.append('roles[]', role); });
 		}
 		saveAccountRequest(button, modal, data);
 	}

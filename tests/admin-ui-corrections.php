@@ -41,9 +41,10 @@ foreach ( array( "class_exists( 'ContactPanda_Plus_Messaging' )", "class_exists(
 	}
 }
 
-foreach ( array( 'management_available()', "ContactPanda_License::entitled( 'plus' )", 'ContactPanda Plus is required to manage user roles.' ) as $contract ) {
-	if ( false === strpos( $capabilities, $contract ) ) {
-		fwrite( STDERR, "Missing Plus-only role management contract {$contract}.\n" );
+
+foreach ( array( 'management_available()', 'contactpanda_render_settings_tab_roles', 'contactpanda_save_role_capabilities', 'Save role permissions' ) as $contract ) {
+	if ( false !== strpos( $capabilities, $contract ) ) {
+		fwrite( STDERR, "Basic must not embed the Plus role editor contract {$contract}.\n" );
 		exit( 1 );
 	}
 }
@@ -55,7 +56,7 @@ foreach ( array( 'Button preview', 'contactpanda-theme-button-preview is-contact
 	}
 }
 
-foreach ( array( 'Drop a CSV file here', 'Drop a vCard file here', 'contactpanda-file-drop-actions' ) as $contract ) {
+foreach ( array( 'Drop a CSV file here', 'contactpanda-file-drop-actions', 'contactpanda_render_contact_import_extensions' ) as $contract ) {
 	if ( false === strpos( $data_tools, $contract ) ) {
 		fwrite( STDERR, "Missing import dropzone contract {$contract}.\n" );
 		exit( 1 );

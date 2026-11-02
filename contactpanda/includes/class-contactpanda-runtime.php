@@ -114,36 +114,13 @@ final class ContactPanda_Runtime {
 
 	/** Add one central, read-only family diagnosis to WordPress Site Health. */
 	public static function site_health_info( $info ) {
-		$endpoint = class_exists( 'ContactPanda_License' ) ? ContactPanda_License::diagnostic_endpoint() : '';
 		$basic_available = '';
 		$updates = get_site_transient( 'update_plugins' );
 		$basic_plugin = defined( 'CONTACTPANDA_FILE' ) ? plugin_basename( CONTACTPANDA_FILE ) : '';
 		if ( $basic_plugin && is_object( $updates ) && isset( $updates->response[ $basic_plugin ]->new_version ) ) $basic_available = sanitize_text_field( $updates->response[ $basic_plugin ]->new_version );
-		$license_value = 'none';
-		if ( class_exists( 'ContactPanda_License' ) ) {
-			$state = ContactPanda_License::state();
-			$statuses = array();
-			foreach ( (array) ( $state['licenses'] ?? array() ) as $license ) $statuses[] = sanitize_key( $license['status'] ?? 'unknown' );
-			if ( $statuses ) {
-				$parts = array();
-				foreach ( array_count_values( $statuses ) as $status => $count ) $parts[] = $status . '=' . absint( $count );
-				$license_value = implode( ', ', $parts );
-			}
-			if ( ! empty( $state['last_successful_check_at'] ) ) $license_value .= ' · checked ' . sanitize_text_field( $state['last_successful_check_at'] );
-		}
 		$fields = array(
 			'basic' => array( 'label' => 'ContactPanda Basic', 'value' => sprintf( '%s → %s', defined( 'CONTACTPANDA_VERSION' ) ? CONTACTPANDA_VERSION : '—', $basic_available ?: '—' ) ),
-			'license_status' => array( 'label' => __( 'License status', 'contactpanda' ), 'value' => $license_value ),
-			'license_service' => array( 'label' => __( 'License and update service', 'contactpanda' ), 'value' => $endpoint ? (string) wp_parse_url( $endpoint, PHP_URL_HOST ) : '—' ),
 		);
-		if ( class_exists( 'ContactPanda_Licensed_Updater' ) ) {
-			foreach ( ContactPanda_Licensed_Updater::diagnostics() as $key => $status ) {
-				$fields[ sanitize_key( $key ) ] = array(
-					'label' => sanitize_text_field( $status['name'] ),
-					'value' => sanitize_text_field( sprintf( '%s → %s · %s', $status['installed'], $status['available'] ?: '—', $status['reason'] ) ),
-				);
-			}
-		}
 		$profiles = (array) get_option( self::PROFILE_OPTION, array() );
 		if ( $profiles ) {
 			$latest = end( $profiles );
@@ -154,7 +131,7 @@ final class ContactPanda_Runtime {
 		}
 		$info['contactpanda'] = array(
 			'label'       => 'ContactPanda',
-			'description' => __( 'Installed versions, available updates, entitlement results, and optional privacy-safe runtime measurements.', 'contactpanda' ),
+			'description' => __( 'Installed version, available WordPress update, and optional privacy-safe runtime measurements.', 'contactpanda' ),
 			'fields'      => $fields,
 		);
 		return $info;

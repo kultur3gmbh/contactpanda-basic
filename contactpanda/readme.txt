@@ -4,11 +4,11 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.9.9
+Stable tag: 0.9.11
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-A user-friendly contact and company CRM for WordPress with a free, reduced newsletter workflow, a WooCommerce customer overview, optional Groundhogg compatibility, and stable extension APIs for the ContactPanda product family.
+Manage people, companies, consent, newsletters and customer history directly in WordPress.
 
 == Description ==
 
@@ -16,11 +16,32 @@ ContactPanda Basic provides an independent contact and company database for Word
 
 Optional integrations are detected at runtime and remain hidden when their source plugin is unavailable. ContactPanda Basic remains fully usable without a paid ContactPanda extension.
 
+== External services ==
+
+ContactPanda Basic works without an external ContactPanda account. The following narrowly scoped services are used only for the described features:
+
+* ContactPanda news: opening the ContactPanda dashboard requests the public RSS feed from `https://mycontactpanda.com/feed/`. The request sends the normal technical connection data, such as the site server's IP address, but no contacts, email lists, orders, or customer records. The service is operated by Kultur3 GmbH; privacy information is available at `https://mycontactpanda.com/datenschutz/`.
+* EU VIES VAT validation: when an administrator or registrant explicitly validates a VAT ID, the country code and VAT number are sent to the European Commission VIES service at `https://ec.europa.eu/taxation_customs/vies/services/checkVatService`. No other ContactPanda profile data is sent. The European Commission privacy policy is available at `https://commission.europa.eu/privacy-policy-websites-managed-european-commission_en`.
+* Optional salutation library: when an administrator explicitly imports the central salutation library, ContactPanda downloads a public JSON file from `https://raw.githubusercontent.com/kultur3gmbh/contactpanda-salutations/main/salutations.json`. No site or customer data is included in that request beyond normal technical connection data. GitHub's privacy statement is available at `https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement`.
+* YouTube preview images: when an email template contains a YouTube video URL, its public preview image may be loaded from `https://i.ytimg.com/` while previewing or displaying that content. The visitor's browser sends normal technical connection data to Google. Google's privacy policy is available at `https://policies.google.com/privacy`.
+* WhatsApp links: a deliberately configured WhatsApp button opens `https://wa.me/` with the destination number and, when configured, the prepared message. Data is sent only after a user follows that link. WhatsApp's privacy information is available at `https://www.whatsapp.com/legal/privacy-policy`.
+
 == Changelog ==
+
+= 0.9.11 =
+* Consolidates the neutral Panda administration controls and keeps action icons centered in every supported button layout.
+* Makes shared color and image controls responsive and reusable by standalone Panda extensions.
+
+= 0.9.10 =
+
+* Adds the official WordPress Plugin Check to continuous validation for WordPress.org readiness.
+* Verifies that the public package remains free of protected updater and licensing code.
 
 = 0.9.9 =
 
-* Unified all ContactPanda admin actions with the grayscale button system, consistent icons, and reliable single-button rendering.
+* Keeps the complete free feature set independent of paid extensions.
+* Removes external update and licensing code from the WordPress.org package.
+* Preserves stable extension points for separately installed ContactPanda products.
 
 = 0.9.8 =
 * Applies the neutral-grey action style to every large administration button, regardless of its label.
@@ -62,7 +83,7 @@ Optional integrations are detected at runtime and remain hidden when their sourc
 
 = 0.9.0 =
 * Provides the release candidate for the public ContactPanda Basic 1.0 line while preserving the extension APIs required by current Plus and Business releases.
-* Retires ContactPanda Pro Legacy from protected family update registration without deleting installed plugins or historical data.
+* Removes the retired intermediate product from protected family update registration without deleting historical data.
 * Includes the corrected event-attendee identities, quick filters, and WooCommerce order summaries validated in 0.8.85.
 
 = 0.8.85 =

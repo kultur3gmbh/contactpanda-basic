@@ -4721,7 +4721,7 @@ msgstr ""
 msgid "Automatic ContactPanda updates"
 msgstr ""
 
-msgid "ContactPanda checks the public GitHub release channel and validates version metadata, compatibility, and the ZIP checksum before WordPress installs an update."
+msgid "ContactPanda Basic receives updates through the official WordPress.org update system."
 msgstr ""
 
 msgid "Only an administrator who may update plugins can change this setting."
@@ -7726,7 +7726,7 @@ msgstr ""
 msgid "MCP interface"
 msgstr ""
 
-msgid "This central interface provides the available ContactPanda tools from ContactPanda and every active family plugin. Paid actions appear only when the corresponding license is active."
+msgid "This central interface provides the available ContactPanda tools from ContactPanda and every active family plugin. Additional actions appear when the corresponding extension is installed and active."
 msgstr ""
 
 msgid "MCP endpoint"
@@ -8284,6 +8284,48 @@ msgstr ""
 msgid "You are not allowed to manage these settings."
 msgstr ""
 
+msgid "Thank you. Please check your inbox and confirm your email address. Your business registration will be activated after approval."
+msgstr ""
+
+msgid "Your email address has been confirmed. Your business registration is still awaiting approval."
+msgstr ""
+
+msgid "Adds a separate business registration with company data and VAT ID validation."
+msgstr ""
+
+msgid "The registration was not approved because the email address has not yet been confirmed."
+msgstr ""
+
+msgid "Your business account has been approved. You can now sign in."
+msgstr ""
+
+msgid "A new business registration was submitted.\n\nPerson: %1$s\nCompany: %2$s\nEmail: %3$s\n\nReview: %4$s"
+msgstr ""
+
+msgid "Edit WordPress roles with ContactPanda Plus."
+msgstr ""
+
+msgid "Plus lets authorized administrators assign and change roles directly from the person record."
+msgstr ""
+
+msgid "Use flexible customer roles with ContactPanda Plus."
+msgstr ""
+
+msgid "Basic assigns a safe standard role. Plus adds controlled role management after registration."
+msgstr ""
+
+msgid "Understand newsletter engagement with ContactPanda Plus."
+msgstr ""
+
+msgid "Plus adds privacy-conscious open and click tracking, rates, filters, and graphical reports."
+msgstr ""
+
+msgid "Plan and optimize mailings with ContactPanda Plus."
+msgstr ""
+
+msgid "Plus adds scheduling, A/B tests, UTM parameters, and advanced delivery analysis."
+msgstr ""
+
 msgid "Telephone"
 msgstr ""
 
@@ -8381,9 +8423,6 @@ msgid "Automations"
 msgstr ""
 
 msgid "Groundhogg migration areas"
-msgstr ""
-
-msgid "ContactPanda Pro"
 msgstr ""
 
 msgid "ContactPanda Business"
