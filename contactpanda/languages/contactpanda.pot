@@ -933,6 +933,48 @@ msgstr ""
 msgid "All"
 msgstr ""
 
+msgid "X (formerly Twitter)"
+msgstr ""
+
+msgid "Caption background"
+msgstr ""
+
+msgid "Below the image"
+msgstr ""
+
+msgid "Icon background"
+msgstr ""
+
+msgid "Show button"
+msgstr ""
+
+msgid "Image fit"
+msgstr ""
+
+msgid "Fill area (crop)"
+msgstr ""
+
+msgid "Show complete image"
+msgstr ""
+
+msgid "Line style"
+msgstr ""
+
+msgid "Solid"
+msgstr ""
+
+msgid "Double"
+msgstr ""
+
+msgid "Dotted"
+msgstr ""
+
+msgid "Line width"
+msgstr ""
+
+msgid "Line color"
+msgstr ""
+
 msgid "Drag blocks here or double-click a block in the element panel."
 msgstr ""
 

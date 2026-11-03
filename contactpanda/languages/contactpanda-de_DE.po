@@ -8875,5 +8875,47 @@ msgstr "WooCommerce-Import abgeschlossen am %1$s: %2$d neue Kontakte, %3$d aktua
 msgid "%1$d editable content blocks were created; %2$d source fragments required an HTML fallback."
 msgstr "%1$d bearbeitbare Inhaltsblöcke wurden erstellt; %2$d Quellfragmente benötigten einen HTML-Rückfall."
 
+msgid "X (formerly Twitter)"
+msgstr "X (ehemals Twitter)"
+
+msgid "Caption background"
+msgstr "Hintergrund der Bildunterschrift"
+
+msgid "Below the image"
+msgstr "Unterhalb des Bildes"
+
+msgid "Icon background"
+msgstr "Icon-Hintergrund"
+
+msgid "Show button"
+msgstr "Schaltfläche anzeigen"
+
+msgid "Image fit"
+msgstr "Bildanpassung"
+
+msgid "Fill area (crop)"
+msgstr "Fläche füllen (beschneiden)"
+
+msgid "Show complete image"
+msgstr "Vollständiges Bild anzeigen"
+
+msgid "Line style"
+msgstr "Linienstil"
+
+msgid "Solid"
+msgstr "Einfach"
+
+msgid "Double"
+msgstr "Doppelt"
+
+msgid "Dotted"
+msgstr "Gepunktet"
+
+msgid "Line width"
+msgstr "Linienstärke"
+
+msgid "Line color"
+msgstr "Linienfarbe"
+
 msgid "You are not allowed to manage these settings."
 msgstr "Sie dürfen diese Einstellungen nicht verwalten."
