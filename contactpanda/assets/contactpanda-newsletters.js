@@ -225,7 +225,7 @@
 		blocks.forEach(function (block, index) {
 			var card = document.createElement('section');
 			card.className = 'contactpanda-newsletter-block' + (block.id === selectedId ? ' is-selected' : '');
-			card.dataset.id = block.id; card.draggable = !(block.id === selectedId && block.type === 'text');
+			card.dataset.id = block.id; card.dataset.pandaEditorElement = block.id; card.draggable = !(block.id === selectedId && block.type === 'text');
 			var inlineTools = '';
 			if (block.id === selectedId && block.type === 'text') {
 				inlineTools = '<div class="contactpanda-inline-text-toolbar"><button type="button" data-command="bold" title="Bold"><strong>B</strong></button><button type="button" data-command="italic" title="Italic"><em>I</em></button><button type="button" data-command="createLink" title="' + escapeHtml(i18n.insertLink) + '"><span class="dashicons dashicons-admin-links"></span></button><button type="button" data-command="insertUnorderedList" title="List"><span class="dashicons dashicons-editor-ul"></span></button><button type="button" data-command="insertOrderedList" title="Numbered list"><span class="dashicons dashicons-editor-ol"></span></button><button type="button" data-command="justifyLeft"><span class="dashicons dashicons-editor-alignleft"></span></button><button type="button" data-command="justifyCenter"><span class="dashicons dashicons-editor-aligncenter"></span></button><button type="button" data-command="justifyRight"><span class="dashicons dashicons-editor-alignright"></span></button></div>';

@@ -4,7 +4,7 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 0.9.11
+Stable tag: 0.9.12
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -27,6 +27,12 @@ ContactPanda Basic works without an external ContactPanda account. The following
 * WhatsApp links: a deliberately configured WhatsApp button opens `https://wa.me/` with the destination number and, when configured, the prepared message. Data is sent only after a user follows that link. WhatsApp's privacy information is available at `https://www.whatsapp.com/legal/privacy-policy`.
 
 == Changelog ==
+
+= 0.9.12 =
+
+* Adds the shared two-column Panda editor contract and central standard-block registry.
+* Makes the newsletter-template workspace use independent canvas and inspector panels without scroll jumps.
+* Refines the shared compact color picker with a square color area and narrower sliders.
 
 = 0.9.11 =
 * Consolidates the neutral Panda administration controls and keeps action icons centered in every supported button layout.

@@ -8266,6 +8266,18 @@ msgstr "Importierte Vorlagen sind schreibgeschützt. Erstellen Sie eine bearbeit
 msgid "You are not allowed to manage these settings."
 msgstr "Sie dürfen diese Einstellungen nicht verwalten."
 
+msgid "Drag blocks here or double-click a block in the element panel."
+msgstr "Ziehen Sie Bausteine hierher oder doppelklicken Sie auf einen Baustein im Elementbereich."
+
+msgid "Drag a block into the email or double-click it to append it."
+msgstr "Ziehen Sie einen Baustein in die E-Mail oder doppelklicken Sie darauf, um ihn anzufügen."
+
+msgid "Add elements"
+msgstr "Elemente hinzufügen"
+
+msgid "Edit element"
+msgstr "Element bearbeiten"
+
 msgid "Thank you. Please check your inbox and confirm your email address. Your business registration will be activated after approval."
 msgstr "Vielen Dank. Bitte prüfen Sie Ihren Posteingang und bestätigen Sie Ihre E-Mail-Adresse. Ihre Firmenregistrierung wird nach der Freigabe aktiviert."
 

@@ -933,6 +933,18 @@ msgstr ""
 msgid "All"
 msgstr ""
 
+msgid "Drag blocks here or double-click a block in the element panel."
+msgstr ""
+
+msgid "Drag a block into the email or double-click it to append it."
+msgstr ""
+
+msgid "Add elements"
+msgstr ""
+
+msgid "Edit element"
+msgstr ""
+
 msgid "Installed versions, available updates, entitlement results, and optional privacy-safe runtime measurements."
 msgstr ""
 

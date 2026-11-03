@@ -1,0 +1,10 @@
+.panda-editor{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,380px);gap:18px;align-items:start;min-width:0}
+.panda-editor__canvas,.panda-editor [data-panda-editor-canvas]{min-width:0;max-height:calc(100vh - 175px);overflow:auto;scrollbar-gutter:stable}
+.panda-editor__sidebar,.panda-editor [data-panda-editor-sidebar]{position:sticky;top:46px;min-width:0;max-height:calc(100vh - 175px);overflow:auto;scrollbar-gutter:stable}
+.panda-editor__tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 14px}
+.panda-editor__tabs button{display:flex;align-items:center;justify-content:center;min-height:42px;padding:8px 12px;border:1px solid #c3c4c7;border-radius:6px;background:#f0f0f1;color:#2c3338;font-weight:700;cursor:pointer}
+.panda-editor__tabs button.is-active{border-color:#3c434a;background:#3c434a;color:#fff}
+.panda-editor [data-panda-editor-panel][hidden]{display:none!important}
+.panda-editor [data-panda-editor-element]{scroll-margin:80px}
+@media(max-width:1180px){.panda-editor{grid-template-columns:minmax(0,1fr) minmax(280px,330px)}}
+@media(max-width:860px){.panda-editor{grid-template-columns:1fr}.panda-editor__canvas,.panda-editor [data-panda-editor-canvas],.panda-editor__sidebar,.panda-editor [data-panda-editor-sidebar]{position:static;max-height:none}}

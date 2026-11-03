@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
- * Version: 0.9.11
+ * Version: 0.9.12
  * Author: Kultur3 GmbH
  * Text Domain: contactpanda
  * Domain Path: /languages
@@ -12,8 +12,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.9.11' );
-define( 'CONTACTPANDA_ASSET_VERSION', '0.9.11-20261102-1' );
+define( 'CONTACTPANDA_VERSION', '0.9.12' );
+define( 'CONTACTPANDA_ASSET_VERSION', '0.9.12-20261103-1' );
 define( 'CONTACTPANDA_EXTENSION_API_VERSION', '1.0' );
 define( 'CONTACTPANDA_FILE', __FILE__ );
 define( 'CONTACTPANDA_PATH', plugin_dir_path( __FILE__ ) );
@@ -202,8 +202,10 @@ function contactpanda_admin_ui_assets( $hook ) {
 		$theme_colors = ContactPanda_Basic_Newsletters::theme_colors();
 	}
 	wp_enqueue_style( 'contactpanda', CONTACTPANDA_URL . 'assets/contactpanda-admin.css', array(), CONTACTPANDA_ASSET_VERSION );
+	wp_enqueue_style( 'panda-editor-ui', CONTACTPANDA_URL . 'assets/panda-editor-ui.css', array( 'contactpanda' ), CONTACTPANDA_ASSET_VERSION );
 	wp_enqueue_media();
 	wp_enqueue_script( 'contactpanda-admin-ui', CONTACTPANDA_URL . 'assets/contactpanda-admin-ui.js', array( 'wp-api-fetch' ), CONTACTPANDA_ASSET_VERSION, true );
+	wp_enqueue_script( 'panda-editor-ui', CONTACTPANDA_URL . 'assets/panda-editor-ui.js', array( 'contactpanda-admin-ui' ), CONTACTPANDA_ASSET_VERSION, true );
 	wp_localize_script(
 		'contactpanda-admin-ui',
 		'CONTACTPANDA_ADMIN_UI',
