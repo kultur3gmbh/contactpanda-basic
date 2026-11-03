@@ -211,6 +211,65 @@ body.contactpanda-modal-open{overflow:hidden}.contactpanda-mailing-modal{z-index
 .contactpanda-wrap .tablenav-pages,.contactpanda-wrap .page-numbers{align-items:center;display:flex;flex-wrap:wrap;gap:6px}.contactpanda-wrap .tablenav-pages .page-numbers,.contactpanda-wrap ul.page-numbers li>a,.contactpanda-wrap ul.page-numbers li>span{align-items:center;background:var(--contactpanda-surface,#fff);border:1px solid var(--contactpanda-border,#c9d2dc);border-radius:6px;box-sizing:border-box;color:var(--contactpanda-text,#2c3b4d);display:inline-flex;justify-content:center;min-height:34px;min-width:34px;padding:5px 10px;text-decoration:none}.contactpanda-wrap .tablenav-pages .page-numbers.current,.contactpanda-wrap ul.page-numbers .current{background:var(--contactpanda-accent,#3858e9);border-color:var(--contactpanda-accent,#3858e9);color:#fff;font-weight:700}.contactpanda-wrap .tablenav-pages a.page-numbers:hover,.contactpanda-wrap ul.page-numbers a:hover{border-color:var(--contactpanda-accent,#3858e9);color:var(--contactpanda-accent,#3858e9)}.contactpanda-wrap ul.page-numbers{list-style:none;margin:16px 0;padding:0}.contactpanda-wrap ul.page-numbers li{margin:0}
 .contactpanda-inline-migration-progress{align-items:center;color:#50575e;display:inline-flex;gap:8px;margin-left:10px}.contactpanda-inline-migration-progress .spinner{float:none;margin:0}
 
+/* Canonical responsive Panda image picker.
+ * Large: preview, metadata and labelled actions.
+ * Medium: the same row with icon-only actions.
+ * Narrow: thumbnail, compact metadata and right-aligned icon actions. */
+.contactpanda-image-picker{container-type:inline-size;display:block;box-sizing:border-box;min-width:0}
+.contactpanda-image-picker>[hidden]{display:none!important}
+.contactpanda-image-picker-drop{grid-template-columns:auto minmax(0,1fr);min-width:0}
+.contactpanda-image-picker-drop-copy{display:grid;gap:3px;min-width:0}
+.contactpanda-image-picker-empty-actions{display:flex;align-items:center;justify-content:flex-end;margin-left:auto}
+.contactpanda-image-picker-drop>.contactpanda-image-picker-empty-actions{grid-column:3}
+.contactpanda-image-picker-empty-actions .contactpanda-image-picker-action{width:36px!important;min-width:36px!important;height:36px!important;min-height:36px!important;padding:0!important}
+.contactpanda-image-picker-drop-copy>strong{font-size:13px;color:#253342}
+.contactpanda-image-picker-drop-copy>small,.contactpanda-image-picker-meta{color:#647386;font-weight:400}
+.contactpanda-image-picker-selected{display:grid;grid-template-columns:150px minmax(150px,1fr);align-items:center;gap:16px;box-sizing:border-box;width:100%;min-height:128px;padding:12px;border:1px solid #bcc5cf;border-radius:10px;background:#fff}
+.contactpanda-image-picker-thumb{display:block;box-sizing:border-box;width:150px;height:104px;margin:0;padding:0;overflow:hidden;border:0;border-radius:7px;background:#f3f5f7;cursor:pointer}
+.contactpanda-image-picker-thumb img{display:block;width:100%;height:100%;object-fit:contain}
+.contactpanda-image-picker-details{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:5px 16px;min-width:0}
+.contactpanda-image-picker-name{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#29313b;line-height:1.15}
+.contactpanda-image-picker-meta{display:block;grid-column:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.15}
+.contactpanda-image-picker-actions{display:flex;grid-column:2;grid-row:1/3;align-items:center;justify-content:flex-end;gap:8px}
+.contactpanda-image-picker-action{display:inline-flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;min-height:42px!important;margin:0!important;padding:0 13px!important;gap:8px;border:1px solid #bcc5cf!important;border-radius:7px!important;background:#f3f5f7!important;box-shadow:none!important;color:#29313b!important;font-weight:500!important;line-height:1!important;cursor:pointer}
+.contactpanda-image-picker-action:hover,.contactpanda-image-picker-action:focus{background:#e7eaee!important;color:#1d2327!important}
+.contactpanda-image-picker-action.is-danger{width:42px!important;min-width:42px!important;padding:0!important;color:#b42318!important}
+.contactpanda-image-picker-action .dashicons{display:grid!important;place-items:center!important;width:17px!important;height:17px!important;margin:0!important;font-size:17px!important;line-height:1!important}
+.contactpanda-image-picker-storage{display:none!important}
+.contactpanda-image-picker.is-multiple{display:grid;grid-template-columns:minmax(0,1fr) auto}
+.contactpanda-image-picker.is-multiple .contactpanda-image-picker-drop{display:grid}
+.contactpanda-image-picker.is-multiple .contactpanda-image-picker-selected{display:none!important}
+@container (max-width:620px){
+	.contactpanda-image-picker-selected{grid-template-columns:112px minmax(0,1fr);gap:12px;min-height:104px;padding:11px}
+	.contactpanda-image-picker-thumb{width:112px;height:82px}
+	.contactpanda-image-picker-details{grid-template-columns:minmax(0,1fr);height:82px;align-content:start;gap:2px}
+	.contactpanda-image-picker-actions{grid-column:1;grid-row:auto;align-self:end;margin-top:auto;gap:6px}
+	.contactpanda-image-picker-action{width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important;padding:0!important}
+	.contactpanda-image-picker-action.is-danger{width:34px!important;min-width:34px!important}
+	.contactpanda-image-picker-action-label{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+}
+@container (max-width:380px){
+	.contactpanda-image-picker-selected{grid-template-columns:76px minmax(0,1fr);gap:11px;min-height:102px;padding:12px}
+	.contactpanda-image-picker-thumb{width:76px;height:76px}
+	.contactpanda-image-picker-details{height:76px}
+	.contactpanda-image-picker-name{line-height:1.1}
+	.contactpanda-image-picker-meta{margin-top:1px;line-height:1.05}
+	.contactpanda-image-picker-actions{justify-content:flex-end}
+	.contactpanda-image-picker-drop{grid-template-columns:76px minmax(0,1fr);align-items:start;min-height:102px;padding:12px;border-style:solid}
+	.contactpanda-image-picker-drop:has(.contactpanda-image-picker-empty-actions:not(:empty)){grid-template-columns:76px minmax(0,1fr) auto}
+	.contactpanda-image-picker-drop>.dashicons{display:grid;width:76px;height:76px;place-items:center;box-sizing:border-box;border:2px dashed #bcc5cf;border-radius:7px;background:#f3f5f7;font-size:26px}
+	.contactpanda-image-picker-drop-copy{height:76px;align-content:start}
+	.contactpanda-image-picker-drop-copy>strong{line-height:1.1}
+	.contactpanda-image-picker-drop-copy>small{margin-top:1px;line-height:1.05}
+}
+@container (max-width:330px){
+	.contactpanda-image-picker-selected,.contactpanda-image-picker-drop{grid-template-columns:64px minmax(0,1fr);gap:9px;padding:10px}
+	.contactpanda-image-picker-thumb,.contactpanda-image-picker-drop>.dashicons{width:64px;height:64px}
+	.contactpanda-image-picker-details,.contactpanda-image-picker-drop-copy{height:64px}
+	.contactpanda-image-picker-action{width:30px!important;min-width:30px!important;height:30px!important;min-height:30px!important}
+	.contactpanda-image-picker-action.is-danger{width:30px!important;min-width:30px!important}
+}
+
 /* Shared ContactPanda family color control. Old permanent palettes are replaced by two compact popovers. */
 .contactpanda-settings-color-field,.contactpanda-color-field{position:relative!important;display:block!important}
 .contactpanda-unified-color{position:relative;display:block;box-sizing:border-box;width:100%;min-width:0;max-width:none;margin-top:5px;font-weight:400}

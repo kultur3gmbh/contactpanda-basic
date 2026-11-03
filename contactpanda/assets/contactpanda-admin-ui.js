@@ -292,26 +292,71 @@
 	}
 
 	function normaliseImage(item) {
-		return {id: Number(item.id || item.attachment_id || 0), url: item.url || item.source_url || '', alt: item.alt || item.alt_text || item.title || ''};
+		item = item || {};
+		var url = item.url || item.source_url || '';
+		var name = item.filename || item.name || (url ? decodeURIComponent(url.split('/').pop().split('?')[0]) : '');
+		var mime = item.subtype || item.mime || item.mime_type || '';
+		if (mime.indexOf('/') >= 0) mime = mime.split('/').pop();
+		return {
+			id: Number(item.id || item.attachment_id || 0), url: url, alt: item.alt || item.alt_text || item.title || '',
+			name: name, width: Number(item.width || 0), height: Number(item.height || 0), format: String(mime || '').toUpperCase(),
+			size: item.filesizeHumanReadable || item.filesize_human_readable || ''
+		};
+	}
+
+	function imageMeta(item) {
+		var parts = [];
+		if (item.width && item.height) parts.push(item.width + ' × ' + item.height + ' px');
+		if (item.format) parts.push(item.format);
+		if (item.size) parts.push(item.size);
+		return parts.join(' · ') || (i18n.imageFormats || 'JPG, PNG, WebP or SVG');
 	}
 
 	function createImagePicker(options) {
 		options = options || {};
 		var root = document.createElement('div');
 		root.className = 'contactpanda-image-picker';
+		root.classList.toggle('is-multiple', !!options.multiple);
 		var drop = document.createElement('button');
 		drop.type = 'button';
 		drop.className = 'contactpanda-image-picker-drop';
-		drop.innerHTML = '<span class="dashicons dashicons-format-image" aria-hidden="true"></span><strong></strong><span class="contactpanda-image-picker-preview"></span><small class="contactpanda-image-picker-status" aria-live="polite"></small>';
+		drop.innerHTML = '<span class="dashicons dashicons-format-image" aria-hidden="true"></span><span class="contactpanda-image-picker-drop-copy"><strong></strong><small></small></span><span class="contactpanda-image-picker-preview"></span><span class="contactpanda-image-picker-status" aria-live="polite"></span>';
 		drop.querySelector('strong').textContent = options.dropLabel || i18n.dropImage || 'Click or drop an image here';
+		drop.querySelector('.contactpanda-image-picker-drop-copy small').textContent = i18n.imageFormats || 'JPG, PNG, WebP or SVG';
 		root.appendChild(drop);
-		var remove = document.createElement('button');
-		remove.type = 'button';
-		remove.className = 'contactpanda-image-picker-remove contactpanda-list-action';
-		remove.title = options.removeLabel || i18n.removeImage || 'Remove image';
-		remove.setAttribute('aria-label', remove.title);
-		remove.innerHTML = '<span class="dashicons dashicons-trash" aria-hidden="true"></span>';
-		root.appendChild(remove);
+		var emptyActions = document.createElement('span');
+		emptyActions.className = 'contactpanda-image-picker-empty-actions';
+		drop.appendChild(emptyActions);
+		var selectedPanel = document.createElement('div');
+		selectedPanel.className = 'contactpanda-image-picker-selected';
+		selectedPanel.innerHTML = '<button type="button" class="contactpanda-image-picker-thumb" aria-label=""><img alt=""></button><span class="contactpanda-image-picker-details"><strong class="contactpanda-image-picker-name"></strong><small class="contactpanda-image-picker-meta"></small><span class="contactpanda-image-picker-actions"></span></span>';
+		root.appendChild(selectedPanel);
+		var actions = selectedPanel.querySelector('.contactpanda-image-picker-actions');
+		function imageAction(action, icon, label, state) {
+			var button = document.createElement('button');
+			button.type = 'button';
+			button.className = 'contactpanda-image-picker-action contactpanda-image-picker-' + action + (state ? ' is-' + state : '');
+			button.title = label; button.setAttribute('aria-label', label);
+			button.innerHTML = '<span class="dashicons dashicons-' + icon + '" aria-hidden="true"></span><span class="contactpanda-image-picker-action-label"></span>';
+			button.querySelector('.contactpanda-image-picker-action-label').textContent = label;
+			actions.appendChild(button);
+			return button;
+		}
+		var replace = imageAction('replace', 'update', i18n.changeImage || 'Change image');
+		var edit = imageAction('edit', 'edit', i18n.editImage || 'Edit image');
+		var allowExternal = options.allowExternal !== false;
+		var external = allowExternal ? imageAction('external', 'admin-links', i18n.externalImage || 'Link external image') : null;
+		var emptyExternal = null;
+		if (allowExternal) {
+			emptyExternal = document.createElement('button');
+			emptyExternal.type = 'button';
+			emptyExternal.className = 'contactpanda-image-picker-action contactpanda-image-picker-external';
+			emptyExternal.title = i18n.externalImage || 'Link external image';
+			emptyExternal.setAttribute('aria-label', emptyExternal.title);
+			emptyExternal.innerHTML = '<span class="dashicons dashicons-admin-links" aria-hidden="true"></span>';
+			emptyActions.appendChild(emptyExternal);
+		}
+		var remove = imageAction('remove', 'trash', options.removeLabel || i18n.removeImage || 'Remove image', 'danger');
 		var items = (options.items || (options.url ? [{id: options.attachmentId, url: options.url, alt: options.alt}] : [])).map(normaliseImage).filter(function (item) { return item.url; });
 
 		function render(notify) {
@@ -319,6 +364,16 @@
 			preview.replaceChildren();
 			items.forEach(function (item) { var image = document.createElement('img'); image.src = item.url; image.alt = item.alt || ''; preview.appendChild(image); });
 			root.classList.toggle('has-image', items.length > 0);
+			drop.hidden = !options.multiple && items.length > 0;
+			selectedPanel.hidden = options.multiple || !items.length;
+			if (!options.multiple && items[0]) {
+				var item = items[0], thumbnail = selectedPanel.querySelector('img');
+				thumbnail.src = item.url; thumbnail.alt = item.alt || '';
+				selectedPanel.querySelector('.contactpanda-image-picker-thumb').setAttribute('aria-label', i18n.changeImage || 'Change image');
+				selectedPanel.querySelector('.contactpanda-image-picker-name').textContent = item.name || i18n.selectedImage || 'Selected image';
+				selectedPanel.querySelector('.contactpanda-image-picker-meta').textContent = imageMeta(item);
+				edit.hidden = !item.id;
+			}
 			remove.hidden = !items.length;
 			if (notify && typeof options.onChange === 'function') options.onChange(options.multiple ? items.slice() : (items[0] || null));
 		}
@@ -330,6 +385,9 @@
 		function openMedia() {
 			if (!window.wp || !wp.media) return;
 			var frame = wp.media({title: options.title || i18n.chooseImage || 'Select image', button: {text: options.buttonLabel || i18n.useImage || 'Use image'}, multiple: options.multiple ? 'add' : false, library: {type: 'image'}});
+			frame.on('open', function () {
+				if (!options.multiple && items[0] && items[0].id) frame.state().get('selection').add(wp.media.attachment(items[0].id));
+			});
 			frame.on('select', function () { select(frame.state().get('selection').toJSON()); });
 			frame.open();
 		}
@@ -346,6 +404,16 @@
 		drop.addEventListener('dragover', function (event) { event.preventDefault(); root.classList.add('is-dragging'); });
 		drop.addEventListener('dragleave', function () { root.classList.remove('is-dragging'); });
 		drop.addEventListener('drop', function (event) { event.preventDefault(); root.classList.remove('is-dragging'); upload(event.dataTransfer.files); });
+		selectedPanel.querySelector('.contactpanda-image-picker-thumb').addEventListener('click', openMedia);
+		replace.addEventListener('click', openMedia);
+		edit.addEventListener('click', openMedia);
+		function linkExternal(event) {
+			if (event) { event.preventDefault(); event.stopPropagation(); }
+			var value = window.prompt(i18n.externalImagePrompt || 'Enter the external image URL:', items[0] ? items[0].url : '');
+			if (value && /^https?:\/\//i.test(value.trim())) select([{id: 0, url: value.trim(), alt: ''}]);
+		}
+		if (external) external.addEventListener('click', linkExternal);
+		if (emptyExternal) emptyExternal.addEventListener('click', linkExternal);
 		remove.addEventListener('click', function () { items = []; render(true); });
 		root.contactPandaSetImages = select;
 		window.setTimeout(function () { render(false); }, 0);
@@ -367,6 +435,8 @@
 			}
 		});
 		root.insertBefore(picker, root.firstChild);
+		if (url) { url.hidden = true; url.classList.add('contactpanda-image-picker-storage'); url.setAttribute('aria-hidden', 'true'); url.tabIndex = -1; }
+		if (id) { id.hidden = true; id.classList.add('contactpanda-image-picker-storage'); }
 		if (url) url.addEventListener('change', function () { picker.contactPandaSetImages(url.value ? [{id: id ? id.value : 0, url: url.value, alt: ''}] : []); });
 		if (legacyButton) legacyButton.hidden = true;
 		if (legacyPreview) legacyPreview.hidden = true;

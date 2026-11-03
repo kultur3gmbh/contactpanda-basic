@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
- * Version: 0.9.17
+ * Version: 0.9.18
  * Author: Kultur3 GmbH
  * License: GPLv3
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.9.17' );
+define( 'CONTACTPANDA_VERSION', '0.9.18' );
 define( 'CONTACTPANDA_ASSET_VERSION', '0.9.14-20261103-1' );
 define( 'CONTACTPANDA_EXTENSION_API_VERSION', '1.0' );
 define( 'CONTACTPANDA_FILE', __FILE__ );
@@ -232,7 +232,12 @@ function contactpanda_admin_ui_assets( $hook ) {
 				'useImage'     => __( 'Use image', 'contactpanda' ),
 				'dropImage'    => __( 'Click or drop an image here', 'contactpanda' ),
 				'changeImage'  => __( 'Change image', 'contactpanda' ),
+				'editImage'    => __( 'Edit image', 'contactpanda' ),
 				'removeImage'  => __( 'Remove image', 'contactpanda' ),
+				'selectedImage'=> __( 'Selected image', 'contactpanda' ),
+				'imageFormats' => __( 'JPG, PNG, WebP or SVG', 'contactpanda' ),
+				'externalImage'=> __( 'Link external image', 'contactpanda' ),
+				'externalImagePrompt' => __( 'Enter the external image URL:', 'contactpanda' ),
 				'uploading'    => __( 'Uploading image…', 'contactpanda' ),
 				'uploadFailed' => __( 'The image could not be uploaded.', 'contactpanda' ),
 			),

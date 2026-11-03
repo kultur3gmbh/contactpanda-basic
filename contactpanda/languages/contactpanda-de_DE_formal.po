@@ -176,7 +176,7 @@ msgstr "Anteil für Variante B (%)"
 msgid "Placeholders such as {campaign_name}, {campaign_id} and {subject_variant} are resolved separately for every delivery."
 msgstr "Platzhalter wie {campaign_name}, {campaign_id} und {subject_variant} werden für jeden Versand einzeln aufgelöst."
 
-"Project-Id-Version: ContactPanda 0.9.17\n"
+"Project-Id-Version: ContactPanda 0.9.18\n"
 "Report-Msgid-Bugs-To: https://kultur3.com/\n"
 "POT-Creation-Date: 2026-10-23 14:30+0200\n"
 "PO-Revision-Date: 2026-10-23 14:30+0200\n"
@@ -8280,6 +8280,21 @@ msgstr "Importierte Vorlagen sind schreibgeschützt. Erstellen Sie eine bearbeit
 
 msgid "You are not allowed to manage these settings."
 msgstr "Sie dürfen diese Einstellungen nicht verwalten."
+
+msgid "Edit image"
+msgstr "Bild bearbeiten"
+
+msgid "Selected image"
+msgstr "Ausgewähltes Bild"
+
+msgid "JPG, PNG, WebP or SVG"
+msgstr "JPG, PNG, WebP oder SVG"
+
+msgid "Link external image"
+msgstr "Externes Bild verknüpfen"
+
+msgid "Enter the external image URL:"
+msgstr "URL des externen Bildes eingeben:"
 
 msgid "No valid published update was found."
 msgstr "Es wurde keine gültige veröffentlichte Aktualisierung gefunden."

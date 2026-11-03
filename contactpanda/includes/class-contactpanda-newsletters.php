@@ -349,7 +349,6 @@ final class ContactPanda_Basic_Newsletters {
 					'whatsapp_button' => __( 'WhatsApp button', 'contactpanda' ),
 					'divider'       => __( 'Divider', 'contactpanda' ),
 					'spacer'        => __( 'Spacer', 'contactpanda' ),
-					'imageUrl'      => __( 'Image URL', 'contactpanda' ),
 					'heroHeading'   => __( 'Hero heading', 'contactpanda' ),
 					'heroText'      => __( 'Hero text', 'contactpanda' ),
 					'overlayColor'  => __( 'Overlay color', 'contactpanda' ),

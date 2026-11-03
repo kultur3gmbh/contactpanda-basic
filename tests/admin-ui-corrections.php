@@ -124,11 +124,24 @@ foreach ( array( 'contactpanda-file-drop-actions', 'contactpanda-people-search-r
 	}
 }
 
-foreach ( array( 'createImagePicker', 'enhanceColorPicker', 'enhanceListActions', 'contactpanda-list-action', 'contactpanda-unified-color-popover', 'contactpanda-unified-color-palette' ) as $contract ) {
+foreach ( array( 'createImagePicker', 'enhanceColorPicker', 'enhanceListActions', 'contactpanda-list-action', 'contactpanda-unified-color-popover', 'contactpanda-unified-color-palette', 'contactpanda-image-picker-selected', 'contactpanda-image-picker-empty-actions', 'dashicons-admin-links', 'contactpanda-image-picker-storage' ) as $contract ) {
 	if ( false === strpos( $shared_ui, $contract ) ) {
 		fwrite( STDERR, "Missing shared family UI contract {$contract}.\n" );
 		exit( 1 );
 	}
+}
+
+foreach ( array( '@container (max-width:620px)', '@container (max-width:380px)', '.contactpanda-image-picker-action-label' ) as $contract ) {
+	if ( false === strpos( $styles, $contract ) ) {
+		fwrite( STDERR, "Missing responsive family image-picker contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
+$newsletter_editor = file_get_contents( $root . '/contactpanda/assets/contactpanda-newsletters.js' );
+if ( false !== strpos( $newsletter_editor, "field(i18n.imageUrl, 'url'" ) ) {
+	fwrite( STDERR, "The newsletter editor must not expose a permanent image URL field.\n" );
+	exit( 1 );
 }
 
 foreach ( array( 'contactpanda_sanitize_css_color', 'Theme and template colors', 'Enter a valid HEX, RGB, or RGBA color.' ) as $contract ) {
