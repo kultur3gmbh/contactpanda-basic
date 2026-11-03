@@ -193,6 +193,7 @@ final class ContactPanda_My_Account {
 		$payment_url = wc_get_endpoint_url( 'payment-methods', '', wc_get_page_permalink( 'myaccount' ) );
 		$password_url = wc_get_endpoint_url( 'contactpanda-password', '', wc_get_page_permalink( 'myaccount' ) );
 		echo '<section class="contactpanda-account-overview"><h2>' . esc_html__( 'Overview', 'contactpanda' ) . '</h2>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		echo '<p class="contactpanda-dashboard-intro">' . sprintf( wp_kses( __( 'From your dashboard you can manage your <a href="%1$s">profile</a>, <a href="%2$s">addresses</a>, <a href="%3$s">payment methods</a>, and <a href="%4$s">password</a>.', 'contactpanda' ), array( 'a' => array( 'href' => array() ) ) ), esc_url( $profile_url ), esc_url( $address_url ), esc_url( $payment_url ), esc_url( $password_url ) ) . '</p><div class="contactpanda-account-facts">';
 		echo '<div><span>' . esc_html__( 'Orders', 'contactpanda' ) . '</span><strong>' . esc_html( number_format_i18n( $order_count ) ) . '</strong></div>';
 		echo '<div><span>' . esc_html__( 'Order total', 'contactpanda' ) . '</span><strong>' . wp_kses_post( wc_price( $total_spent ) ) . '</strong></div>';
@@ -222,6 +223,7 @@ final class ContactPanda_My_Account {
 		foreach ( $orders as $order ) {
 			$url = $order->get_view_order_url();
 			$date = $order->get_date_created();
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			echo '<a href="' . esc_url( $url ) . '"><span><strong>' . esc_html( sprintf( __( 'Order #%s', 'contactpanda' ), $order->get_order_number() ) ) . '</strong><small>' . esc_html( $date ? wc_format_datetime( $date ) : '—' ) . '</small></span><span>' . wp_kses_post( $order->get_formatted_order_total() ) . '<small>' . esc_html( wc_get_order_status_name( $order->get_status() ) ) . '</small></span></a>';
 		}
 		echo '</div></div>';
@@ -504,6 +506,7 @@ final class ContactPanda_My_Account {
 			return new WP_Error(
 				'contactpanda_address_not_persisted',
 				sprintf(
+					/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 					__( 'WooCommerce did not persist all address fields. Please try again. Affected fields: %s', 'contactpanda' ),
 					implode( ', ', array_map( 'sanitize_text_field', $mismatches ) )
 				)

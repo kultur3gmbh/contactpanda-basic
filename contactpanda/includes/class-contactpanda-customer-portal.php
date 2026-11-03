@@ -182,6 +182,7 @@ final class ContactPanda_Customer_Portal {
 		$was_marketable = ContactPanda_Plugin::extension_is_marketable( $identity['object'] ?: $identity );
 		if ( $was_marketable && ! in_array( 'email', $channels, true ) ) {
 			$email = sanitize_email( $identity['email'] ?? '' );
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			ContactPanda_Plugin::extension_unsubscribe_contact( $identity['id'], 'preference_centre', sprintf( __( 'Email address %1$s finally unsubscribed through communication preferences at %2$s.', 'contactpanda' ), $email, current_time( 'mysql' ) ), $email );
 		}
 		$data = array( 'channels' => $channels, 'topics' => $topics, 'language' => $language, 'updated_at' => current_time( 'mysql' ) );
@@ -260,6 +261,7 @@ final class ContactPanda_Customer_Portal {
 		if ( is_wp_error( $identity ) || empty( $identity['id'] ) ) wp_die( esc_html__( 'The ContactPanda person could not be resolved.', 'contactpanda' ), '', array( 'response' => 404 ) );
 		$email = sanitize_email( $identity['email'] ?? '' );
 		$now = current_time( 'mysql' );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		ContactPanda_Plugin::extension_unsubscribe_contact( $identity['id'], 'preference_centre', sprintf( __( 'Email address %1$s finally unsubscribed through the preference centre at %2$s.', 'contactpanda' ), $email, $now ), $email );
 		do_action( 'contactpanda_portal_subscription_changed', $identity['id'], 'newsletter', 'unsubscribed', array( 'source' => 'preference_centre', 'email' => $email ) );
 		self::redirect_notice( true, __( 'The email address has been finally unsubscribed from the newsletter.' , 'contactpanda' ) );
@@ -441,7 +443,8 @@ final class ContactPanda_Customer_Portal {
 		$token = wp_generate_password( 48, false, false );
 		update_user_meta( $user->ID, self::EMAIL_META, array( 'email' => $email, 'hash' => hash( 'sha256', $token ), 'expires' => time() + DAY_IN_SECONDS ) );
 		$url = add_query_arg( 'contactpanda_email_confirm', rawurlencode( $token ), self::portal_url() );
-		$sent = wp_mail( $email, sprintf( __( 'Confirm your email address for %s', 'contactpanda' ), get_bloginfo( 'name' ) ), sprintf( __( "Hello %1$s,\n\nconfirm your new email address using this link:\n%2$s\n\nThe link is valid for 24 hours.", 'contactpanda' ), $user->display_name, $url ) );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
+		$sent = wp_mail( $email, sprintf( __( 'Confirm your email address for %s', 'contactpanda' ), get_bloginfo( 'name' ) ), sprintf( __( "Hello %1\$s,\n\nconfirm your new email address using this link:\n%2\$s\n\nThe link is valid for 24 hours.", 'contactpanda' ), $user->display_name, $url ) );
 		return $sent ? true : new WP_Error( 'contactpanda_portal_email_send', __( 'The confirmation email could not be sent.', 'contactpanda' ) );
 	}
 

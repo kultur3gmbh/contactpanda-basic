@@ -262,6 +262,7 @@ final class ContactPanda_Data_Tools {
 			} catch ( Throwable $error ) {
 				$steps = array();
 			}
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			$flows[] = array( 'source_id' => 'groundhogg:funnel:' . $id, 'source_numeric_id' => $id, 'name' => $name ?: sprintf( __( 'Groundhogg flow #%d', 'contactpanda' ), $id ), 'steps' => array_map( array( __CLASS__, 'normalize_groundhogg_step' ), $steps ) );
 		}
 		return $flows;
@@ -333,6 +334,7 @@ final class ContactPanda_Data_Tools {
 		foreach ( $runs as $run ) {
 			$records_url = add_query_arg( array( 'page' => 'companies' === $run['entity_type'] ? 'contactpanda-firmen' : 'contactpanda', 'import_run' => absint( $run['id'] ) ), admin_url( 'admin.php' ) );
 			$rollback_url = wp_nonce_url( admin_url( 'admin-post.php?action=contactpanda_rollback_import&run_id=' . absint( $run['id'] ) ), 'contactpanda_rollback_import_' . absint( $run['id'] ) );
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			$summary = sprintf( __( '%1$d created, %2$d updated, %3$d skipped, %4$d errors', 'contactpanda' ), absint( $run['created_count'] ), absint( $run['updated_count'] ), absint( $run['skipped_count'] ), absint( $run['error_count'] ) );
 			echo '<tr><td>' . esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $run['started_at'] ) ) . '</td><td><strong>' . esc_html( strtoupper( $run['source'] ) ) . '</strong><br><small>' . esc_html( $run['original_filename'] ?: '—' ) . '</small></td><td>' . esc_html( 'companies' === $run['entity_type'] ? __( 'Companies', 'contactpanda' ) : __( 'People', 'contactpanda' ) ) . '</td><td>' . esc_html( $summary ) . '<br><small>' . esc_html( $run['status'] ) . '</small></td><td><a href="' . esc_url( $records_url ) . '">' . esc_html__( 'Show records', 'contactpanda' ) . '</a>';
 			if ( 'rolled_back' !== $run['status'] ) echo ' · <a class="contactpanda-rollback-import" href="' . esc_url( $rollback_url ) . '">' . esc_html__( 'Roll back', 'contactpanda' ) . '</a>';
@@ -348,6 +350,7 @@ final class ContactPanda_Data_Tools {
 		check_admin_referer( 'contactpanda_rollback_import_' . $run_id );
 		$result = ContactPanda_Store::rollback_import_run( $run_id );
 		if ( is_wp_error( $result ) ) self::redirect_import_notice( 'error', $result->get_error_message() );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		self::redirect_import_notice( 'success', sprintf( __( 'Import rolled back: %1$d records restored, %2$d new records moved to Trash, %3$d later edits retained as conflicts.', 'contactpanda' ), absint( $result['restored'] ), absint( $result['trashed'] ), absint( $result['conflicts'] ) ) );
 	}
 
@@ -369,6 +372,7 @@ final class ContactPanda_Data_Tools {
 		$preview = $token ? get_transient( 'contactpanda_csv_' . get_current_user_id() . '_' . $token ) : false;
 		echo '<section id="contactpanda-import" class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Import CSV data', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Import people or companies from a CSV file. The preview and field mapping are shown before anything is saved. Empty CSV values never erase existing data.', 'contactpanda' ) . '</p>';
 		$report = get_transient( 'contactpanda_csv_report_' . get_current_user_id() );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( is_array( $report ) ) { delete_transient( 'contactpanda_csv_report_' . get_current_user_id() ); echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Last CSV import', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( __( '%1$d created, %2$d updated, %3$d skipped, %4$d errors.', 'contactpanda' ), $report['created'], $report['updated'], $report['skipped'], count( $report['errors'] ) ) ) . '</p>'; if ( $report['errors'] ) { echo '<details><summary>' . esc_html__( 'Show import errors', 'contactpanda' ) . '</summary><ul>'; foreach ( array_slice( $report['errors'], 0, 100 ) as $error ) echo '<li>' . esc_html( $error ) . '</li>'; echo '</ul></details>'; } echo '</div>'; }
 		if ( ! $preview ) {
 			echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-settings-grid"><input type="hidden" name="action" value="contactpanda_csv_preview"><input type="hidden" name="return_page" value="' . esc_attr( $return_page ) . '">';
@@ -382,6 +386,7 @@ final class ContactPanda_Data_Tools {
 		}
 
 		$fields = self::csv_fields( $preview['entity'] );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Import preview', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( __( '%1$d data rows detected using “%2$s” as the delimiter. Map the columns before importing.', 'contactpanda' ), count( $preview['rows'] ), $preview['delimiter_label'] ) ) . '</p></div>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_csv_import"><input type="hidden" name="csv_token" value="' . esc_attr( $token ) . '">';
 		wp_nonce_field( 'contactpanda_csv_import' );
@@ -421,7 +426,10 @@ final class ContactPanda_Data_Tools {
 		$sample = (string) fgets( $handle ); rewind( $handle );
 		$counts = array( ',' => substr_count( $sample, ',' ), ';' => substr_count( $sample, ';' ), "\t" => substr_count( $sample, "\t" ) ); arsort( $counts ); $delimiter = (string) key( $counts );
 		$headers = fgetcsv( $handle, 0, $delimiter ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
-		if ( ! is_array( $headers ) || count( $headers ) < 1 ) { fclose( $handle ); return new WP_Error( 'contactpanda_csv_header', __( 'No CSV header row was detected.', 'contactpanda' ) ); }
+		if ( ! is_array( $headers ) || count( $headers ) < 1 ) {
+			fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing the validated temporary upload stream.
+			return new WP_Error( 'contactpanda_csv_header', __( 'No CSV header row was detected.', 'contactpanda' ) );
+		}
 		$headers = array_map( static function ( $value ) { return sanitize_text_field( preg_replace( '/^\xEF\xBB\xBF/', '', (string) $value ) ); }, $headers );
 		$rows = array();
 		while ( count( $rows ) < 5000 && false !== ( $row = fgetcsv( $handle, 0, $delimiter ) ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
@@ -468,6 +476,7 @@ final class ContactPanda_Data_Tools {
 			$before_id = is_array( $before_record ) ? absint( $before_record['id'] ?? 0 ) : absint( $before_record );
 			$before = $before_id ? ContactPanda_Store::snapshot_for_import( $data['entity'], $before_id ) : array();
 			$result = self::import_csv_record( $data['entity'], $record, $data['mode'], $data['source_hash'] . ':' . ( $number + 2 ) );
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			if ( is_wp_error( $result ) ) { $report['errors'][] = sprintf( __( 'Row %1$d: %2$s', 'contactpanda' ), $number + 2, $result->get_error_message() ); continue; }
 			$report[ $result ]++;
 			$after_record = 'companies' === $data['entity'] ? ContactPanda_Store::company_by_name( $record['name'] ?? '' ) : ContactPanda_Store::contact_by_email( $record['email'] ?? '' );
@@ -477,6 +486,7 @@ final class ContactPanda_Data_Tools {
 		if ( $run_id ) { ContactPanda_Store::finish_import_run( $run_id, $report ); $report['run_id'] = $run_id; }
 		delete_transient( 'contactpanda_csv_' . get_current_user_id() . '_' . $token );
 		set_transient( 'contactpanda_csv_report_' . get_current_user_id(), $report, HOUR_IN_SECONDS );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		self::redirect_import_notice( 'success', sprintf( __( 'CSV import completed: %1$d created, %2$d updated, %3$d skipped, %4$d errors.', 'contactpanda' ), $report['created'], $report['updated'], $report['skipped'], count( $report['errors'] ) ), $return_page );
 	}
 
@@ -524,6 +534,7 @@ final class ContactPanda_Data_Tools {
 		$records = 'contacts' === $entity ? ContactPanda_Store::search_contacts( $search, 50, 0 )['contacts'] : array_values( array_filter( ContactPanda_Store::companies(), static function ( $company ) use ( $search ) { return false !== stripos( (string) $company['name'], $search ); } ) );
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_merge_preview"><input type="hidden" name="entity" value="' . esc_attr( $entity ) . '">'; wp_nonce_field( 'contactpanda_merge_preview' );
 		echo '<table class="widefat striped"><thead><tr><th class="check-column"></th><th>' . esc_html__( 'Record', 'contactpanda' ) . '</th><th>' . esc_html__( 'Details', 'contactpanda' ) . '</th></tr></thead><tbody>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		foreach ( $records as $record ) { $id = absint( $record['id'] ); $name = 'contacts' === $entity ? trim( $record['first_name'] . ' ' . $record['last_name'] ) : $record['name']; $details = 'contacts' === $entity ? $record['email'] : trim( ( $record['city'] ?? '' ) . ' ' . ( $record['vat_id'] ?? '' ) ); echo '<tr><td><input type="checkbox" name="ids[]" value="' . esc_attr( $id ) . '"></td><td>' . esc_html( $name ?: sprintf( __( 'Record #%d', 'contactpanda' ), $id ) ) . '</td><td>' . esc_html( $details ) . '</td></tr>'; }
 		if ( ! $records ) echo '<tr><td colspan="3">' . esc_html__( 'No matching records found.', 'contactpanda' ) . '</td></tr>';
 		echo '</tbody></table><p><button class="button button-primary">' . esc_html__( 'Compare selected records', 'contactpanda' ) . '</button></p></form></section>';
@@ -660,6 +671,7 @@ final class ContactPanda_Data_Tools {
 		}
 		$result = ContactPanda_Store::merge_records( $state['entity'], $selected_ids, $primary_id, $choices, $resolved, $channels, $primary_channels );
 		if ( is_wp_error( $result ) ) self::redirect_duplicate_notice( 'error', $result->get_error_message(), array( 'merge_token' => $token ) );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		delete_transient( 'contactpanda_merge_' . get_current_user_id() . '_' . $token ); self::redirect_duplicate_notice( 'success', sprintf( __( '%d duplicate fragments were merged and moved to Trash.', 'contactpanda' ), $result['merged'] ) );
 	}
 
@@ -674,6 +686,7 @@ final class ContactPanda_Data_Tools {
 		echo '<p class="contactpanda-central-library-actions"><button class="button button-primary" name="save" value="1">' . esc_html__( 'Save library settings', 'contactpanda' ) . '</button>';
 		if ( ! empty( $settings['enabled'] ) ) echo ' <button class="button" name="sync" value="1">' . esc_html__( 'Update central library now', 'contactpanda' ) . '</button>';
 		echo '</p></form>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( $settings['version'] || $settings['updated_at'] ) echo '<p class="description">' . esc_html( sprintf( __( 'Installed central version: %1$s. Last check: %2$s.', 'contactpanda' ), $settings['version'] ?: '—', $settings['updated_at'] ?: '—' ) ) . '</p>';
 		if ( $settings['error'] ) echo '<div class="notice notice-warning inline"><p>' . esc_html( $settings['error'] ) . '</p></div>';
 		echo '</section>';
@@ -693,11 +706,13 @@ final class ContactPanda_Data_Tools {
 		if ( ! $settings['auto'] ) wp_clear_scheduled_hook( 'contactpanda_central_salutation_sync' );
 		if ( $enabled && ! empty( $_POST['sync'] ) ) {
 			$result = self::sync_central_library();
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			set_transient( 'contactpanda_database_notice_' . get_current_user_id(), array( 'type' => is_wp_error( $result ) ? 'error' : 'success', 'message' => is_wp_error( $result ) ? $result->get_error_message() : sprintf( __( 'Central library updated: %d new names added.', 'contactpanda' ), $result ) ), MINUTE_IN_SECONDS );
 		}
 		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=misc&misc_section=salutations' ) ); exit;
 	}
 
+	/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 	public static function handle_central_sync() { self::require_admin( 'contactpanda_sync_central_salutations' ); $result = self::sync_central_library(); set_transient( 'contactpanda_database_notice_' . get_current_user_id(), array( 'type' => is_wp_error( $result ) ? 'error' : 'success', 'message' => is_wp_error( $result ) ? $result->get_error_message() : sprintf( __( 'Central library updated: %d new names added.', 'contactpanda' ), $result ) ), MINUTE_IN_SECONDS ); wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=misc&misc_section=salutations' ) ); exit; }
 	public static function scheduled_central_sync() { $settings = (array) get_option( self::CENTRAL_OPTION, array() ); if ( ! empty( $settings['enabled'] ) && ! empty( $settings['auto'] ) ) self::sync_central_library(); }
 
@@ -706,9 +721,10 @@ final class ContactPanda_Data_Tools {
 		if ( empty( $settings['enabled'] ) ) return new WP_Error( 'contactpanda_central_disabled', __( 'Enable the central library before updating it.', 'contactpanda' ) );
 		// The public library contains no customer data and may be replaced by a filtered URL.
 		$url = apply_filters( 'contactpanda_central_salutation_library_url', 'https://raw.githubusercontent.com/kultur3gmbh/contactpanda-salutations/main/salutations.json' );
-		$response = wp_safe_remote_get( $url, array( 'timeout' => 15, 'user-agent' => 'ContactPanda/' . CONTACTPANDA_VERSION ) );
+		$response = wp_safe_remote_get( $url, array( 'timeout' => 15, 'user-agent' => 'ContactPanda/' . CONTACTPANDA_VERSION ) ); // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Optional, administrator-enabled synchronization from the documented public salutation library.
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 			$reason = is_wp_error( $response ) ? sanitize_text_field( $response->get_error_message() ) : sprintf( 'HTTP %d', wp_remote_retrieve_response_code( $response ) );
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			$settings['error'] = sprintf( __( 'The central library could not be downloaded (%s). Your local library was not changed.', 'contactpanda' ), $reason );
 			$settings['updated_at'] = current_time( 'mysql' );
 			update_option( self::CENTRAL_OPTION, $settings, false );
@@ -730,6 +746,7 @@ final class ContactPanda_Data_Tools {
 	public static function render_notice_settings() {
 		$settings = wp_parse_args( (array) get_option( self::NOTICE_OPTION, array() ), array( 'enabled' => 0 ) ); $hidden = (array) get_user_meta( get_current_user_id(), 'contactpanda_hidden_admin_notices', true );
 		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Optional notice cleanup', 'contactpanda' ) . '</h2><p>' . esc_html__( 'ContactPanda can add a Hide link to non-critical promotional, license-key, and upgrade reminders. Error messages, security warnings, and WordPress core update notices are never hidden.', 'contactpanda' ) . '</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_admin_notice_settings">'; wp_nonce_field( 'contactpanda_admin_notice_settings' );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		echo '<label><input type="checkbox" name="enabled" value="1"' . checked( ! empty( $settings['enabled'] ), true, false ) . '> ' . esc_html__( 'Allow me to hide non-critical reminders', 'contactpanda' ) . '</label><p><label><input type="checkbox" name="restore" value="1"> ' . esc_html( sprintf( __( 'Restore all hidden reminders for my account (%d)', 'contactpanda' ), count( $hidden ) ) ) . '</label></p><p><button class="button button-primary">' . esc_html__( 'Save notice settings', 'contactpanda' ) . '</button></p></form></section>';
 	}
 

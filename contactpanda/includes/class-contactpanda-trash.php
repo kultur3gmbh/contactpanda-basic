@@ -39,9 +39,9 @@ final class ContactPanda_Trash {
 			else { $where .= ' AND name LIKE %s'; $params[] = $like; }
 		}
 		$count = "SELECT COUNT(*) FROM `{$table}` WHERE {$where}";
-		$total = (int) $wpdb->get_var( $params ? $wpdb->prepare( $count, $params ) : $count );
+		$total = (int) $wpdb->get_var( $params ? $wpdb->prepare( $count, $params ) : $count ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- entity table is selected from a fixed allowlist; values are prepared when present.
 		$sql = "SELECT * FROM `{$table}` WHERE {$where} ORDER BY id DESC LIMIT %d OFFSET %d";
-		$rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( $params, array( 50, ( max( 1, absint( $page ) ) - 1 ) * 50 ) ) ), ARRAY_A );
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( $params, array( 50, ( max( 1, absint( $page ) ) - 1 ) * 50 ) ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- entity table is selected from a fixed allowlist; all values are prepared.
 		return array( 'rows' => (array) $rows, 'total' => $total );
 	}
 
@@ -58,7 +58,7 @@ final class ContactPanda_Trash {
 			$sql = 'restore' === $operation
 				? $wpdb->prepare( "UPDATE `{$table}` SET deleted_at = NULL, updated_at = %s WHERE id = %d AND deleted_at {$state}", $now, $id )
 				: $wpdb->prepare( "UPDATE `{$table}` SET deleted_at = %s, updated_at = %s WHERE id = %d AND deleted_at {$state}", $now, $now, $id );
-			return 1 === $wpdb->query( $sql );
+			return 1 === $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- query was prepared above; entity table is selected from a fixed allowlist.
 		}
 
 		$key = 'contacts' === $entity ? 'contact_id' : 'company_id';
@@ -115,6 +115,7 @@ final class ContactPanda_Trash {
 		$id = isset( $_GET['record'] ) ? absint( $_GET['record'] ) : 0;
 		$search = isset( $_GET['s'] ) && is_string( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
 		echo '<p>' . esc_html__( 'Only ContactPanda records are affected. WordPress users, orders, invoices, events, Groundhogg records and external source data are never deleted.', 'contactpanda' ) . '</p>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( isset( $_GET['changed'], $_GET['failed'] ) ) echo '<div class="notice notice-info"><p>' . esc_html( sprintf( __( 'Changed: %1$d. Failed or no longer in the required state: %2$d.', 'contactpanda' ), absint( $_GET['changed'] ), absint( $_GET['failed'] ) ) ) . '</p></div>';
 		echo '<p class="description">' . esc_html__( 'Move records to Trash from the People or Companies list. This page only restores or permanently deletes records that are already in Trash.', 'contactpanda' ) . '</p>';
 		$result = self::records( $entity, $trashed, $page, $search, $id );

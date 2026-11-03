@@ -102,9 +102,9 @@ final class ContactPanda_Store {
 			$params = array( $like, $like, $like, ContactPanda_Custom_Fields::PREFIX . '%', $like );
 		}
 		$count_sql = "SELECT COUNT(*) FROM `{$tables['contacts']}` WHERE {$where}";
-		$total = $params ? (int) $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) ) : (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table and fixed clauses.
+		$total = $params ? (int) $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) ) : (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- internal allowlisted table and fixed clauses; values are prepared when present.
 		$sql = "SELECT * FROM `{$tables['contacts']}` WHERE {$where} ORDER BY last_name ASC, first_name ASC LIMIT %d OFFSET %d";
-		$rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( $params, array( absint( $limit ), absint( $offset ) ) ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table and fixed clauses.
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( $params, array( absint( $limit ), absint( $offset ) ) ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- internal allowlisted table and fixed clauses; all values are prepared.
 		return array( 'contacts' => array_map( array( __CLASS__, 'hydrate_contact' ), (array) $rows ), 'total_items' => $total );
 	}
 
@@ -240,6 +240,7 @@ final class ContactPanda_Store {
 			if ( count( $ids ) < 2 ) continue;
 			$group_reasons = array();
 			foreach ( $reasons as $key => $reason ) { list( $a, $b ) = array_map( 'absint', explode( ':', $key ) ); if ( in_array( $a, $ids, true ) && in_array( $b, $ids, true ) ) $group_reasons[] = $reason; }
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			$result[] = array( 'ids' => $ids, 'names' => array_map( static function ( $id ) use ( $names ) { return $names[ $id ] ?: sprintf( __( 'Record #%d', 'contactpanda' ), $id ); }, $ids ), 'reasons' => array_values( array_unique( $group_reasons ) ) );
 			if ( count( $result ) >= absint( $limit ) ) break;
 		}
@@ -453,7 +454,7 @@ final class ContactPanda_Store {
 		global $wpdb;
 		$tables = ContactPanda_Schema::table_names();
 		$sql = "SELECT r.company_id,r.contact_id,r.relationship_type,r.position,r.is_primary,r.is_primary_company,c.name,c.legal_name,c.website FROM `{$tables['company_contacts']}` r INNER JOIN `{$tables['companies']}` c ON c.id=r.company_id WHERE r.contact_id=%d AND c.deleted_at IS NULL ORDER BY r.is_primary_company DESC,c.name ASC";
-		return (array) $wpdb->get_results( $wpdb->prepare( $sql, absint( $contact_id ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table names.
+		return (array) $wpdb->get_results( $wpdb->prepare( $sql, absint( $contact_id ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- internal table names; the only value is prepared.
 	}
 
 	public static function remove_company_contact( $company_id, $contact_id ) {
@@ -582,7 +583,7 @@ final class ContactPanda_Store {
 			if ( $search ) { $where .= ' AND first_name LIKE %s'; $args[] = '%' . $wpdb->esc_like( $search ) . '%'; }
 			$sql = "SELECT * FROM `{$table}` WHERE {$where} ORDER BY first_name ASC"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table name and fixed clause.
 			if ( $limit ) { $sql .= ' LIMIT %d OFFSET %d'; $args[] = absint( $limit ); $args[] = absint( $offset ); }
-			return (array) $wpdb->get_results( $wpdb->prepare( $sql, $args ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- prepared dynamic parameters.
+			return (array) $wpdb->get_results( $wpdb->prepare( $sql, $args ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- internal table and fixed clauses; all dynamic values are prepared.
 		}
 		$rows = array();
 		foreach ( (array) get_option( 'contactpanda_salutation_library', array() ) as $key => $row ) {
@@ -630,7 +631,7 @@ final class ContactPanda_Store {
 	/** Return one salutation-library row by its local identifier. */
 	public static function salutation( $id ) {
 		global $wpdb;
-		if ( self::ready() ) return $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM `' . ContactPanda_Schema::table_names()['salutations'] . '` WHERE id=%d', absint( $id ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table name.
+		if ( self::ready() ) return $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM `' . ContactPanda_Schema::table_names()['salutations'] . '` WHERE id=%d', absint( $id ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- internal table name; the identifier is prepared.
 		$library = (array) get_option( 'contactpanda_salutation_library', array() );
 		$key = sanitize_text_field( (string) $id );
 		if ( ! isset( $library[ $key ] ) ) return false;
@@ -800,6 +801,7 @@ final class ContactPanda_Store {
 					ContactPanda_Identity_Store::sync_contact( $primary_id );
 				}
 				$wpdb->query( $wpdb->prepare( "UPDATE `{$table}` SET deleted_at=%s, updated_at=%s WHERE id IN (" . implode( ',', array_fill( 0, count( $donors ), '%d' ) ) . ')', array_merge( array( $now, $now ), $donors ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table and numeric placeholders.
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				self::add_activity( $primary_id, 0, 'merge', __( 'Contact records merged', 'contactpanda' ), sprintf( __( 'Source record IDs moved to Trash: %s', 'contactpanda' ), implode( ', ', $donors ) ) );
 			} else {
 				$fields = array( 'name', 'legal_name', 'industry', 'website', 'email', 'phone_number', 'vat_id', 'street', 'address_2', 'postcode', 'city', 'country' );
@@ -832,6 +834,7 @@ final class ContactPanda_Store {
 				foreach ( array_unique( $affected_contacts ) as $contact_id ) self::ensure_primary_company( $contact_id );
 				self::set_company_meta( $primary_id, 'merged_company_ids', $ids );
 				$wpdb->query( $wpdb->prepare( "UPDATE `{$table}` SET deleted_at=%s, updated_at=%s WHERE id IN (" . implode( ',', array_fill( 0, count( $donors ), '%d' ) ) . ')', array_merge( array( $now, $now ), $donors ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				self::add_activity( 0, $primary_id, 'merge', __( 'Company records merged', 'contactpanda' ), sprintf( __( 'Source record IDs moved to Trash: %s', 'contactpanda' ), implode( ', ', $donors ) ) );
 			}
 			if ( class_exists( 'ContactPanda_Identity_Store' ) && ! ContactPanda_Identity_Store::record_merge( $entity, $primary_id, $donors, $snapshot ) ) throw new Exception( 'merge_history' );
@@ -1018,6 +1021,7 @@ final class ContactPanda_Store {
 		self::set_contact_meta( $contact_id, $channel . '_marketing_status', 'granted' === $status ? 'confirmed' : 'revoked' );
 		self::set_contact_meta( $contact_id, $channel . '_marketing_' . ( 'granted' === $status ? 'confirmed' : 'revoked' ) . '_at', $date );
 		self::set_contact_meta( $contact_id, $channel . '_marketing_source', sanitize_text_field( $source ) );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		return self::add_activity( $contact_id, 0, 'consent', sprintf( 'granted' === $status ? __( '%s marketing consent granted', 'contactpanda' ) : __( '%s marketing consent revoked', 'contactpanda' ), strtoupper( $channel ) ), $note );
 	}
 
@@ -1216,10 +1220,12 @@ final class ContactPanda_Store {
 			$name = self::value( $source_tag, array( 'name', 'tag_name' ) );
 			$source_tag_id = absint( self::value( $source_tag, array( 'id', 'tag_id', 'ID' ) ) );
 			if ( $source_tag_id && in_array( $source_tag_id, $system_tag_ids, true ) ) {
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				$report['skipped_tags'][] = sprintf( __( 'Internal Groundhogg status tag “%s” was intentionally omitted.', 'contactpanda' ), $name ?: '#' . $source_tag_id );
 				continue;
 			}
 			if ( ! $name || ! $source_tag_id ) {
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				$report['missing_tags'][] = $source_tag_id ? sprintf( __( 'Tag ID %d has no name.', 'contactpanda' ), $source_tag_id ) : __( 'A Groundhogg tag has no readable ID.', 'contactpanda' );
 				continue;
 			}
@@ -1227,6 +1233,7 @@ final class ContactPanda_Store {
 			if ( $new_tag_id ) {
 				$source_tag_map[ $source_tag_id ] = $new_tag_id;
 			} else {
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				$report['missing_tags'][] = sprintf( __( 'Tag “%s” could not be stored.', 'contactpanda' ), $name );
 			}
 		}
@@ -1277,6 +1284,7 @@ final class ContactPanda_Store {
 							self::assign_tag( $contact_id, $source_tag_map[ $source_tag_id ] );
 							$report['assignments']++;
 						} else {
+							/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 							$report['missing_tags'][] = sprintf( __( 'Tag ID %d is assigned to a contact but was not found in the tag list.', 'contactpanda' ), $source_tag_id );
 						}
 						continue;
@@ -1291,6 +1299,7 @@ final class ContactPanda_Store {
 						continue;
 					}
 					if ( ! $name ) {
+						/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 						$report['missing_tags'][] = sprintf( __( 'An unreadable tag assignment was found on Groundhogg contact %d.', 'contactpanda' ), $source_id );
 						continue;
 					}

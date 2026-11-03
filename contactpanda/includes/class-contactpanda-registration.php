@@ -390,6 +390,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Salutation library', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Saved assignments are applied automatically when the same first name is entered again. A manually selected salutation updates the library.', 'contactpanda' ) . '</p><p class="description"><strong>' . esc_html__( 'Last central synchronization:', 'contactpanda' ) . '</strong> ' . esc_html( $last_sync ) . '</p>';
 		echo '<form method="get" class="contactpanda-search"><input type="hidden" name="page" value="contactpanda-settings"><input type="hidden" name="tab" value="misc"><input type="hidden" name="misc_section" value="salutations"><select name="library_language" aria-label="' . esc_attr__( 'Language', 'contactpanda' ) . '">'; foreach ( array( 'de' => 'Deutsch', 'en' => 'English', 'fr' => 'Français', 'es' => 'Español', 'it' => 'Italiano' ) as $code => $label ) echo '<option value="' . esc_attr( $code ) . '"' . selected( $language, $code, false ) . '>' . esc_html( $label ) . '</option>'; echo '</select><input type="search" name="salutation_search" value="' . esc_attr( $search ) . '" placeholder="' . esc_attr__( 'Search first names', 'contactpanda' ) . '"><button class="button">' . esc_html__( 'Apply', 'contactpanda' ) . '</button></form>';
 		$bulk = get_transient( 'contactpanda_salutation_bulk_' . get_current_user_id() );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( is_array( $bulk ) ) { delete_transient( 'contactpanda_salutation_bulk_' . get_current_user_id() ); echo '<div class="notice notice-info inline"><p>' . esc_html( $bulk['applied'] ? sprintf( __( '%d missing salutations were assigned.', 'contactpanda' ), absint( $bulk['count'] ) ) : sprintf( __( '%d contacts can be assigned from the library. Confirm to apply the changes.', 'contactpanda' ), absint( $bulk['count'] ) ) ) . '</p></div>'; }
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-settings-grid"><input type="hidden" name="action" value="contactpanda_salutation_dictionary"><input type="hidden" name="operation" value="save"><input type="hidden" name="original_id" value="' . esc_attr( $edit_id ) . '"><input type="hidden" name="language" value="' . esc_attr( $language ) . '">'; wp_nonce_field( 'contactpanda_salutation_dictionary' );
 		echo '<label><span>' . esc_html__( 'First name', 'contactpanda' ) . '</span><input required name="first_name" value="' . esc_attr( $editing['first_name'] ?? '' ) . '"></label><label><span>' . esc_html__( 'Salutation', 'contactpanda' ) . '</span><select name="salutation" required><option value="">' . esc_html__( '--- Please select ---', 'contactpanda' ) . '</option><option value="mr"' . selected( $editing['salutation'] ?? '', 'mr', false ) . '>' . esc_html__( 'Mr', 'contactpanda' ) . '</option><option value="ms"' . selected( $editing['salutation'] ?? '', 'ms', false ) . '>' . esc_html__( 'Ms', 'contactpanda' ) . '</option><option value="family"' . selected( $editing['salutation'] ?? '', 'family', false ) . '>' . esc_html__( 'Family', 'contactpanda' ) . '</option><option value="neutral"' . selected( $editing['salutation'] ?? '', 'neutral', false ) . '>' . esc_html__( 'Neutral', 'contactpanda' ) . '</option></select></label><p><button class="button button-primary">' . ( $editing ? esc_html__( 'Save changes', 'contactpanda' ) : esc_html__( 'Add entry', 'contactpanda' ) ) . '</button>' . ( $editing ? ' <a class="button" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-settings&tab=misc&misc_section=salutations' ) ) . '">' . esc_html__( 'Cancel', 'contactpanda' ) . '</a>' : '' ) . '</p></form>';
@@ -403,6 +404,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		}
 		if ( ! $rows ) echo '<tr><td colspan="4">' . esc_html__( 'The dictionary is empty.', 'contactpanda' ) . '</td></tr>';
 		echo '</tbody></table>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( $total_rows > $per_page ) { $base = array( 'page' => 'contactpanda-settings', 'tab' => 'misc', 'misc_section' => 'salutations', 'library_language' => $language, 'salutation_search' => $search ); echo '<div class="tablenav"><div class="tablenav-pages">'; if ( $page > 1 ) echo '<a class="button" href="' . esc_url( add_query_arg( array_merge( $base, array( 'salutation_page' => $page - 1 ) ), admin_url( 'admin.php' ) ) ) . '">' . esc_html__( 'Previous', 'contactpanda' ) . '</a>'; echo '<span>' . esc_html( sprintf( __( 'Page %1$d of %2$d', 'contactpanda' ), $page, (int) ceil( $total_rows / $per_page ) ) ) . '</span>'; if ( $page * $per_page < $total_rows ) echo '<a class="button" href="' . esc_url( add_query_arg( array_merge( $base, array( 'salutation_page' => $page + 1 ) ), admin_url( 'admin.php' ) ) ) . '">' . esc_html__( 'Next', 'contactpanda' ) . '</a>'; echo '</div></div>'; }
 		echo '<div class="contactpanda-database-actions"><a class="button" href="' . esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=contactpanda_export_salutations&language=' . $language ), 'contactpanda_export_salutations' ) ) . '">' . esc_html__( 'Export CSV', 'contactpanda' ) . '</a>';
 		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_salutation_dictionary"><input type="hidden" name="operation" value="import"><input type="hidden" name="language" value="' . esc_attr( $language ) . '">'; wp_nonce_field( 'contactpanda_salutation_dictionary' );
@@ -571,6 +573,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		echo '<form method="post" action="options.php">';
 		settings_fields( 'contactpanda_general' );
 		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Customer portal', 'contactpanda' ) . '</h2><p>' . esc_html__( 'ContactPanda provides a theme-compatible portal automatically. Choose a page only if you want to embed the portal at a custom address.', 'contactpanda' ) . '</p><div class="contactpanda-setting-row"><strong>' . esc_html__( 'Built-in customer portal', 'contactpanda' ) . '</strong><p><a class="button" href="' . esc_url( ContactPanda_Customer_Portal::portal_url() ) . '" target="_blank" rel="noopener">' . esc_html__( 'View customer portal', 'contactpanda' ) . '</a></p></div><label class="contactpanda-setting-row"><span><strong>' . esc_html__( 'Optional custom portal page', 'contactpanda' ) . '</strong></span>';
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
 		wp_dropdown_pages( array( 'name' => self::GENERAL_OPTION . '[portal_page_id]', 'selected' => absint( $settings['portal_page_id'] ?? 0 ), 'show_option_none' => __( 'Select a page', 'contactpanda' ), 'option_none_value' => 0 ) );
 		echo '</label><p class="description"><code>[contactpanda_customer_portal]</code></p>';
 		submit_button( __( 'Save portal settings', 'contactpanda' ) );
@@ -587,6 +590,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		echo '<label class="contactpanda-source-option' . ( $standalone_ready ? '' : ' is-disabled' ) . '"><input type="radio" name="' . esc_attr( self::GENERAL_OPTION ) . '[data_source]" value="standalone"' . checked( 'standalone', $settings['data_source'], false ) . ( $standalone_ready ? '' : ' disabled' ) . '><span><strong>' . esc_html__( 'ContactPanda database', 'contactpanda' ) . '</strong><small>' . esc_html__( 'ContactPanda stores independent changes in its own database. Groundhogg remains unchanged. A later reverse migration to Groundhogg is not provided.', 'contactpanda' ) . '</small></span></label>';
 		if ( $groundhogg ) echo '<label class="contactpanda-source-option"><input type="radio" name="' . esc_attr( self::GENERAL_OPTION ) . '[data_source]" value="groundhogg"' . checked( 'groundhogg', $settings['data_source'], false ) . '><span><strong>' . esc_html__( 'Groundhogg frontend mode', 'contactpanda' ) . '</strong><small>' . esc_html__( 'Groundhogg remains the leading system. Changes made through ContactPanda are written directly to Groundhogg.', 'contactpanda' ) . '</small></span></label>';
 		elseif ( 'groundhogg' === $settings['data_source'] ) echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'Groundhogg is configured as the data source but is currently inactive. ContactPanda has not switched the data source automatically.', 'contactpanda' ) . '</p></div>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		echo '</div><p class="description">' . esc_html( sprintf( __( '%1$d of %2$d ContactPanda database tables are present. Schema version: %3$s.', 'contactpanda' ), $schema['count'], $schema['total'], $schema['version'] ?: __( 'unknown', 'contactpanda' ) ) ) . '</p>';
 		submit_button( __( 'Save data source', 'contactpanda' ) ); echo '</section></form>';
 	}
@@ -687,7 +691,9 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		$preview = (array) get_transient( 'contactpanda_wordpress_user_preview_' . get_current_user_id() );
 		$report  = (array) get_option( 'contactpanda_last_wordpress_user_migration_report', array() );
 		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Match WordPress users', 'contactpanda' ) . '</h2><p>' . esc_html__( 'All WordPress users with a valid email address are matched to ContactPanda people. Existing values are preserved; only missing names, addresses, and telephone numbers are completed. Ambiguous links are skipped and reported.', 'contactpanda' ) . '</p>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( $preview ) echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Import preview', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( __( '%1$d users found: %2$d new people, %3$d existing people to link, and %4$d already linked. No data has been changed yet.', 'contactpanda' ), absint( $preview['found'] ?? 0 ), absint( $preview['new'] ?? 0 ), absint( $preview['updated'] ?? 0 ), absint( $preview['linked'] ?? 0 ) ) ) . '</p></div>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( $report ) echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Last import', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( __( '%1$d new, %2$d updated, %3$d linked, %4$d skipped, %5$d conflicts, %6$d errors. Completed: %7$s', 'contactpanda' ), absint( $report['new'] ?? 0 ), absint( $report['updated'] ?? 0 ), absint( $report['linked'] ?? 0 ), absint( $report['skipped'] ?? 0 ), absint( $report['conflicts'] ?? 0 ), absint( $report['errors'] ?? 0 ), sanitize_text_field( $report['completed_at'] ?? '' ) ) ) . '</p></div>';
 		echo '<div class="contactpanda-database-actions">';
 		self::wordpress_user_import_form( 'preview', __( 'Preview matching', 'contactpanda' ), 'button-secondary' );
@@ -749,6 +755,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		}
 		delete_transient( 'contactpanda_wordpress_user_preview_' . get_current_user_id() );
 		update_option( 'contactpanda_last_wordpress_user_migration_report', $report, false );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		self::database_redirect( 'success', sprintf( __( 'WordPress user matching completed at %1$s: %2$d new, %3$d updated, %4$d already linked, %5$d conflicts.', 'contactpanda' ), $report['completed_at'], $report['new'], $report['updated'], $report['linked'], $report['conflicts'] ) );
 	}
 
@@ -781,6 +788,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		$preview = get_transient( 'contactpanda_woocommerce_import_' . get_current_user_id() );
 		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Import WooCommerce customers', 'contactpanda' ) . '</h2><p>' . esc_html__( 'ContactPanda can merge customer profiles from WooCommerce into the ContactPanda database using the email address as the unique key. Orders, invoices, prices, and WooCommerce data remain unchanged.', 'contactpanda' ) . '</p>';
 		if ( $preview ) {
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Pre-import information', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( __( '%1$d unique customers found: %2$d new and %3$d already present. This information has not changed any data.', 'contactpanda' ), absint( $preview['found'] ?? 0 ), absint( $preview['new'] ?? 0 ), absint( $preview['updated'] ?? 0 ) ) ) . '</p></div>';
 		}
 		echo '<div class="contactpanda-database-actions">';
@@ -830,7 +838,9 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		$preview = (array) get_transient( 'contactpanda_fluentcrm_preview_' . get_current_user_id() );
 		$report = (array) get_option( 'contactpanda_last_fluentcrm_migration_report', array() );
 		echo '<p>' . esc_html__( 'Contacts are matched first by their FluentCRM source ID and then by email address. Existing unsubscribe, bounce, and complaint states always take precedence. The FluentCRM database remains unchanged.', 'contactpanda' ) . '</p>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( $preview ) echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Import preview', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( __( '%1$d contacts found: %2$d new, %3$d already present, and %4$d without a usable email address. No data has been changed yet.', 'contactpanda' ), absint( $preview['found'] ?? 0 ), absint( $preview['new'] ?? 0 ), absint( $preview['updated'] ?? 0 ), absint( $preview['skipped'] ?? 0 ) ) ) . '</p></div>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( $report ) echo '<p><strong>' . esc_html__( 'Last import:', 'contactpanda' ) . '</strong> ' . esc_html( sprintf( __( '%1$d new, %2$d updated, %3$d skipped, %4$d errors. Completed: %5$s', 'contactpanda' ), absint( $report['new'] ?? 0 ), absint( $report['updated'] ?? 0 ), absint( $report['skipped'] ?? 0 ), absint( $report['errors'] ?? 0 ), sanitize_text_field( $report['completed_at'] ?? '' ) ) ) . '</p>';
 		echo '<div class="contactpanda-database-actions">';
 		self::fluentcrm_import_form( 'preview', __( 'Preview import', 'contactpanda' ), 'button-secondary' );
@@ -860,10 +870,14 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		$report = (array) get_option( 'contactpanda_last_newsletter_plugin_migration_report', array() );
 		$preview = (array) get_transient( 'contactpanda_newsletter_plugin_preview_' . get_current_user_id() );
 		echo '<p>' . esc_html__( 'Subscribers are matched by email address. Historical mailings and available statistics are imported as read-only archives by ContactPanda Plus. Unsubscribed and bounced states take precedence and are never changed into a marketing consent by the import.', 'contactpanda' ) . '</p>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( $preview ) echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Import preview', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( __( '%1$d subscribers, %2$d reusable email sources, and %3$d historical mailings were found. No data has been changed yet.', 'contactpanda' ), absint( $preview['subscribers'] ?? 0 ), absint( $preview['templates'] ?? 0 ), absint( $preview['mailings'] ?? 0 ) ) ) . '</p></div>';
 		if ( $report ) {
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			echo '<p><strong>' . esc_html__( 'Last import:', 'contactpanda' ) . '</strong> ' . esc_html( sprintf( __( '%1$d new, %2$d updated, %3$d templates, %4$d mailings, %5$d skipped, %6$d errors. Completed: %7$s', 'contactpanda' ), absint( $report['new'] ?? 0 ), absint( $report['updated'] ?? 0 ), absint( $report['templates'] ?? 0 ), absint( $report['mailings'] ?? 0 ), absint( $report['skipped'] ?? 0 ), absint( $report['errors'] ?? 0 ), sanitize_text_field( $report['completed_at'] ?? '' ) ) ) . '</p>';
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			if ( isset( $report['mailing_recipients'] ) ) echo '<p>' . esc_html( sprintf( __( '%d historical recipient assignments were imported and linked to matching people.', 'contactpanda' ), absint( $report['mailing_recipients'] ) ) ) . '</p>';
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			if ( isset( $report['editable_blocks'] ) ) echo '<p>' . esc_html( sprintf( __( '%1$d editable content blocks were created; %2$d source fragments required an HTML fallback.', 'contactpanda' ), absint( $report['editable_blocks'] ), absint( $report['html_fallbacks'] ?? 0 ) ) ) . '</p>';
 		}
 		echo '<div class="contactpanda-database-actions">';
@@ -948,6 +962,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		$report['completed_at'] = current_time( 'mysql' );
 		update_option( 'contactpanda_last_newsletter_plugin_migration_report', $report, false );
 		self::store_migration_progress( array( 'stage' => __( 'Migration completed.', 'contactpanda' ), 'processed' => count( $rows ), 'total' => count( $rows ), 'percent' => 100 ) );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		self::database_redirect( 'success', sprintf( __( 'Newsletter subscriber import completed: %1$d new contacts, %2$d updated contacts, %3$d skipped.', 'contactpanda' ), $report['new'], $report['updated'], $report['skipped'] ) );
 	}
 
@@ -1036,6 +1051,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		}
 		delete_transient( 'contactpanda_fluentcrm_preview_' . get_current_user_id() );
 		update_option( 'contactpanda_last_fluentcrm_migration_report', $report, false );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		self::database_redirect( 'success', sprintf( __( 'FluentCRM import completed: %1$d new contacts, %2$d updated contacts, %3$d skipped.', 'contactpanda' ), $report['new'], $report['updated'], $report['skipped'] ), 'fluentcrm' );
 	}
 
@@ -1064,6 +1080,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			$names = array_values( $group['names'] );
 			$primary = array_shift( $names );
 			echo '<tr><td><strong>' . esc_html( $primary ) . '</strong>' . ( $names ? '<br><span class="contactpanda-muted">' . esc_html( implode( ', ', $names ) ) . '</span>' : '' ) . '</td><td>' . esc_html( implode( ', ', $group['reasons'] ) ) . '</td><td><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-duplicate-selection"><input type="hidden" name="action" value="contactpanda_merge_group">';
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			foreach ( $group['ids'] as $index => $id ) echo '<label><input type="checkbox" name="ids[]" value="' . esc_attr( $id ) . '" checked> ' . esc_html( $group['names'][ $index ] ?: sprintf( __( 'Record #%d', 'contactpanda' ), $id ) ) . ' <small>#' . esc_html( $id ) . '</small></label>';
 			wp_nonce_field( 'contactpanda_merge_group' ); echo '<p class="description">' . esc_html__( 'Select only the records that should be combined. At least two are required.', 'contactpanda' ) . '</p><button class="button">' . esc_html__( 'Edit duplicates', 'contactpanda' ) . '</button></form></td></tr>';
 		}
@@ -1072,6 +1089,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			$base = array( 'page' => 'contactpanda-settings', 'tab' => 'other', 'other_section' => 'duplicates', 'duplicate_search' => $search );
 			echo '<div class="tablenav"><div class="tablenav-pages">';
 			if ( $page > 1 ) echo '<a class="button" href="' . esc_url( add_query_arg( array_merge( $base, array( 'duplicate_page' => $page - 1 ) ), admin_url( 'admin.php' ) ) ) . '">' . esc_html__( 'Previous', 'contactpanda' ) . '</a>';
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			echo '<span>' . esc_html( sprintf( __( 'Page %1$d of %2$d', 'contactpanda' ), $page, (int) ceil( $total / $per_page ) ) ) . '</span>';
 			if ( $page * $per_page < $total ) echo '<a class="button" href="' . esc_url( add_query_arg( array_merge( $base, array( 'duplicate_page' => $page + 1 ) ), admin_url( 'admin.php' ) ) ) . '">' . esc_html__( 'Next', 'contactpanda' ) . '</a>';
 			echo '</div></div>';
@@ -1119,6 +1137,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			$sent_column = in_array( 'sent', $columns, true ) ? 'sent' : ( in_array( 'total', $columns, true ) ? 'total' : '0' );
 			$rows = (array) $wpdb->get_results( "SELECT id, `{$title_column}` AS title, {$sent_column} AS sent FROM `{$email_table}` ORDER BY id DESC LIMIT 20", ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
 			echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Mailing', 'contactpanda' ) . '</th><th>' . esc_html__( 'Delivered', 'contactpanda' ) . '</th></tr></thead><tbody>';
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			foreach ( $rows as $row ) echo '<tr><td>' . esc_html( $row['title'] ?: sprintf( __( 'Mailing #%d', 'contactpanda' ), $row['id'] ) ) . '</td><td>' . esc_html( absint( $row['sent'] ) ) . '</td></tr>';
 			if ( ! $rows ) echo '<tr><td colspan="2">' . esc_html__( 'No previous mailings were found.', 'contactpanda' ) . '</td></tr>';
 			echo '</tbody></table>';
@@ -1179,6 +1198,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		delete_transient( 'contactpanda_woocommerce_import_' . get_current_user_id() );
 		$result['completed_at'] = current_time( 'mysql' );
 		update_option( 'contactpanda_last_woocommerce_migration_report', $result, false );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		self::database_redirect( 'success', sprintf( __( 'WooCommerce import completed at %1$s: %2$d new contacts, %3$d updated contacts, %4$d new companies, %5$d skipped.', 'contactpanda' ), $result['completed_at'], absint( $result['new'] ), absint( $result['updated'] ), absint( $result['companies'] ), absint( $result['skipped'] ) ) );
 	}
 
@@ -1187,10 +1207,12 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		$name = $theme->get( 'Name' ) ? $theme->get( 'Name' ) : $theme->get_stylesheet();
 		$active = ! empty( $settings['theme_styles'] );
 		echo '<section class="contactpanda-card contactpanda-settings-card contactpanda-theme-settings"><h2>' . esc_html__( 'Appearance', 'contactpanda' ) . '</h2>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		echo '<div class="contactpanda-active-theme"><span><strong>' . esc_html__( 'Active theme', 'contactpanda' ) . '</strong><small>' . esc_html( $name ) . '</small></span><span class="contactpanda-status-badge is-positive">' . ( $active ? esc_html( sprintf( __( '%s theme style', 'contactpanda' ), $name ) ) : esc_html__( 'ContactPanda style', 'contactpanda' ) ) . '</span></div>';
 		echo '<p class="description">' . esc_html__( 'ContactPanda can inherit the theme typography, colors, form fields, buttons, borders, and corner radii. Its functional layout remains intact.', 'contactpanda' ) . '</p>';
 		echo '<form method="post" action="options.php">'; settings_fields( 'contactpanda_general' );
 		echo '<div class="contactpanda-style-switch"><label class="contactpanda-style-option"><input type="radio" name="' . esc_attr( self::GENERAL_OPTION ) . '[theme_styles]" value="0"' . checked( ! $active, true, false ) . '><span><strong>' . esc_html__( 'ContactPanda style', 'contactpanda' ) . '</strong><small>' . esc_html__( 'Use the neutral ContactPanda form and account design.', 'contactpanda' ) . '</small><span class="contactpanda-theme-button-sample"><small>' . esc_html__( 'Button preview', 'contactpanda' ) . '</small><span class="contactpanda-theme-button-preview is-contactpanda">' . esc_html__( 'Example button', 'contactpanda' ) . '</span></span></span></label>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		echo '<label class="contactpanda-style-option"><input type="radio" name="' . esc_attr( self::GENERAL_OPTION ) . '[theme_styles]" value="1"' . checked( $active, true, false ) . '><span><strong>' . esc_html( sprintf( __( '%s theme style', 'contactpanda' ), $name ) ) . '</strong><small>' . esc_html__( 'Inherit compatible typography, colors, fields, buttons, borders, and spacing from the active theme.', 'contactpanda' ) . '</small><span class="contactpanda-style-theme-colors" aria-label="' . esc_attr__( 'Detected theme colors', 'contactpanda' ) . '">';
 		if ( class_exists( 'ContactPanda_Basic_Newsletters' ) ) foreach ( ContactPanda_Basic_Newsletters::detected_theme_colors() as $color ) echo '<i title="' . esc_attr( $color ) . '" style="background:' . esc_attr( $color ) . '"></i>';
 		echo '</span><span class="contactpanda-theme-button-sample"><small>' . esc_html__( 'Button preview', 'contactpanda' ) . '</small><span class="contactpanda-theme-button-preview is-theme">' . esc_html__( 'Example button', 'contactpanda' ) . '</span></span></span></label></div>';
@@ -1208,6 +1230,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		$settings['theme_stylesheet'] = sanitize_key( $theme->get_stylesheet() );
 		$settings['theme_name'] = sanitize_text_field( $theme->get( 'Name' ) ? $theme->get( 'Name' ) : $theme->get_stylesheet() );
 		update_option( self::GENERAL_OPTION, $settings, false );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		set_transient( 'contactpanda_database_notice_' . get_current_user_id(), array( 'type' => 'success', 'message' => sprintf( __( 'ContactPanda now adopts the styles from %s.', 'contactpanda' ), $settings['theme_name'] ) ), MINUTE_IN_SECONDS );
 		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=general' ) );
 		exit;
@@ -1227,6 +1250,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			if ( $show_groundhogg && self::groundhogg_active() ) {
 				echo '<p>' . esc_html__( 'People, companies and tags are analyzed and migrated independently from email templates, forms and automations. Groundhogg remains unchanged.', 'contactpanda' ) . '</p>';
 				if ( $preview ) {
+					/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 					echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Analysis', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( __( '%1$d people, %2$d companies and %3$d tags found. ContactPanda currently contains %4$d people, %5$d companies and %6$d tags. No data was changed.', 'contactpanda' ), absint( $preview['contacts'] ?? 0 ), absint( $preview['companies'] ?? 0 ), absint( $preview['tags'] ?? 0 ), absint( $preview['existing_contacts'] ?? 0 ), absint( $preview['existing_companies'] ?? 0 ), absint( $preview['existing_tags'] ?? 0 ) ) ) . '</p></div>';
 				}
 				self::groundhogg_contacts_migration_form( 'preview', __( 'Analyze people, companies and tags', 'contactpanda' ), 'button-secondary' );
@@ -1236,20 +1260,26 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			if ( $show_reset ) self::admin_action_form( 'contactpanda_reset_standalone', __( 'Reset ContactPanda data', 'contactpanda' ), 'button-secondary contactpanda-reset-test-data', __( 'Deletes ContactPanda CRM records and imported Groundhogg newsletter archives. ContactPanda-created newsletter drafts, Groundhogg, WordPress, WooCommerce, invoices, and events remain untouched.', 'contactpanda' ), true );
 			echo '</div>';
 			if ( $show_groundhogg && $report ) {
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Last migration', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( __( '%1$d contacts, %2$d companies, %3$d tags, %4$d tag assignments, %5$d skipped, %6$d errors. Completed: %7$s', 'contactpanda' ), absint( $report['contacts'] ?? 0 ), absint( $report['companies'] ?? 0 ), absint( $report['tags'] ?? 0 ), absint( $report['assignments'] ?? 0 ), absint( $report['skipped'] ?? 0 ), absint( $report['errors'] ?? 0 ), sanitize_text_field( $report['completed_at'] ?? '' ) ) ) . '</p>';
 				if ( isset( $report['source_contacts'] ) ) {
+					/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 					echo '<p>' . esc_html( sprintf( __( 'Groundhogg contact comparison: %1$d found in the source, %2$d imported or updated.', 'contactpanda' ), absint( $report['source_contacts'] ), absint( $report['contacts'] ?? 0 ) ) ) . '</p>';
 				}
 				if ( isset( $report['source_tags'] ) ) {
+					/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 					echo '<p>' . esc_html( sprintf( __( 'Tag comparison: %1$d in Groundhogg, %2$d in ContactPanda; %3$d source assignments processed.', 'contactpanda' ), absint( $report['source_tags'] ), absint( $report['tags'] ?? 0 ), absint( $report['source_assignments'] ?? 0 ) ) ) . '</p>';
 				}
 				if ( isset( $report['email_templates'] ) || isset( $report['broadcasts'] ) ) {
+					/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 					echo '<p>' . esc_html( sprintf( __( 'Newsletter archive: %1$d email templates and %2$d completed broadcasts imported; %3$d errors.', 'contactpanda' ), absint( $report['email_templates'] ?? 0 ), absint( $report['broadcasts'] ?? 0 ), absint( $report['newsletter_errors'] ?? 0 ) ) ) . '</p>';
 					if ( isset( $report['broadcast_recipients'] ) ) {
+						/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 						echo '<p>' . esc_html( sprintf( __( '%d historical broadcast recipient assignments were imported where Groundhogg made them available.', 'contactpanda' ), absint( $report['broadcast_recipients'] ) ) ) . '</p>';
 					}
 				}
 				if ( ! empty( $report['missing_tags'] ) && is_array( $report['missing_tags'] ) ) {
+					/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 					echo '<details><summary>' . esc_html( sprintf( __( 'Tag warnings: %d', 'contactpanda' ), count( $report['missing_tags'] ) ) ) . '</summary><ul>';
 					foreach ( array_slice( $report['missing_tags'], 0, 100 ) as $warning ) {
 						echo '<li>' . esc_html( $warning ) . '</li>';
@@ -1257,6 +1287,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 					echo '</ul></details>';
 				}
 				if ( ! empty( $report['skipped_tags'] ) && is_array( $report['skipped_tags'] ) ) {
+					/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 					echo '<details><summary>' . esc_html( sprintf( __( 'Intentionally omitted system tags: %d', 'contactpanda' ), count( $report['skipped_tags'] ) ) ) . '</summary><ul>';
 					foreach ( array_slice( $report['skipped_tags'], 0, 100 ) as $warning ) {
 						echo '<li>' . esc_html( $warning ) . '</li>';
@@ -1475,8 +1506,11 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		echo '<div class="contactpanda-setting-row"><label for="contactpanda-' . esc_attr( $key ) . '"><strong>' . esc_html( $label ) . '</strong></label>';
 		wp_dropdown_pages(
 			array(
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
 				'name'              => self::OPTION . '[' . $key . ']',
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
 				'id'                => 'contactpanda-' . $key,
+				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
 				'show_option_none'  => __( '— Select page —', 'contactpanda' ),
 				'option_none_value' => 0,
 				'sort_column'       => 'post_title',
@@ -1922,6 +1956,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 			$token = sanitize_text_field( $notice['pending_token'] );
 			$email = sanitize_email( $notice['pending_email'] );
 			$html .= '<div class="contactpanda-confirmation-pending"><h3>' . esc_html__( 'Please confirm your email address', 'contactpanda' ) . '</h3>';
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			$html .= '<p>' . sprintf( esc_html__( 'We sent the confirmation email to %s.', 'contactpanda' ), '<strong>' . esc_html( $email ) . '</strong>' ) . '</p>';
 			$html .= '<p>' . esc_html__( 'If you cannot find the message, please also check your spam folder.', 'contactpanda' ) . '</p>';
 			$html .= '<div class="contactpanda-pending-actions"><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_pending_resend"><input type="hidden" name="pending_token" value="' . esc_attr( $token ) . '"><button type="submit" class="contactpanda-pending-button">' . esc_html__( 'Send confirmation email again', 'contactpanda' ) . '</button></form>';
@@ -2517,6 +2552,7 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		}
 		if ( ContactPanda_Store::standalone() ) {
 			$contact = ContactPanda_Store::contact_by_email( $user->user_email );
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			if ( $contact ) ContactPanda_Store::add_activity( $contact['id'], 0, 'registration', 'approve' === $decision ? __( 'Registration approved', 'contactpanda' ) : __( 'Registration rejected', 'contactpanda' ), sprintf( __( 'Edited by: %s', 'contactpanda' ), wp_get_current_user()->display_name ) );
 		}
 		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&updated=1' ) );
@@ -2545,7 +2581,9 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		if ( ! $user || ! is_email( $settings['admin_email'] ) ) {
 			return;
 		}
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		$subject = sprintf( __( 'New business registration: %s', 'contactpanda' ), $user->display_name );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		$message = sprintf( __( 'A new business registration was submitted.
 
 Person: %1$s

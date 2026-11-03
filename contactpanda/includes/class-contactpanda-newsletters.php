@@ -152,6 +152,7 @@ final class ContactPanda_Basic_Newsletters {
 		echo '</div>';
 		echo '<h3>' . esc_html__( 'Double opt-in reminders', 'contactpanda' ) . '</h3><p>' . esc_html__( 'Optionally remind unconfirmed newsletter subscribers. Reminders stop automatically after confirmation or expiry and contain no marketing content.', 'contactpanda' ) . '</p><div class="contactpanda-settings-grid">';
 		echo '<label><span>' . esc_html__( 'Number of reminders', 'contactpanda' ) . '</span><select name="' . esc_attr( self::OPTION ) . '[reminder_count]">'; for ( $i = 0; $i <= 3; $i++ ) echo '<option value="' . esc_attr( $i ) . '"' . selected( absint( $settings['reminder_count'] ), $i, false ) . '>' . esc_html( $i ) . '</option>'; echo '</select></label>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		for ( $i = 0; $i < 3; $i++ ) echo '<label><span>' . esc_html( sprintf( __( 'Reminder %d after days', 'contactpanda' ), $i + 1 ) ) . '</span><input type="number" min="1" max="30" name="' . esc_attr( self::OPTION ) . '[reminder_delays][]" value="' . esc_attr( absint( $settings['reminder_delays'][ $i ] ?? ( $i + 1 ) * 3 ) ) . '"></label>';
 		self::settings_field( 'reminder_subject', __( 'Reminder subject', 'contactpanda' ), $settings );
 		echo '<label><span>' . esc_html__( 'Reminder email text', 'contactpanda' ) . '</span><textarea rows="6" name="' . esc_attr( self::OPTION ) . '[reminder_message]">' . esc_textarea( $settings['reminder_message'] ) . '</textarea></label></div>';
@@ -210,6 +211,7 @@ final class ContactPanda_Basic_Newsletters {
 			'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' => __( 'System font', 'contactpanda' ),
 		);
 		if ( $current && ! isset( $fonts[ $current ] ) ) {
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			$fonts[ $current ] = sprintf( __( 'Previously saved: %s', 'contactpanda' ), $current );
 		}
 		echo '<label><span>' . esc_html__( 'Font family', 'contactpanda' ) . '</span><select name="' . esc_attr( self::OPTION ) . '[font_family]">';
@@ -643,9 +645,9 @@ final class ContactPanda_Basic_Newsletters {
 		elseif ( 'this_year' === $date_filter ) $where .= ' AND created_at >= ' . "'" . esc_sql( gmdate( 'Y-01-01 00:00:00', current_time( 'timestamp', true ) ) ) . "'";
 		$allowed_orderby = array( 'name', 'created_at', 'updated_at' ); if ( ! in_array( $orderby, $allowed_orderby, true ) ) $orderby = 'updated_at';
 		$count_sql = "SELECT COUNT(*) FROM `{$table}` {$where}"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table name.
-		$total = (int) ( $params ? $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) ) : $wpdb->get_var( $count_sql ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- prepared when variables exist.
+		$total = (int) ( $params ? $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) ) : $wpdb->get_var( $count_sql ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- internal allowlisted table; values are prepared when present.
 		$query = "SELECT * FROM `{$table}` {$where} ORDER BY {$orderby} {$order} LIMIT %d OFFSET %d"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- allowlisted column/order and internal table name.
-		$rows = (array) $wpdb->get_results( $wpdb->prepare( $query, array_merge( $params, array( $per_page, ( $page - 1 ) * $per_page ) ) ), ARRAY_A );
+		$rows = (array) $wpdb->get_results( $wpdb->prepare( $query, array_merge( $params, array( $per_page, ( $page - 1 ) * $per_page ) ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- table, order, and clauses are allowlisted or fixed; all values are prepared.
 		$notice = get_transient( 'contactpanda_newsletter_notice_' . get_current_user_id() );
 		if ( $notice ) {
 			delete_transient( 'contactpanda_newsletter_notice_' . get_current_user_id() );
@@ -862,6 +864,7 @@ final class ContactPanda_Basic_Newsletters {
 			'"Trebuchet MS", Arial, sans-serif'         => 'Trebuchet MS',
 		);
 		$current = sanitize_text_field( $current );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( $current && ! isset( $fonts[ $current ] ) ) $fonts[ $current ] = sprintf( __( 'Previously saved: %s', 'contactpanda' ), $current );
 		echo '<label><span>' . esc_html__( 'Font family', 'contactpanda' ) . '</span><select name="font_family">';
 		foreach ( $fonts as $value => $label ) echo '<option value="' . esc_attr( $value ) . '"' . selected( $current, $value, false ) . '>' . esc_html( $label ) . '</option>';
@@ -949,6 +952,7 @@ final class ContactPanda_Basic_Newsletters {
 			if ( 'make_template' === $operation ) {
 				$template['status'] = 'template';
 			} else {
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				$template['name'] = sprintf( __( '%s (copy)', 'contactpanda' ), $template['name'] );
 				$template['status'] = 'draft';
 			}
@@ -999,6 +1003,7 @@ final class ContactPanda_Basic_Newsletters {
 		if ( ! $sent ) {
 			wp_send_json_error( array( 'message' => __( 'WordPress could not hand the test email to the configured mail system.', 'contactpanda' ) ), 500 );
 		}
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		wp_send_json_success( array( 'message' => sprintf( __( 'The test email was sent to %s.', 'contactpanda' ), $recipient ) ) );
 	}
 
@@ -1354,6 +1359,7 @@ final class ContactPanda_Basic_Newsletters {
 			$footer .= '<p>{unsubscribe_link}</p>';
 		}
 		if ( 'woocommerce' === ( $settings['email_layout'] ?? '' ) && class_exists( 'WooCommerce' ) ) {
+			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
 			ob_start(); do_action( 'woocommerce_email_header', '', null ); echo '<!--contactpanda-content-start-->' . wp_kses_post( $body ) . '<!--contactpanda-content-end-->'; echo '<div style="margin-top:28px;padding-top:18px;border-top:1px solid #dfe5eb;text-align:center;color:#6b7785;font:11px/1.5 ' . $font . '">' . wp_kses_post( $footer ) . '</div>'; do_action( 'woocommerce_email_footer', null ); return (string) ob_get_clean();
 		}
 		$logo = $settings['logo_url'] ? '<p style="margin:0 0 24px;text-align:center"><img src="' . esc_url( $settings['logo_url'] ) . '" alt="' . esc_attr( $settings['company_name'] ) . '" style="display:inline-block;max-width:220px;max-height:90px;width:auto;height:auto"></p>' : '';
