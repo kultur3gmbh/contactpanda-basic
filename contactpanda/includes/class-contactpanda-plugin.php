@@ -392,6 +392,7 @@ final class ContactPanda_Plugin {
 					'onePersonSelected'        => __( '1 person selected', 'contactpanda' ),
 					/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 					'peopleSelected'           => __( '%d people selected', 'contactpanda' ),
+					/* translators: %d is the number of selected person records. */
 					'confirmBulkTrash'         => __( 'Move %d selected records to Trash? They can be restored from Trash.', 'contactpanda' ),
 					'checkingContacts'         => __( 'Checking the selected contacts…', 'contactpanda' ),
 					'enterTagName'             => __( 'Please enter a tag name.', 'contactpanda' ),
