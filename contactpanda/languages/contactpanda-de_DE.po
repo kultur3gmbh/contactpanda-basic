@@ -176,7 +176,7 @@ msgstr "Anteil für Variante B (%)"
 msgid "Placeholders such as {campaign_name}, {campaign_id} and {subject_variant} are resolved separately for every delivery."
 msgstr "Platzhalter wie {campaign_name}, {campaign_id} und {subject_variant} werden für jeden Versand einzeln aufgelöst."
 
-"Project-Id-Version: ContactPanda 0.9.15\n"
+"Project-Id-Version: ContactPanda 0.9.16\n"
 "Report-Msgid-Bugs-To: https://kultur3.com/\n"
 "POT-Creation-Date: 2026-10-23 14:30+0200\n"
 "PO-Revision-Date: 2026-10-23 14:30+0200\n"
@@ -8280,6 +8280,51 @@ msgstr "Importierte Vorlagen sind schreibgeschützt. Erstellen Sie eine bearbeit
 
 msgid "You are not allowed to manage these settings."
 msgstr "Sie dürfen diese Einstellungen nicht verwalten."
+
+msgid "No valid published update was found."
+msgstr "Es wurde keine gültige veröffentlichte Aktualisierung gefunden."
+
+msgid "The published update metadata is invalid."
+msgstr "Die veröffentlichten Metadaten der Aktualisierung sind ungültig."
+
+msgid "The update archive has an invalid folder."
+msgstr "Das Aktualisierungsarchiv enthält einen ungültigen Ordner."
+
+msgid "The update archive has an invalid structure."
+msgstr "Das Aktualisierungsarchiv besitzt eine ungültige Struktur."
+
+msgid "The update archive version is invalid."
+msgstr "Die Version des Aktualisierungsarchivs ist ungültig."
+
+msgid "The update download could not be followed safely."
+msgstr "Der Download der Aktualisierung konnte nicht sicher weitergeleitet werden."
+
+msgid "The update download is invalid."
+msgstr "Der Download der Aktualisierung ist ungültig."
+
+msgid "The update manifest is invalid."
+msgstr "Das Aktualisierungsmanifest ist ungültig."
+
+msgid "The update package could not be stored temporarily."
+msgstr "Das Aktualisierungspaket konnte nicht vorübergehend gespeichert werden."
+
+msgid "The update package could not be verified."
+msgstr "Das Aktualisierungspaket konnte nicht überprüft werden."
+
+msgid "The update package failed its integrity check."
+msgstr "Das Aktualisierungspaket hat die Integritätsprüfung nicht bestanden."
+
+msgid "The update package is incomplete."
+msgstr "Das Aktualisierungspaket ist unvollständig."
+
+msgid "The update service could not be reached."
+msgstr "Der Aktualisierungsdienst konnte nicht erreicht werden."
+
+msgid "The update source is invalid."
+msgstr "Die Aktualisierungsquelle ist ungültig."
+
+msgid "You are not allowed to install updates."
+msgstr "Sie sind nicht berechtigt, Aktualisierungen zu installieren."
 
 msgid "Drag blocks here or double-click a block in the element panel."
 msgstr "Ziehen Sie Bausteine hierher oder doppelklicken Sie auf einen Baustein im Elementbereich."

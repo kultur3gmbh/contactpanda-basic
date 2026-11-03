@@ -176,7 +176,7 @@ msgstr ""
 msgid "Placeholders such as {campaign_name}, {campaign_id} and {subject_variant} are resolved separately for every delivery."
 msgstr ""
 
-"Project-Id-Version: ContactPanda 0.9.15\n"
+"Project-Id-Version: ContactPanda 0.9.16\n"
 "Report-Msgid-Bugs-To: https://kultur3.com/\n"
 "POT-Creation-Date: 2026-10-23 14:30+0200\n"
 "PO-Revision-Date: 2026-10-23 14:30+0200\n"
@@ -8351,6 +8351,51 @@ msgid "Imported templates are read-only. Create an editable copy to change the c
 msgstr ""
 
 msgid "You are not allowed to manage these settings."
+msgstr ""
+
+msgid "No valid published update was found."
+msgstr ""
+
+msgid "The published update metadata is invalid."
+msgstr ""
+
+msgid "The update archive has an invalid folder."
+msgstr ""
+
+msgid "The update archive has an invalid structure."
+msgstr ""
+
+msgid "The update archive version is invalid."
+msgstr ""
+
+msgid "The update download could not be followed safely."
+msgstr ""
+
+msgid "The update download is invalid."
+msgstr ""
+
+msgid "The update manifest is invalid."
+msgstr ""
+
+msgid "The update package could not be stored temporarily."
+msgstr ""
+
+msgid "The update package could not be verified."
+msgstr ""
+
+msgid "The update package failed its integrity check."
+msgstr ""
+
+msgid "The update package is incomplete."
+msgstr ""
+
+msgid "The update service could not be reached."
+msgstr ""
+
+msgid "The update source is invalid."
+msgstr ""
+
+msgid "You are not allowed to install updates."
 msgstr ""
 
 msgid "Thank you. Please check your inbox and confirm your email address. Your business registration will be activated after approval."
