@@ -4,7 +4,7 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.9.12
+Stable tag: 0.9.13
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -27,6 +27,11 @@ ContactPanda Basic works without an external ContactPanda account. The following
 * WhatsApp links: a deliberately configured WhatsApp button opens `https://wa.me/` with the destination number and, when configured, the prepared message. Data is sent only after a user follows that link. WhatsApp's privacy information is available at `https://www.whatsapp.com/legal/privacy-policy`.
 
 == Changelog ==
+
+= 0.9.13 =
+
+* Completes the current WordPress.org validation cleanup and shared Panda UI consolidation.
+* Keeps free and optional extension code cleanly separated while preserving the public extension contracts.
 
 = 0.9.12 =
 
