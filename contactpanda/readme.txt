@@ -2,7 +2,7 @@
 Contributors: kultur3gmbh
 Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
-Tested up to: 6.8
+Tested up to: 7.1
 Requires PHP: 7.4
 Stable tag: 0.9.12
 License: GPLv3

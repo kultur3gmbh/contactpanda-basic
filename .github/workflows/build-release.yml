@@ -18,15 +18,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '24'
       - name: Build installable ZIP files
         env:
           CONTACTPANDA_TESTED_WP: ${{ inputs.tested_wordpress }}
@@ -41,9 +41,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
-          else
-            gh release create "$GITHUB_REF_NAME" dist/* --verify-tag --generate-notes --latest
-          fi
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --latest
+          for asset in dist/*; do
+            name="${asset##*/}"
+            gh release delete-asset "$GITHUB_REF_NAME" "$name" --yes >/dev/null 2>&1 || true
+            gh release upload "$GITHUB_REF_NAME" "$asset"
+          done
 

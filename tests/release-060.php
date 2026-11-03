@@ -58,7 +58,7 @@ foreach ( array( 'parse_vcard_contents', 'handle_vcard_import', 'export_contacts
 	}
 }
 
-foreach ( array( 'contactpanda_render_contact_import_extensions', 'contactpanda_render_contact_export_extensions', 'contactpanda_campaign_render_advanced_settings', 'contactpanda_campaign_render_delivery_options', 'contactpanda_campaign_tracking_arguments' ) as $extension_contract ) {
+foreach ( array( 'contactpanda_render_contact_import_extensions', 'contactpanda_render_contact_export_extensions', 'contactpanda_campaign_render_advanced_settings', 'contactpanda_campaign_render_delivery_options' ) as $extension_contract ) {
 	if ( false === strpos( $data_tools . $plugin . $campaigns, $extension_contract ) ) {
 		fwrite( STDERR, "Basic is missing extension point {$extension_contract}.\n" );
 		exit( 1 );

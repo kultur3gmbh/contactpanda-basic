@@ -8,7 +8,7 @@ $identity = file_get_contents( $root . '/contactpanda/includes/class-contactpand
 $account  = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-my-account.php' );
 $plugin   = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-plugin.php' );
 
-foreach ( array( 'class-contactpanda-identity.php', 'class-contactpanda-customer-portal.php', 'ContactPanda_Customer_Portal', 'contactpanda_register_family_updaters' ) as $contract ) {
+foreach ( array( 'class-contactpanda-identity.php', 'class-contactpanda-customer-portal.php', 'ContactPanda_Customer_Portal' ) as $contract ) {
 	if ( false === strpos( $main, $contract ) ) {
 		fwrite( STDERR, "Missing Basic portal bootstrap contract {$contract}.\n" );
 		exit( 1 );

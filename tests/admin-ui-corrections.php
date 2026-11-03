@@ -144,7 +144,7 @@ foreach ( array( '.contactpanda-unified-color-popover', '.contactpanda-unified-c
 		exit( 1 );
 	}
 }
-foreach ( array( 'grid-template-columns:minmax(140px,190px) 30px 30px', 'width:min(296px,calc(100vw - 48px))', 'repeat(auto-fit,minmax(min(280px,100%),1fr))' ) as $contract ) {
+foreach ( array( 'grid-template-columns:minmax(0,1fr) 18px 18px', 'width:100%;max-width:100%', 'repeat(auto-fit,minmax(min(280px,100%),1fr))' ) as $contract ) {
 	if ( false === strpos( $styles, $contract ) ) {
 		fwrite( STDERR, "Missing non-clipping responsive color picker contract {$contract}.\n" );
 		exit( 1 );

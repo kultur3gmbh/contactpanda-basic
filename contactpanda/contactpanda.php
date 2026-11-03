@@ -4,6 +4,8 @@
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
  * Version: 0.9.12
  * Author: Kultur3 GmbH
+ * License: GPLv3
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: contactpanda
  * Domain Path: /languages
  * Requires PHP: 7.4
