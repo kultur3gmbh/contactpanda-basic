@@ -45,7 +45,7 @@ final class ContactPanda_System_Emails {
 			echo '</section>';
 			return;
 		}
-		echo '<div class="contactpanda-system-email-preview">' . self::render( __( 'Your message subject', 'contactpanda' ), '<h2>' . esc_html__( 'Hello!', 'contactpanda' ) . '</h2><p>' . esc_html__( 'The actual system message is inserted here automatically.', 'contactpanda' ) . '</p>' ) . '</div>';
+		echo '<div class="contactpanda-system-email-preview">' . wp_kses_post( self::render( __( 'Your message subject', 'contactpanda' ), '<h2>' . esc_html__( 'Hello!', 'contactpanda' ) . '</h2><p>' . esc_html__( 'The actual system message is inserted here automatically.', 'contactpanda' ) . '</p>' ) ) . '</div>';
 		echo '<div class="contactpanda-plus-promotion"><p><strong>' . esc_html__( 'Individual email headers and footers are available with ContactPanda Plus.', 'contactpanda' ) . '</strong> ' . esc_html__( 'Plus adds a visual composer for images, formatted text, separators, multiple rows, and reusable header and footer layouts.', 'contactpanda' ) . '</p><p><a class="button" href="' . esc_url( apply_filters( 'contactpanda_plus_url', 'https://contactpanda.com/', 'system-emails' ) ) . '" target="_blank" rel="noopener">' . esc_html__( 'Upgrade to ContactPanda Plus', 'contactpanda' ) . '</a></p></div></section>';
 	}
 

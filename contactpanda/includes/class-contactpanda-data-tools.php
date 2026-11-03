@@ -720,6 +720,7 @@ final class ContactPanda_Data_Tools {
 		$settings = wp_parse_args( (array) get_option( self::CENTRAL_OPTION, array() ), array( 'enabled' => 0, 'source_url' => '', 'version' => '', 'updated_at' => '', 'last_success_at' => '', 'error' => '' ) );
 		if ( empty( $settings['enabled'] ) ) return new WP_Error( 'contactpanda_central_disabled', __( 'Enable the central library before updating it.', 'contactpanda' ) );
 		// The public library contains no customer data and may be replaced by a filtered URL.
+		// phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- This documented, administrator-enabled external service supplies public salutation data and receives no site or customer data.
 		$url = apply_filters( 'contactpanda_central_salutation_library_url', 'https://raw.githubusercontent.com/kultur3gmbh/contactpanda-salutations/main/salutations.json' );
 		$response = wp_safe_remote_get( $url, array( 'timeout' => 15, 'user-agent' => 'ContactPanda/' . CONTACTPANDA_VERSION ) ); // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Optional, administrator-enabled synchronization from the documented public salutation library.
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
