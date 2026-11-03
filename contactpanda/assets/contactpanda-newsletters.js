@@ -9,26 +9,6 @@
 	var postFilters = config.postFilters || {types: []};
 	var productPreviewCache = {};
 	var productPreviewTimers = {};
-	var mediaButton = document.querySelector('.contactpanda-newsletter-media-button');
-	if (mediaButton && window.wp && wp.media) {
-		mediaButton.addEventListener('click', function () {
-			var frame = wp.media({title: i18n.chooseImage, button: {text: i18n.useImage}, multiple: false, library: {type: 'image'}});
-			frame.on('select', function () {
-				var image = frame.state().get('selection').first().toJSON();
-				var form = mediaButton.closest('form');
-				form.querySelector('[name="contactpanda_newsletter_settings[logo_id]"]').value = image.id || 0;
-				form.querySelector('[name="contactpanda_newsletter_settings[logo_url]"]').value = image.url || '';
-				var preview = form.querySelector('.contactpanda-newsletter-logo-preview');
-				if (!preview) {
-					preview = document.createElement('span');
-					preview.className = 'contactpanda-newsletter-logo-preview';
-					mediaButton.parentNode.appendChild(preview);
-				}
-				preview.innerHTML = image.url ? '<img src="' + String(image.url).replace(/"/g, '&quot;') + '" alt="">' : '';
-			});
-			frame.open();
-		});
-	}
 	document.querySelectorAll('.contactpanda-archive-template').forEach(function (archiveForm) {
 		archiveForm.addEventListener('submit', function (event) { if (!window.confirm(i18n.confirmArchive)) event.preventDefault(); });
 	});

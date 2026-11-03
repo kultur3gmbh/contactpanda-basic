@@ -143,6 +143,9 @@ if ( false !== strpos( $newsletter_editor, "field(i18n.imageUrl, 'url'" ) ) {
 	fwrite( STDERR, "The newsletter editor must not expose a permanent image URL field.\n" );
 	exit( 1 );
 }
+if ( false !== strpos( $newsletter_editor, "var mediaButton = document.querySelector('.contactpanda-newsletter-media-button')" ) ) {
+	fail( 'The newsletter settings still initialize a legacy standalone logo picker.' );
+}
 
 foreach ( array( 'contactpanda_sanitize_css_color', 'Theme and template colors', 'Enter a valid HEX, RGB, or RGBA color.' ) as $contract ) {
 	if ( false === strpos( $bootstrap, $contract ) ) {

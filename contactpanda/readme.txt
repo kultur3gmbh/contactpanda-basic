@@ -4,7 +4,7 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.9.18
+Stable tag: 0.9.19
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -27,6 +27,9 @@ ContactPanda Basic works without an external ContactPanda account. The following
 * WhatsApp links: a deliberately configured WhatsApp button opens `https://wa.me/` with the destination number and, when configured, the prepared message. Data is sent only after a user follows that link. WhatsApp's privacy information is available at `https://www.whatsapp.com/legal/privacy-policy`.
 
 == Changelog ==
+
+= 0.9.19 =
+* Removes the last legacy newsletter-logo media handler so single-image fields use only the shared responsive Panda image picker.
 
 = 0.9.18 =
 * Unifies the responsive family image picker and removes permanent image URL fields.
