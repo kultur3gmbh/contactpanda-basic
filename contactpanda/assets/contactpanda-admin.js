@@ -85,7 +85,12 @@
 		if (button.classList.contains('contactpanda-open-consent')) return openConsent(button.closest('.contactpanda-marketing'));
 		if (button.classList.contains('contactpanda-close-consent')) return closeConsent(button.closest('.contactpanda-marketing'));
 		if (button.classList.contains('contactpanda-save-consent')) return saveConsent(button.closest('.contactpanda-marketing'));
-		if (button.classList.contains('contactpanda-open-bulk')) return document.getElementById('contactpanda-bulk-action').value === 'newsletter' ? openNewsletterSelection() : openBulkMarketing();
+		if (button.classList.contains('contactpanda-open-bulk')) {
+			var bulkAction = document.getElementById('contactpanda-bulk-action').value;
+			if (bulkAction === 'newsletter') return openNewsletterSelection();
+			if (bulkAction === 'trash') return bulkTrashPeople();
+			return openBulkMarketing();
+		}
 		if (button.classList.contains('contactpanda-close-bulk')) return closeBulkMarketing();
 		if (button.classList.contains('contactpanda-close-newsletter-selection')) return closeNewsletterSelection();
 		if (button.classList.contains('contactpanda-select-all-matching')) return selectAllMatchingPeople();
@@ -598,7 +603,7 @@
 		}
 		if (label && !allMatchingPeopleSelected) label.textContent = selected.length === 1 ? tr('onePersonSelected', '1 person selected') : format(tr('peopleSelected', '%d people selected'), selected.length);
 		if (allMatching) allMatching.hidden = allMatchingPeopleSelected || !selectAll || !selectAll.checked || !toolbar || Number(toolbar.dataset.total || 0) <= checkboxes.length;
-		if (button) button.disabled = !(selected.length || allMatchingPeopleSelected) || !action || ['marketable', 'newsletter'].indexOf(action.value) === -1 || (action.value === 'marketable' && allMatchingPeopleSelected);
+		if (button) button.disabled = !(selected.length || allMatchingPeopleSelected) || !action || ['marketable', 'newsletter', 'trash'].indexOf(action.value) === -1 || (['marketable', 'trash'].indexOf(action.value) !== -1 && allMatchingPeopleSelected);
 		var outputModal = document.querySelector('.contactpanda-output-modal');
 		if (outputModal) {
 			var selectedOption = outputModal.querySelector('input[name="scope"][value="selected"]');
@@ -606,6 +611,28 @@
 			if (selectedOption) selectedOption.disabled = !selected.length;
 			if (selectedLabel) selectedLabel.textContent = selected.length === 1 ? tr('onePersonSelected', '1 person selected') : format(tr('peopleSelected', '%d people selected'), selected.length);
 		}
+	}
+
+	function bulkTrashPeople() {
+		var ids = selectedContactIds();
+		if (!ids.length || allMatchingPeopleSelected || !CONTACTPANDA_CONFIG.trashUrl || !CONTACTPANDA_CONFIG.trashNonce) return;
+		if (!window.confirm(format(tr('confirmBulkTrash', 'Move %d selected records to Trash? They can be restored from Trash.'), ids.length))) return;
+		var form = document.createElement('form');
+		form.method = 'post';
+		form.action = CONTACTPANDA_CONFIG.trashUrl;
+		[
+			['action', 'contactpanda_record_action'],
+			['entity', 'contacts'],
+			['operation', 'trash'],
+			['confirmed', '1'],
+			['_wpnonce', CONTACTPANDA_CONFIG.trashNonce],
+			['return_url', window.location.href]
+		].forEach(function (pair) {
+			var input = document.createElement('input'); input.type = 'hidden'; input.name = pair[0]; input.value = pair[1]; form.appendChild(input);
+		});
+		ids.forEach(function (id) { var input = document.createElement('input'); input.type = 'hidden'; input.name = 'ids[]'; input.value = id; form.appendChild(input); });
+		document.body.appendChild(form);
+		form.submit();
 	}
 
 	function openNewsletterSelection() {
@@ -1341,6 +1368,13 @@
 	});
 
 	document.addEventListener('change', function (event) {
+		if (event.target.matches('[data-contactpanda-language-select]')) {
+			var container = event.target.closest('[data-contactpanda-language-sections]');
+			if (container) container.querySelectorAll('[data-contactpanda-language]').forEach(function (section) {
+				section.hidden = section.dataset.contactpandaLanguage !== event.target.value;
+			});
+			return;
+		}
 		if (event.target.matches('[data-contactpanda-legal-form]')) {
 			var representative = event.target.closest('form').querySelector('[data-contactpanda-representative-field]');
 			if (representative) {

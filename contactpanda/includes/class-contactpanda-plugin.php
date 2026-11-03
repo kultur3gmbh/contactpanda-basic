@@ -358,6 +358,8 @@ final class ContactPanda_Plugin {
 			'CONTACTPANDA_CONFIG',
 			array(
 				'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+				'trashUrl'       => admin_url( 'admin-post.php' ),
+				'trashNonce'     => wp_create_nonce( 'contactpanda_record_action' ),
 				'campaignUrl'    => admin_url( 'admin.php?page=contactpanda-campaigns&new_campaign=1' ),
 				'nonce'          => wp_create_nonce( 'contactpanda_update_company' ),
 				'columnsNonce'   => wp_create_nonce( 'contactpanda_columns' ),
@@ -390,6 +392,7 @@ final class ContactPanda_Plugin {
 					'onePersonSelected'        => __( '1 person selected', 'contactpanda' ),
 					/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 					'peopleSelected'           => __( '%d people selected', 'contactpanda' ),
+					'confirmBulkTrash'         => __( 'Move %d selected records to Trash? They can be restored from Trash.', 'contactpanda' ),
 					'checkingContacts'         => __( 'Checking the selected contacts…', 'contactpanda' ),
 					'enterTagName'             => __( 'Please enter a tag name.', 'contactpanda' ),
 					'runningTagAction'         => __( 'Running tag action…', 'contactpanda' ),
@@ -2326,6 +2329,7 @@ final class ContactPanda_Plugin {
 
 		echo '<div class="contactpanda-bulk-toolbar" data-total="' . esc_attr( $total ) . '" data-list-token="' . esc_attr( $list_state ) . '"><label class="screen-reader-text" for="contactpanda-bulk-action">' . esc_html__( 'Select bulk action', 'contactpanda' ) . '</label><select id="contactpanda-bulk-action"><option value="">' . esc_html__( 'Bulk actions', 'contactpanda' ) . '</option><option value="marketable">' . esc_html__( 'Enable marketable status', 'contactpanda' ) . '</option>';
 		if ( class_exists( 'ContactPanda_Basic_Newsletter_Campaigns' ) ) echo '<option value="newsletter">' . esc_html__( 'Send newsletter', 'contactpanda' ) . '</option>';
+		if ( current_user_can( 'manage_options' ) && class_exists( 'ContactPanda_Trash' ) && ContactPanda_Trash::available() ) echo '<option value="trash">' . esc_html__( 'Move records to Trash', 'contactpanda' ) . '</option>';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		echo '</select><button type="button" class="button contactpanda-open-bulk" disabled>' . esc_html__( 'Execute', 'contactpanda' ) . '</button><span class="contactpanda-bulk-selection" aria-live="polite">' . esc_html__( 'No person selected', 'contactpanda' ) . '</span><button type="button" class="button-link contactpanda-select-all-matching" hidden>' . esc_html( sprintf( __( 'Select all %d matching people', 'contactpanda' ), $total ) ) . '</button><span class="contactpanda-list-output-actions"><button type="button" class="button contactpanda-open-export"><span class="dashicons dashicons-download" aria-hidden="true"></span> ' . esc_html__( 'Export', 'contactpanda' ) . '</button><button type="button" class="button contactpanda-open-print"><span class="dashicons dashicons-printer" aria-hidden="true"></span> ' . esc_html__( 'Print list', 'contactpanda' ) . '</button></span></div>';
 		echo '<div class="contactpanda-table-scroll"><table class="widefat striped contactpanda-table contactpanda-people-table"><thead><tr class="contactpanda-group-headings">';

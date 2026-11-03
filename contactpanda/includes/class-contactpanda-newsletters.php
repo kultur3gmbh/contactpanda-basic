@@ -20,8 +20,8 @@ final class ContactPanda_Basic_Newsletters {
 		add_action( 'admin_post_contactpanda_import_woocommerce_email_style', array( __CLASS__, 'import_woocommerce_style' ) );
 		add_filter( 'contactpanda_newsletter_confirmation_ttl', array( __CLASS__, 'confirmation_ttl' ), 10, 2 );
 		add_action( 'contactpanda_newsletter_confirmation_sent', array( __CLASS__, 'schedule_confirmation_reminders' ), 10, 3 );
-		add_action( 'contactpanda_newsletter_confirmation_reminder', array( __CLASS__, 'send_confirmation_reminder' ), 10, 5 );
-		add_action( 'contactpanda_plus_newsletter_confirmation_reminder', array( __CLASS__, 'send_confirmation_reminder' ), 10, 5 );
+		add_action( 'contactpanda_newsletter_confirmation_reminder', array( __CLASS__, 'send_confirmation_reminder' ), 10, 6 );
+		add_action( 'contactpanda_plus_newsletter_confirmation_reminder', array( __CLASS__, 'send_confirmation_reminder' ), 10, 6 );
 	}
 
 	public static function settings_tab( $tabs ) {
@@ -71,6 +71,7 @@ final class ContactPanda_Basic_Newsletters {
 			'reminder_delays'  => array( 2, 5, 10 ),
 			'reminder_subject' => __( 'Reminder: confirm your newsletter subscription at {site_name}', 'contactpanda' ),
 			'reminder_message' => __( "Hello {first_name},\n\nplease confirm your newsletter subscription by opening this link:\n{confirmation_link}", 'contactpanda' ),
+			'reminder_translations' => array(),
 		);
 	}
 
@@ -115,6 +116,24 @@ final class ContactPanda_Basic_Newsletters {
 		$output['reminder_delays'] = array(); foreach ( array_slice( (array) ( $input['reminder_delays'] ?? array() ), 0, 3 ) as $delay ) $output['reminder_delays'][] = min( 30, max( 1, absint( $delay ) ) ); $output['reminder_delays'] = array_pad( $output['reminder_delays'], 3, 7 );
 		$output['reminder_subject'] = sanitize_text_field( $input['reminder_subject'] ?? $defaults['reminder_subject'] );
 		$output['reminder_message'] = wp_kses_post( $input['reminder_message'] ?? $defaults['reminder_message'] );
+		if ( false === strpos( $output['reminder_message'], '{confirmation_link}' ) ) {
+			$output['reminder_message'] .= "\n\n{confirmation_link}";
+		}
+		$output['reminder_translations'] = array();
+		foreach ( (array) ( $input['reminder_translations'] ?? array() ) as $locale => $translation ) {
+			$locale = preg_replace( '/[^A-Za-z0-9_\-]/', '', (string) $locale );
+			if ( ! $locale || ! is_array( $translation ) ) continue;
+			$subject = sanitize_text_field( $translation['subject'] ?? '' );
+			$message = wp_kses_post( $translation['message'] ?? '' );
+			if ( '' === $subject && '' === trim( wp_strip_all_tags( $message ) ) ) continue;
+			if ( false === strpos( $message, '{confirmation_link}' ) ) $message .= "\n\n{confirmation_link}";
+			$output['reminder_translations'][ $locale ] = array( 'subject' => $subject ?: $output['reminder_subject'], 'message' => $message ?: $output['reminder_message'] );
+		}
+		$site_locale = determine_locale();
+		if ( isset( $output['reminder_translations'][ $site_locale ] ) ) {
+			$output['reminder_subject'] = $output['reminder_translations'][ $site_locale ]['subject'];
+			$output['reminder_message'] = $output['reminder_translations'][ $site_locale ]['message'];
+		}
 		return $output;
 	}
 
@@ -154,8 +173,8 @@ final class ContactPanda_Basic_Newsletters {
 		echo '<label><span>' . esc_html__( 'Number of reminders', 'contactpanda' ) . '</span><select name="' . esc_attr( self::OPTION ) . '[reminder_count]">'; for ( $i = 0; $i <= 3; $i++ ) echo '<option value="' . esc_attr( $i ) . '"' . selected( absint( $settings['reminder_count'] ), $i, false ) . '>' . esc_html( $i ) . '</option>'; echo '</select></label>';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		for ( $i = 0; $i < 3; $i++ ) echo '<label><span>' . esc_html( sprintf( __( 'Reminder %d after days', 'contactpanda' ), $i + 1 ) ) . '</span><input type="number" min="1" max="30" name="' . esc_attr( self::OPTION ) . '[reminder_delays][]" value="' . esc_attr( absint( $settings['reminder_delays'][ $i ] ?? ( $i + 1 ) * 3 ) ) . '"></label>';
-		self::settings_field( 'reminder_subject', __( 'Reminder subject', 'contactpanda' ), $settings );
-		echo '<label><span>' . esc_html__( 'Reminder email text', 'contactpanda' ) . '</span><textarea rows="6" name="' . esc_attr( self::OPTION ) . '[reminder_message]">' . esc_textarea( $settings['reminder_message'] ) . '</textarea></label></div>';
+		echo '</div>';
+		self::render_reminder_translations( $settings );
 		submit_button( __( 'Save newsletter settings', 'contactpanda' ) );
 		echo '</section></form>';
 		if ( class_exists( 'ContactPanda_System_Emails' ) ) {
@@ -167,7 +186,8 @@ final class ContactPanda_Basic_Newsletters {
 		$settings = self::settings(); $count = min( 3, absint( $settings['reminder_count'] ) );
 		for ( $i = 0; $i < $count; $i++ ) {
 			$days = min( 30, max( 1, absint( $settings['reminder_delays'][ $i ] ?? ( $i + 1 ) * 3 ) ) );
-			wp_schedule_single_event( time() + $days * DAY_IN_SECONDS, 'contactpanda_newsletter_confirmation_reminder', array( sanitize_key( $verification_key ), sanitize_text_field( $token ), sanitize_email( $payload['email'] ?? '' ), sanitize_text_field( $payload['first_name'] ?? '' ), $i + 1 ) );
+			$locale = preg_replace( '/[^A-Za-z0-9_\-]/', '', (string) ( $payload['locale'] ?? $payload['language'] ?? determine_locale() ) );
+			wp_schedule_single_event( time() + $days * DAY_IN_SECONDS, 'contactpanda_newsletter_confirmation_reminder', array( sanitize_key( $verification_key ), sanitize_text_field( $token ), sanitize_email( $payload['email'] ?? '' ), sanitize_text_field( $payload['first_name'] ?? '' ), $i + 1, $locale ) );
 		}
 	}
 
@@ -179,13 +199,36 @@ final class ContactPanda_Basic_Newsletters {
 		return max( absint( $ttl ), ( max( array_map( 'absint', $delays ) ) + 1 ) * DAY_IN_SECONDS );
 	}
 
-	public static function send_confirmation_reminder( $verification_key, $token, $email, $first_name, $number ) {
+	public static function send_confirmation_reminder( $verification_key, $token, $email, $first_name, $number, $locale = '' ) {
 		if ( ! get_transient( 'contactpanda_newsletter_verify_' . sanitize_key( $verification_key ) ) || ! is_email( $email ) ) return;
-		$settings = self::settings(); $link = add_query_arg( 'contactpanda_newsletter_verify', sanitize_text_field( $token ), home_url( '/' ) );
+		$settings = self::settings();
+		$locale = preg_replace( '/[^A-Za-z0-9_\-]/', '', (string) $locale );
+		if ( $locale && isset( $settings['reminder_translations'][ $locale ] ) ) {
+			$settings['reminder_subject'] = $settings['reminder_translations'][ $locale ]['subject'];
+			$settings['reminder_message'] = $settings['reminder_translations'][ $locale ]['message'];
+		}
+		$link = add_query_arg( 'contactpanda_newsletter_verify', sanitize_text_field( $token ), home_url( '/' ) );
 		$replace = array( '{first_name}' => esc_html( $first_name ), '{site_name}' => esc_html( wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) ), '{confirmation_link}' => '<a href="' . esc_url( $link ) . '">' . esc_html__( 'Confirm newsletter subscription', 'contactpanda' ) . '</a>', '{reminder_number}' => absint( $number ) );
 		$subject = strtr( $settings['reminder_subject'], $replace ); $message = strtr( wpautop( $settings['reminder_message'] ), $replace );
 		if ( false === strpos( $settings['reminder_message'], '{confirmation_link}' ) ) $message .= '<p>' . $replace['{confirmation_link}'] . '</p>';
 		wp_mail( $email, $subject, $message, array( 'Content-Type: text/html; charset=UTF-8' ) );
+	}
+
+	private static function render_reminder_translations( $settings ) {
+		$site_locale = determine_locale();
+		$translations = (array) ( $settings['reminder_translations'] ?? array() );
+		if ( ! isset( $translations[ $site_locale ] ) ) $translations[ $site_locale ] = array( 'subject' => $settings['reminder_subject'], 'message' => $settings['reminder_message'] );
+		$locales = array_unique( array_merge( array( $site_locale ), get_available_languages(), array_keys( $translations ) ) );
+		echo '<div class="contactpanda-reminder-translations" data-contactpanda-language-sections><label class="contactpanda-language-selector"><span>' . esc_html__( 'Content language', 'contactpanda' ) . '</span><select data-contactpanda-language-select>';
+		foreach ( $locales as $locale ) echo '<option value="' . esc_attr( $locale ) . '"' . selected( $locale, $site_locale, false ) . '>' . esc_html( str_replace( '_', ' – ', $locale ) ) . '</option>';
+		echo '</select></label>';
+		foreach ( $locales as $locale ) {
+			$translation = wp_parse_args( (array) ( $translations[ $locale ] ?? array() ), array( 'subject' => '', 'message' => '' ) );
+			echo '<section class="contactpanda-language-section" data-contactpanda-language="' . esc_attr( $locale ) . '"' . ( $locale === $site_locale ? '' : ' hidden' ) . '><div class="contactpanda-settings-grid">';
+			echo '<label><span>' . esc_html__( 'Reminder subject', 'contactpanda' ) . '</span><input type="text" name="' . esc_attr( self::OPTION ) . '[reminder_translations][' . esc_attr( $locale ) . '][subject]" value="' . esc_attr( $translation['subject'] ) . '"></label>';
+			echo '<label class="contactpanda-reminder-message"><span>' . esc_html__( 'Reminder email text', 'contactpanda' ) . '</span><textarea class="large-text" rows="9" name="' . esc_attr( self::OPTION ) . '[reminder_translations][' . esc_attr( $locale ) . '][message]">' . esc_textarea( $translation['message'] ) . '</textarea><small>' . esc_html__( 'Available placeholders: {first_name}, {site_name}, {confirmation_link}. The confirmation link is required and is restored automatically if it is missing.', 'contactpanda' ) . '</small></label></div></section>';
+		}
+		echo '<input type="hidden" name="' . esc_attr( self::OPTION ) . '[reminder_subject]" value="' . esc_attr( $settings['reminder_subject'] ) . '"><input type="hidden" name="' . esc_attr( self::OPTION ) . '[reminder_message]" value="' . esc_attr( $settings['reminder_message'] ) . '"></div>';
 	}
 
 	private static function settings_field( $key, $label, $settings, $type = 'text', $extra = '' ) {
