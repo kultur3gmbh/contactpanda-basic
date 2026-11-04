@@ -1360,6 +1360,21 @@
 	});
 
 	document.addEventListener('click', function (event) {
+		var settingsTab = event.target.closest('[data-contactpanda-settings-tab]');
+		if (settingsTab) {
+			var navigation = settingsTab.closest('[data-contactpanda-settings-tabs]');
+			var selected = settingsTab.dataset.contactpandaSettingsTab;
+			if (!navigation || !selected) return;
+			navigation.querySelectorAll('[data-contactpanda-settings-tab]').forEach(function (button) {
+				var active = button === settingsTab;
+				button.classList.toggle('is-active', active);
+				button.setAttribute('aria-selected', active ? 'true' : 'false');
+			});
+			document.querySelectorAll('[data-contactpanda-settings-panel]').forEach(function (panel) {
+				panel.hidden = panel.dataset.contactpandaSettingsPanel !== selected;
+			});
+			return;
+		}
 		var link = event.target.closest('.contactpanda-delete-tag-link');
 		if (!link) return;
 		var template = tr('confirmDeleteTag', 'Delete the tag “%1$s”? It is currently assigned to %2$d people. The people themselves will not be deleted.');

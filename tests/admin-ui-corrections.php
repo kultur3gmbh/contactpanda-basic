@@ -179,6 +179,11 @@ foreach ( array( 'contactpanda-admin-ui', 'wp_enqueue_media', 'CONTACTPANDA_ADMI
 	}
 }
 
+if ( false === strpos( $bootstrap, "define( 'CONTACTPANDA_ASSET_VERSION', CONTACTPANDA_VERSION );" ) ) {
+	fwrite( STDERR, "Administrator assets must use the installed Basic version for cache invalidation.\n" );
+	exit( 1 );
+}
+
 foreach ( array( 'contactpanda-admin-menu', 'contactpanda-newsletters', 'contactpanda-campaigns', 'contactpanda-flows', 'contactpanda-data-transfer', 'contactpanda-migration', 'contactpanda-settings', 'contactpanda-trash' ) as $contract ) {
 	if ( false === strpos( $plugin, $contract ) ) {
 		fwrite( STDERR, "Missing ContactPanda menu order contract {$contract}.\n" );

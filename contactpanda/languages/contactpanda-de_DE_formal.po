@@ -8281,6 +8281,27 @@ msgstr "Importierte Vorlagen sind schreibgeschützt. Erstellen Sie eine bearbeit
 msgid "You are not allowed to manage these settings."
 msgstr "Sie dürfen diese Einstellungen nicht verwalten."
 
+msgid "Back to people overview"
+msgstr "Zurück zur Personenübersicht"
+
+msgid "Change these details under Website owner"
+msgstr "Diese Angaben unter Website-Inhaber ändern"
+
+msgid "Click to edit."
+msgstr "Zum Bearbeiten anklicken."
+
+msgid "Data"
+msgstr "Daten"
+
+msgid "Email default settings"
+msgstr "E-Mail-Standardeinstellungen"
+
+msgid "Fields with the same group are displayed together."
+msgstr "Felder mit derselben Gruppe werden gemeinsam angezeigt."
+
+msgid "Group"
+msgstr "Gruppe"
+
 msgid "Edit image"
 msgstr "Bild bearbeiten"
 

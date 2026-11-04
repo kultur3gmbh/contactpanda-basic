@@ -8368,6 +8368,27 @@ msgstr ""
 msgid "You are not allowed to manage these settings."
 msgstr ""
 
+msgid "Back to people overview"
+msgstr ""
+
+msgid "Change these details under Website owner"
+msgstr ""
+
+msgid "Click to edit."
+msgstr ""
+
+msgid "Data"
+msgstr ""
+
+msgid "Email default settings"
+msgstr ""
+
+msgid "Fields with the same group are displayed together."
+msgstr ""
+
+msgid "Group"
+msgstr ""
+
 msgid "No valid published update was found."
 msgstr ""
 

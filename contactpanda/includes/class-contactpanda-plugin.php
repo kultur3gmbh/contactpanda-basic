@@ -2490,7 +2490,7 @@ final class ContactPanda_Plugin {
 				echo '<a class="button button-primary contactpanda-heading-action" href="' . esc_url( add_query_arg( $edit_args, admin_url( 'admin.php' ) ) ) . '">' . esc_html__( 'Edit', 'contactpanda' ) . '</a>';
 		}
 		echo '</header>';
-		echo '<div class="contactpanda-detail-navigation"><a class="contactpanda-back" href="' . esc_url( $navigation['back'] ) . '">' . esc_html__( '← Back to people overview', 'contactpanda' ) . '</a><span class="contactpanda-detail-navigation-meta">';
+		echo '<div class="contactpanda-detail-navigation"><a class="contactpanda-back" href="' . esc_url( $navigation['back'] ) . '"><span class="dashicons dashicons-undo" aria-hidden="true"></span><span>' . esc_html__( 'Back to people overview', 'contactpanda' ) . '</span></a><span class="contactpanda-detail-navigation-meta">';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( $navigation['position'] && $navigation['total'] ) echo '<strong>' . esc_html( sprintf( __( '%1$d of %2$d entries', 'contactpanda' ), $navigation['position'], $navigation['total'] ) ) . '</strong>';
 		echo '<span class="contactpanda-detail-navigation-buttons">';
@@ -5532,7 +5532,7 @@ final class ContactPanda_Plugin {
 	}
 
 	private static function editable_address_summary( $label, $address ) {
-		echo '<div class="contactpanda-field contactpanda-address-summary"><span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row"><button type="button" class="button-link contactpanda-edit-address-summary contactpanda-address-summary-value" aria-label="' . esc_attr__( 'Edit address', 'contactpanda' ) . '">' . wp_kses( nl2br( esc_html( $address ?: __( 'Add', 'contactpanda' ) ) ), array( 'br' => array() ) ) . '</button></div><small>' . esc_html__( 'The structured contact address opens for editing.', 'contactpanda' ) . '</small></div>';
+		echo '<div class="contactpanda-field contactpanda-address-summary"><span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row"><button type="button" class="button-link contactpanda-edit-address-summary contactpanda-address-summary-value" aria-label="' . esc_attr__( 'Edit address', 'contactpanda' ) . '">' . wp_kses( nl2br( esc_html( $address ?: __( 'Add', 'contactpanda' ) ) ), array( 'br' => array() ) ) . '</button></div><small>' . esc_html__( 'Click to edit.', 'contactpanda' ) . '</small></div>';
 	}
 
 	private static function phone_field( $label, $value, $field, $id, $entity ) {

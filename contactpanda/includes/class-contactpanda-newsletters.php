@@ -139,25 +139,25 @@ final class ContactPanda_Basic_Newsletters {
 
 	public static function render_settings() {
 		$settings = self::settings();
+		$owner_url = admin_url( 'admin.php?page=contactpanda-settings&tab=general&general_section=company' );
 		$notice = get_transient( 'contactpanda_newsletter_settings_notice_' . get_current_user_id() );
 		if ( $notice ) {
 			delete_transient( 'contactpanda_newsletter_settings_notice_' . get_current_user_id() );
 			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( $notice ) . '</p></div>';
 		}
+		echo '<nav class="contactpanda-email-settings-tabs" data-contactpanda-settings-tabs role="tablist" aria-label="' . esc_attr__( 'Email default settings', 'contactpanda' ) . '"><button type="button" class="is-active" role="tab" aria-selected="true" data-contactpanda-settings-tab="data">' . esc_html__( 'Data', 'contactpanda' ) . '</button><button type="button" role="tab" aria-selected="false" data-contactpanda-settings-tab="design">' . esc_html__( 'Design', 'contactpanda' ) . '</button><button type="button" role="tab" aria-selected="false" data-contactpanda-settings-tab="reminders">' . esc_html__( 'Double opt-in reminders', 'contactpanda' ) . '</button></nav>';
 		if ( class_exists( 'WooCommerce' ) ) {
-			echo '<section class="contactpanda-card contactpanda-settings-card contactpanda-woocommerce-email-import"><h2>' . esc_html__( 'Adopt WooCommerce settings', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Copy the current WooCommerce email colors, sender details, header image, and footer text into the editable ContactPanda fields below. This is a one-time copy and does not switch the selected email layout.', 'contactpanda' ) . '</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_import_woocommerce_email_style">';
+			echo '<section class="contactpanda-card contactpanda-settings-card contactpanda-woocommerce-email-import" data-contactpanda-settings-panel="data"><h2>' . esc_html__( 'Adopt WooCommerce settings', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Copy the current WooCommerce email colors, sender details, header image, and footer text into the editable ContactPanda fields below. This is a one-time copy and does not switch the selected email layout.', 'contactpanda' ) . '</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_import_woocommerce_email_style">';
 			wp_nonce_field( 'contactpanda_import_woocommerce_email_style' );
 			echo '<button type="submit" class="button">' . esc_html__( 'Adopt WooCommerce settings', 'contactpanda' ) . '</button></form></section>';
 		}
 		echo '<form method="post" action="options.php"><section class="contactpanda-card contactpanda-settings-card contactpanda-newsletter-global-settings"><h2>' . esc_html__( 'Email defaults', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Website owner, address, and logo details are maintained once under Website owner. This page contains only email-specific defaults.', 'contactpanda' ) . '</p>';
 		settings_fields( 'contactpanda_newsletter' );
-		echo '<h3>' . esc_html__( 'Sender details', 'contactpanda' ) . '</h3><div class="contactpanda-settings-grid">';
-		self::settings_field( 'from_name', __( 'Sender name', 'contactpanda' ), $settings );
-		self::settings_field( 'from_email', __( 'Sender email address', 'contactpanda' ), $settings, 'email' );
-		self::settings_field( 'reply_to', __( 'Default reply-to address', 'contactpanda' ), $settings, 'email' );
-		echo '</div><h3>' . esc_html__( 'Email footer', 'contactpanda' ) . '</h3>';
+		echo '<div data-contactpanda-settings-panel="data"><h3>' . esc_html__( 'Sender details', 'contactpanda' ) . '</h3><dl class="contactpanda-sender-summary"><div><dt>' . esc_html__( 'Sender name', 'contactpanda' ) . '</dt><dd>' . esc_html( $settings['from_name'] ) . '</dd></div><div><dt>' . esc_html__( 'Sender email address', 'contactpanda' ) . '</dt><dd>' . esc_html( $settings['from_email'] ) . '</dd></div><div><dt>' . esc_html__( 'Default reply-to address', 'contactpanda' ) . '</dt><dd>' . esc_html( $settings['reply_to'] ) . '</dd></div></dl><p><a href="' . esc_url( $owner_url ) . '">' . esc_html__( 'Change these details under Website owner', 'contactpanda' ) . '</a></p>';
+		foreach ( array( 'from_name', 'from_email', 'reply_to' ) as $key ) echo '<input type="hidden" name="' . esc_attr( self::OPTION ) . '[' . esc_attr( $key ) . ']" value="' . esc_attr( $settings[ $key ] ) . '">';
+		echo '<h3>' . esc_html__( 'Email footer', 'contactpanda' ) . '</h3>';
 		echo '<textarea class="large-text" rows="4" name="' . esc_attr( self::OPTION ) . '[footer_text]" placeholder="' . esc_attr__( 'Optional email-specific footer text', 'contactpanda' ) . '">' . esc_textarea( $settings['footer_text'] ) . '</textarea>';
-		echo '<h3>' . esc_html__( 'Email appearance', 'contactpanda' ) . '</h3><div class="contactpanda-settings-grid">';
+		echo '</div><div data-contactpanda-settings-panel="design" hidden><h3>' . esc_html__( 'Email appearance', 'contactpanda' ) . '</h3><div class="contactpanda-settings-grid">';
 		foreach ( array( 'base_color' => __( 'Accent color', 'contactpanda' ), 'background_color' => __( 'Background color', 'contactpanda' ), 'body_color' => __( 'Content background', 'contactpanda' ), 'text_color' => __( 'Text color', 'contactpanda' ) ) as $key => $label ) {
 			self::settings_color_field( $key, $label, $settings );
 		}
@@ -168,17 +168,20 @@ final class ContactPanda_Basic_Newsletters {
 			echo '<label class="contactpanda-style-option"><input type="radio" name="' . esc_attr( self::OPTION ) . '[email_layout]" value="woocommerce"' . checked( $settings['email_layout'], 'woocommerce', false ) . '><span><strong>' . esc_html__( 'WooCommerce email layout', 'contactpanda' ) . '</strong><small>' . esc_html__( 'Use the configured WooCommerce email frame with ContactPanda content and unsubscribe protection.', 'contactpanda' ) . '</small></span></label>';
 		}
 		echo '</div></fieldset>';
-		echo '</div>';
-		echo '<h3>' . esc_html__( 'Double opt-in reminders', 'contactpanda' ) . '</h3><p>' . esc_html__( 'Optionally remind unconfirmed newsletter subscribers. Reminders stop automatically after confirmation or expiry and contain no marketing content.', 'contactpanda' ) . '</p><div class="contactpanda-settings-grid">';
+		echo '</div></div>';
+		echo '<div data-contactpanda-settings-panel="reminders" hidden><h3>' . esc_html__( 'Double opt-in reminders', 'contactpanda' ) . '</h3><p>' . esc_html__( 'Optionally remind unconfirmed newsletter subscribers. Reminders stop automatically after confirmation or expiry and contain no marketing content.', 'contactpanda' ) . '</p><div class="contactpanda-settings-grid">';
 		echo '<label><span>' . esc_html__( 'Number of reminders', 'contactpanda' ) . '</span><select name="' . esc_attr( self::OPTION ) . '[reminder_count]">'; for ( $i = 0; $i <= 3; $i++ ) echo '<option value="' . esc_attr( $i ) . '"' . selected( absint( $settings['reminder_count'] ), $i, false ) . '>' . esc_html( $i ) . '</option>'; echo '</select></label>';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		for ( $i = 0; $i < 3; $i++ ) echo '<label><span>' . esc_html( sprintf( __( 'Reminder %d after days', 'contactpanda' ), $i + 1 ) ) . '</span><input type="number" min="1" max="30" name="' . esc_attr( self::OPTION ) . '[reminder_delays][]" value="' . esc_attr( absint( $settings['reminder_delays'][ $i ] ?? ( $i + 1 ) * 3 ) ) . '"></label>';
 		echo '</div>';
 		self::render_reminder_translations( $settings );
+		echo '</div>';
 		submit_button( __( 'Save newsletter settings', 'contactpanda' ) );
 		echo '</section></form>';
 		if ( class_exists( 'ContactPanda_System_Emails' ) ) {
+			echo '<div data-contactpanda-settings-panel="design" hidden>';
 			ContactPanda_System_Emails::render_settings();
+			echo '</div>';
 		}
 	}
 

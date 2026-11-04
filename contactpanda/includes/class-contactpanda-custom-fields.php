@@ -54,6 +54,8 @@ final class ContactPanda_Custom_Fields {
 	public static function integration_definitions( $entity = '' ) {
 		$definitions = array_values( array_filter( (array) get_option( self::OPTION, array() ), array( __CLASS__, 'valid_definition' ) ) );
 		usort( $definitions, static function ( $left, $right ) {
+			$group = strcasecmp( $left['group'] ?? '', $right['group'] ?? '' );
+			if ( 0 !== $group ) return $group;
 			$sort = (int) $left['sort'] <=> (int) $right['sort'];
 			return 0 !== $sort ? $sort : strcasecmp( $left['label'], $right['label'] );
 		} );
@@ -93,6 +95,7 @@ final class ContactPanda_Custom_Fields {
 			'id'       => 'imported-' . substr( md5( $entity . ':' . $key ), 0, 20 ),
 			'key'      => $key,
 			'label'    => sanitize_text_field( $label ) ?: $key,
+			'group'    => 'Imported fields',
 			'entity'   => $entity,
 			'type'     => $type,
 			'required' => 0,
@@ -173,20 +176,20 @@ final class ContactPanda_Custom_Fields {
 		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Custom fields', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Create additional fields for people or companies in the ContactPanda database. Existing values remain available if a field definition is later removed.', 'contactpanda' ) . '</p>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-custom-field-form"><input type="hidden" name="action" value="contactpanda_save_custom_field"><input type="hidden" name="field_id" value="' . esc_attr( $editing['id'] ?? '' ) . '">';
 		wp_nonce_field( 'contactpanda_save_custom_field' );
-		echo '<div class="contactpanda-custom-field-primary"><label><span>' . esc_html__( 'Field name', 'contactpanda' ) . '</span><input name="label" required value="' . esc_attr( $editing['label'] ?? '' ) . '"></label><label><span>' . esc_html__( 'Internal key', 'contactpanda' ) . '</span><input name="field_key" required pattern="[a-z0-9_]+" value="' . esc_attr( $editing['key'] ?? '' ) . '"' . ( $editing ? ' readonly' : '' ) . '><small>' . esc_html__( 'Lowercase letters, numbers and underscores. The key cannot be changed later.', 'contactpanda' ) . '</small></label><label class="contactpanda-custom-field-required"><input type="checkbox" name="required" value="1"' . checked( ! empty( $editing['required'] ), true, false ) . '> <span>' . esc_html__( 'Use as a required field', 'contactpanda' ) . '</span></label></div>';
+		echo '<div class="contactpanda-custom-field-primary"><label><span>' . esc_html__( 'Field name', 'contactpanda' ) . '</span><input name="label" required value="' . esc_attr( $editing['label'] ?? '' ) . '"></label><label><span>' . esc_html__( 'Group', 'contactpanda' ) . '</span><input name="field_group" value="' . esc_attr( $editing['group'] ?? '' ) . '" placeholder="' . esc_attr__( 'General', 'contactpanda' ) . '"><small>' . esc_html__( 'Fields with the same group are displayed together.', 'contactpanda' ) . '</small></label><label><span>' . esc_html__( 'Internal key', 'contactpanda' ) . '</span><input name="field_key" required pattern="[a-z0-9_]+" value="' . esc_attr( $editing['key'] ?? '' ) . '"' . ( $editing ? ' readonly' : '' ) . '><small>' . esc_html__( 'Lowercase letters, numbers and underscores. The key cannot be changed later.', 'contactpanda' ) . '</small></label><label class="contactpanda-custom-field-required"><input type="checkbox" name="required" value="1"' . checked( ! empty( $editing['required'] ), true, false ) . '> <span>' . esc_html__( 'Use as a required field', 'contactpanda' ) . '</span></label></div>';
 		echo '<div class="contactpanda-custom-field-properties">';
 		echo '<label><span>' . esc_html__( 'Applies to', 'contactpanda' ) . '</span><select name="entity"><option value="contacts"' . selected( $editing['entity'] ?? 'contacts', 'contacts', false ) . '>' . esc_html__( 'People', 'contactpanda' ) . '</option><option value="companies"' . selected( $editing['entity'] ?? '', 'companies', false ) . '>' . esc_html__( 'Companies', 'contactpanda' ) . '</option></select></label>';
 		echo '<label><span>' . esc_html__( 'Field type', 'contactpanda' ) . '</span><select name="field_type">';
 		foreach ( self::type_labels() as $type => $label ) echo '<option value="' . esc_attr( $type ) . '"' . selected( $editing['type'] ?? 'text', $type, false ) . '>' . esc_html( $label ) . '</option>';
 		echo '</select></label><label><span>' . esc_html__( 'Sort order', 'contactpanda' ) . '</span><input type="number" name="sort" value="' . esc_attr( $editing['sort'] ?? 10 ) . '"></label><label class="contactpanda-custom-field-options"><span>' . esc_html__( 'Dropdown options', 'contactpanda' ) . '</span><textarea name="options" rows="3" placeholder="' . esc_attr__( 'One option per line', 'contactpanda' ) . '">' . esc_textarea( implode( "\n", (array) ( $editing['options'] ?? array() ) ) ) . '</textarea><small>' . esc_html__( 'Used only for Dropdown fields.', 'contactpanda' ) . '</small></label></div>';
 		echo '<p><button class="button button-primary">' . ( $editing ? esc_html__( 'Save changes', 'contactpanda' ) : esc_html__( 'Add custom field', 'contactpanda' ) ) . '</button>' . ( $editing ? ' <a class="button" href="' . esc_url( self::settings_url() ) . '">' . esc_html__( 'Cancel', 'contactpanda' ) . '</a>' : '' ) . '</p></form>';
-		echo '<table class="widefat striped contactpanda-table"><thead><tr><th>' . esc_html__( 'Field', 'contactpanda' ) . '</th><th>' . esc_html__( 'Internal key', 'contactpanda' ) . '</th><th>' . esc_html__( 'Applies to', 'contactpanda' ) . '</th><th>' . esc_html__( 'Type', 'contactpanda' ) . '</th><th>' . esc_html__( 'Order', 'contactpanda' ) . '</th><th>' . esc_html__( 'Actions', 'contactpanda' ) . '</th></tr></thead><tbody>';
+		echo '<table class="widefat striped contactpanda-table"><thead><tr><th>' . esc_html__( 'Field', 'contactpanda' ) . '</th><th>' . esc_html__( 'Group', 'contactpanda' ) . '</th><th>' . esc_html__( 'Internal key', 'contactpanda' ) . '</th><th>' . esc_html__( 'Applies to', 'contactpanda' ) . '</th><th>' . esc_html__( 'Type', 'contactpanda' ) . '</th><th>' . esc_html__( 'Order', 'contactpanda' ) . '</th><th>' . esc_html__( 'Actions', 'contactpanda' ) . '</th></tr></thead><tbody>';
 		foreach ( $definitions as $definition ) {
 			$edit_url = self::settings_url( array( 'edit_custom_field' => $definition['id'] ) );
 			$delete_url = self::settings_url( array( 'delete_custom_field' => $definition['id'] ) );
-			echo '<tr><td><strong>' . esc_html( $definition['label'] ) . '</strong>' . ( $definition['required'] ? ' <span class="contactpanda-mini-badge">' . esc_html__( 'Required', 'contactpanda' ) . '</span>' : '' ) . '</td><td><code>' . esc_html( $definition['key'] ) . '</code></td><td>' . esc_html( 'contacts' === $definition['entity'] ? __( 'People', 'contactpanda' ) : __( 'Companies', 'contactpanda' ) ) . '</td><td>' . esc_html( self::type_labels()[ $definition['type'] ] ?? $definition['type'] ) . '</td><td>' . esc_html( $definition['sort'] ) . '</td><td><a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'contactpanda' ) . '</a> · <a href="' . esc_url( $delete_url ) . '">' . esc_html__( 'Delete', 'contactpanda' ) . '</a></td></tr>';
+			echo '<tr><td><strong>' . esc_html( $definition['label'] ) . '</strong>' . ( $definition['required'] ? ' <span class="contactpanda-mini-badge">' . esc_html__( 'Required', 'contactpanda' ) . '</span>' : '' ) . '</td><td>' . esc_html( $definition['group'] ?? __( 'General', 'contactpanda' ) ) . '</td><td><code>' . esc_html( $definition['key'] ) . '</code></td><td>' . esc_html( 'contacts' === $definition['entity'] ? __( 'People', 'contactpanda' ) : __( 'Companies', 'contactpanda' ) ) . '</td><td>' . esc_html( self::type_labels()[ $definition['type'] ] ?? $definition['type'] ) . '</td><td>' . esc_html( $definition['sort'] ) . '</td><td><a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'contactpanda' ) . '</a> · <a href="' . esc_url( $delete_url ) . '">' . esc_html__( 'Delete', 'contactpanda' ) . '</a></td></tr>';
 		}
-		if ( ! $definitions ) echo '<tr><td colspan="6">' . esc_html__( 'No custom fields have been created yet.', 'contactpanda' ) . '</td></tr>';
+		if ( ! $definitions ) echo '<tr><td colspan="7">' . esc_html__( 'No custom fields have been created yet.', 'contactpanda' ) . '</td></tr>';
 		echo '</tbody></table></section>';
 	}
 
@@ -197,6 +200,7 @@ final class ContactPanda_Custom_Fields {
 		$id = sanitize_key( wp_unslash( $_POST['field_id'] ?? '' ) );
 		$key = sanitize_key( wp_unslash( $_POST['field_key'] ?? '' ) );
 		$label = sanitize_text_field( wp_unslash( $_POST['label'] ?? '' ) );
+		$group = sanitize_text_field( wp_unslash( $_POST['field_group'] ?? '' ) );
 		$type = sanitize_key( wp_unslash( $_POST['field_type'] ?? 'text' ) );
 		$entity = self::normalize_entity( sanitize_key( wp_unslash( $_POST['entity'] ?? 'contacts' ) ) );
 		if ( ! $key || ! $label || ! isset( self::type_labels()[ $type ] ) ) {
@@ -215,7 +219,7 @@ final class ContactPanda_Custom_Fields {
 			self::notice( 'error', __( 'Add at least one option for a selection field.', 'contactpanda' ) );
 			wp_safe_redirect( self::settings_url( $id ? array( 'edit_custom_field' => $id ) : array() ) ); exit;
 		}
-		$new = array( 'id' => $id ?: wp_generate_uuid4(), 'key' => $key, 'label' => $label, 'entity' => $entity, 'type' => $type, 'required' => empty( $_POST['required'] ) ? 0 : 1, 'sort' => intval( $_POST['sort'] ?? 10 ), 'options' => $options );
+		$new = array( 'id' => $id ?: wp_generate_uuid4(), 'key' => $key, 'label' => $label, 'group' => $group ?: 'General', 'entity' => $entity, 'type' => $type, 'required' => empty( $_POST['required'] ) ? 0 : 1, 'sort' => intval( $_POST['sort'] ?? 10 ), 'options' => $options );
 		$replaced = false;
 		foreach ( $definitions as $index => $definition ) if ( $new['id'] === $definition['id'] ) { $new['key'] = $definition['key']; $definitions[ $index ] = $new; $replaced = true; }
 		if ( ! $replaced ) $definitions[] = $new;
@@ -251,12 +255,32 @@ final class ContactPanda_Custom_Fields {
 		echo '<section class="contactpanda-card contactpanda-custom-values"><h2>' . esc_html__( 'Custom fields', 'contactpanda' ) . '</h2>';
 		if ( isset( $_GET['custom_fields_saved'] ) ) echo '<div class="notice notice-success inline"><p>' . esc_html__( 'The custom fields were saved.', 'contactpanda' ) . '</p></div>'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- success flag only.
 		if ( $readonly ) {
-			foreach ( $definitions as $definition ) echo '<div class="contactpanda-field"><span>' . esc_html( $definition['label'] ) . '</span><strong>' . esc_html( self::display_value( $definition, self::record_value( $record, $definition ) ) ) . '</strong></div>';
+			$current_group = null;
+			foreach ( $definitions as $definition ) {
+				$group = $definition['group'] ?? __( 'General', 'contactpanda' );
+				if ( $group !== $current_group ) {
+					if ( null !== $current_group ) echo '</div>';
+					echo '<div class="contactpanda-custom-field-group"><h3>' . esc_html( $group ) . '</h3>';
+					$current_group = $group;
+				}
+				echo '<div class="contactpanda-field"><span>' . esc_html( $definition['label'] ) . '</span><strong>' . esc_html( self::display_value( $definition, self::record_value( $record, $definition ) ) ) . '</strong></div>';
+			}
+			if ( null !== $current_group ) echo '</div>';
 			echo '</section>'; return;
 		}
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_save_custom_values"><input type="hidden" name="entity" value="' . esc_attr( $entity ) . '"><input type="hidden" name="record_id" value="' . esc_attr( $id ) . '">';
 		wp_nonce_field( 'contactpanda_save_custom_values_' . $entity . '_' . $id );
-		foreach ( $definitions as $definition ) self::render_input( $definition, self::record_value( $record, $definition ) );
+		$current_group = null;
+		foreach ( $definitions as $definition ) {
+			$group = $definition['group'] ?? __( 'General', 'contactpanda' );
+			if ( $group !== $current_group ) {
+				if ( null !== $current_group ) echo '</fieldset>';
+				echo '<fieldset class="contactpanda-custom-field-group"><legend>' . esc_html( $group ) . '</legend>';
+				$current_group = $group;
+			}
+			self::render_input( $definition, self::record_value( $record, $definition ) );
+		}
+		if ( null !== $current_group ) echo '</fieldset>';
 		echo '<p><button class="button button-primary">' . esc_html__( 'Save custom fields', 'contactpanda' ) . '</button></p></form></section>';
 	}
 
