@@ -30,6 +30,7 @@ final class ContactPanda_System_Emails {
 			'apply_wordpress'  => 0,
 			'header_blocks'    => array( array( 'type' => 'image', 'url' => '' ) ),
 			'footer_blocks'    => array( array( 'type' => 'text', 'content' => '' ) ),
+			'footer_mode'      => 'standard',
 		);
 	}
 
@@ -79,6 +80,12 @@ final class ContactPanda_System_Emails {
 			if ( 'image' === $type ) { $url = $block['url'] ?? ''; $url = $url ?: $logo; if ( $url ) $html .= '<div style="text-align:' . esc_attr( $position ) . ';margin:0 0 16px"><img src="' . esc_url( $url ) . '" alt="" style="display:inline-block;max-height:72px;max-width:240px"></div>'; }
 			elseif ( 'text' === $type && ! empty( $block['content'] ) ) $html .= '<div style="margin:0 0 14px">' . wpautop( wp_kses_post( $block['content'] ) ) . '</div>';
 			elseif ( 'separator' === $type ) $html .= '<hr style="border:0;border-top:1px solid #dcdcde;margin:16px 0">';
+			elseif ( 'columns' === $type && ! empty( $block['columns'] ) ) {
+				$columns = array_slice( (array) $block['columns'], 0, 3 );
+				$html .= '<table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>';
+				foreach ( $columns as $column ) $html .= '<td width="' . esc_attr( floor( 100 / max( 1, count( $columns ) ) ) ) . '%" valign="top" style="padding:0 8px">' . wpautop( wp_kses_post( $column ) ) . '</td>';
+				$html .= '</tr></table>';
+			}
 		}
 		return $html;
 	}
@@ -92,7 +99,7 @@ final class ContactPanda_System_Emails {
 		$button_css = 'background:' . $s['accent_color'] . ';border-radius:4px;color:#fff!important;display:inline-block;padding:11px 18px;text-decoration:none';
 		$content = preg_replace( '/class=(["\'])contactpanda-email-button\1/', 'style="' . esc_attr( $button_css ) . '"', (string) $content );
 		$header = self::render_blocks( $s['header_blocks'], $logo, $s['logo_position'] );
-		$footer = self::render_blocks( $s['footer_blocks'], $logo, $s['logo_position'] );
+		$footer = 'custom' === ( $s['footer_mode'] ?? 'standard' ) ? self::render_blocks( $s['footer_blocks'], $logo, $s['logo_position'] ) : '';
 		return '<!doctype html><html><body data-contactpanda-system-email="1" style="margin:0;padding:0;background:' . esc_attr( $s['background_color'] ) . ';color:' . esc_attr( $s['text_color'] ) . ';font-family:' . esc_attr( $s['font_family'] ) . '"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 14px"><table role="presentation" width="640" style="max-width:640px;width:100%;background:' . esc_attr( $s['content_color'] ) . ';border-radius:8px;overflow:hidden" cellspacing="0" cellpadding="0"><tr><td style="padding:24px 28px;background:' . esc_attr( $s['header_color'] ) . '">' . $header . '</td></tr><tr><td style="padding:28px"><div style="font-size:16px;line-height:1.6">' . wp_kses_post( $content ) . '</div></td></tr><tr><td align="center" style="text-align:center;border-top:1px solid #e2e5e8;padding:20px 28px;font-size:12px;line-height:1.5;background:' . esc_attr( $s['footer_color'] ) . ';color:' . esc_attr( $s['footer_text_color'] ) . '">' . $footer . ( $legal ? nl2br( esc_html( $legal ) ) : '' ) . '</td></tr></table><div style="font-size:12px;color:#646970;margin-top:12px">' . esc_html( $subject ) . '</div></td></tr></table></body></html>';
 	}
 }
