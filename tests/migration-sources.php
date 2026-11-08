@@ -12,6 +12,8 @@ $checks = array(
 	'FluentCRM preview handler' => 'handle_migrate_fluentcrm()',
 	'stable FluentCRM source identifier' => "'fluentcrm_subscriber_id' => \$source_id",
 	'non-destructive status protection' => "array( 'unsubscribed', 'bounced', 'spam' )",
+	'Newsletter Plugin AJAX migration' => "wp_ajax_contactpanda_migrate_newsletter_plugin",
+	'Newsletter Plugin live progress' => 'contactpanda-live-migration-form',
 );
 
 foreach ( $checks as $label => $needle ) {

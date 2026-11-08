@@ -10,6 +10,44 @@ $styles     = file_get_contents( $root . '/contactpanda/assets/contactpanda-admi
 $menu_styles = file_get_contents( $root . '/contactpanda/assets/contactpanda-admin-menu.css' );
 $bootstrap  = file_get_contents( $root . '/contactpanda/contactpanda.php' );
 $registration = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-registration.php' );
+$company_profile = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-company-profile.php' );
+$newsletters = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-newsletters.php' );
+$system_emails = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-system-emails.php' );
+$capabilities = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-capabilities.php' );
+
+foreach ( array( 'data-contactpanda-legal-form', 'Name or organisation', 'Chairperson or president', "<select name=\"country\"", "\$profile = self::get();" ) as $contract ) {
+	if ( false === strpos( $company_profile, $contract ) ) {
+		fwrite( STDERR, "Missing inclusive website-owner contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
+foreach ( array( "Payments and documents", "Stamp image", "Signature image", "Country code" ) as $obsolete_contract ) {
+	if ( false !== strpos( $company_profile, "esc_html__( '" . $obsolete_contract ) ) {
+		fwrite( STDERR, "Basic must not render {$obsolete_contract} in website-owner settings.\n" );
+		exit( 1 );
+	}
+}
+
+if ( false !== strpos( $system_emails, "contactpanda_general_settings_sections" ) || false === strpos( $newsletters, 'ContactPanda_System_Emails::render_settings();' ) ) {
+	fwrite( STDERR, "System email design must be consolidated into Email defaults.\n" );
+	exit( 1 );
+}
+
+foreach ( array( "class_exists( 'ContactPanda_Plus_Messaging' )", "class_exists( 'ContactPanda_Plus_Email_Delivery' )" ) as $contract ) {
+	if ( false === strpos( $registration, $contract ) ) {
+		fwrite( STDERR, "Missing optional Plus integration visibility contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
+
+foreach ( array( 'management_available()', 'contactpanda_render_settings_tab_roles', 'contactpanda_save_role_capabilities', 'Save role permissions' ) as $contract ) {
+	if ( false !== strpos( $capabilities, $contract ) ) {
+		fwrite( STDERR, "Basic must not embed the Plus role editor contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
 
 foreach ( array( 'Button preview', 'contactpanda-theme-button-preview is-contactpanda', 'contactpanda-theme-button-preview is-theme', 'Detected theme colors' ) as $contract ) {
 	if ( false === strpos( $registration, $contract ) ) {
@@ -18,14 +56,14 @@ foreach ( array( 'Button preview', 'contactpanda-theme-button-preview is-contact
 	}
 }
 
-foreach ( array( 'Drop a CSV file here', 'Drop a vCard file here', 'contactpanda-file-drop-actions' ) as $contract ) {
+foreach ( array( 'Drop a CSV file here', 'contactpanda-file-drop-actions', 'contactpanda_render_contact_import_extensions' ) as $contract ) {
 	if ( false === strpos( $data_tools, $contract ) ) {
 		fwrite( STDERR, "Missing import dropzone contract {$contract}.\n" );
 		exit( 1 );
 	}
 }
 
-foreach ( array( 'contactpanda-people-search-row', 'contactpanda-search-primary', 'Search by name, email, phone, or company', "esc_html__( 'Execute', 'contactpanda' )" ) as $contract ) {
+foreach ( array( 'contactpanda-people-search-row', 'contactpanda-search-primary', 'Quick search by name, email, phone, or company', "esc_html__( 'Execute', 'contactpanda' )" ) as $contract ) {
 	if ( false === strpos( $plugin, $contract ) ) {
 		fwrite( STDERR, "Missing people-list UI contract {$contract}.\n" );
 		exit( 1 );
@@ -79,6 +117,20 @@ foreach ( array( 'contactpanda-open-company-relation', 'contactpanda-close-compa
 	}
 }
 
+foreach ( array( 'contactpanda_bulk_manage_contact_tags', 'bulk_manage_contact_tags', "value=\"tags_add\"", "value=\"tags_remove\"", 'contactpanda-bulk-tags-modal', 'contactpanda-bulk-tag-suggestion' ) as $contract ) {
+	if ( false === strpos( $plugin, $contract ) && false === strpos( $script, $contract ) ) {
+		fwrite( STDERR, "Missing selected-person tag bulk action contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
+foreach ( array( "['marketable', 'newsletter', 'trash', 'tags_add', 'tags_remove']", 'contactpanda-save-bulk-tags', 'contactpanda-remove-bulk-tag', 'tag_ids[]' ) as $contract ) {
+	if ( false === strpos( $script, $contract ) ) {
+		fwrite( STDERR, "Missing selected-person tag interaction contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
 foreach ( array( 'contactpanda-file-drop-actions', 'contactpanda-people-search-row', 'contactpanda-search-primary', 'contactpanda-company-relation-modal', 'contactpanda-table-scroll', 'contactpanda-email-column' ) as $contract ) {
 	if ( false === strpos( $styles, $contract ) ) {
 		fwrite( STDERR, "Missing administrator style contract {$contract}.\n" );
@@ -86,11 +138,27 @@ foreach ( array( 'contactpanda-file-drop-actions', 'contactpanda-people-search-r
 	}
 }
 
-foreach ( array( 'createImagePicker', 'enhanceColorPicker', 'enhanceListActions', 'contactpanda-list-action', 'contactpanda-unified-color-popover', 'contactpanda-unified-color-palette' ) as $contract ) {
+foreach ( array( 'createImagePicker', 'enhanceColorPicker', 'enhanceListActions', 'contactpanda-list-action', 'contactpanda-unified-color-popover', 'contactpanda-unified-color-palette', 'contactpanda-image-picker-selected', 'contactpanda-image-picker-empty-actions', 'dashicons-admin-links', 'contactpanda-image-picker-storage' ) as $contract ) {
 	if ( false === strpos( $shared_ui, $contract ) ) {
 		fwrite( STDERR, "Missing shared family UI contract {$contract}.\n" );
 		exit( 1 );
 	}
+}
+
+foreach ( array( '@container (max-width:620px)', '@container (max-width:380px)', '.contactpanda-image-picker-action-label' ) as $contract ) {
+	if ( false === strpos( $styles, $contract ) ) {
+		fwrite( STDERR, "Missing responsive family image-picker contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
+$newsletter_editor = file_get_contents( $root . '/contactpanda/assets/contactpanda-newsletters.js' );
+if ( false !== strpos( $newsletter_editor, "field(i18n.imageUrl, 'url'" ) ) {
+	fwrite( STDERR, "The newsletter editor must not expose a permanent image URL field.\n" );
+	exit( 1 );
+}
+if ( false !== strpos( $newsletter_editor, "var mediaButton = document.querySelector('.contactpanda-newsletter-media-button')" ) ) {
+	fail( 'The newsletter settings still initialize a legacy standalone logo picker.' );
 }
 
 foreach ( array( 'contactpanda_sanitize_css_color', 'Theme and template colors', 'Enter a valid HEX, RGB, or RGBA color.' ) as $contract ) {
@@ -106,7 +174,7 @@ foreach ( array( '.contactpanda-unified-color-popover', '.contactpanda-unified-c
 		exit( 1 );
 	}
 }
-foreach ( array( 'min-width:280px', 'grid-template-columns:190px 30px 30px', 'repeat(auto-fit,minmax(min(280px,100%),1fr))' ) as $contract ) {
+foreach ( array( 'grid-template-columns:minmax(0,1fr) 18px 18px', 'width:100%;max-width:100%', 'repeat(auto-fit,minmax(min(280px,100%),1fr))' ) as $contract ) {
 	if ( false === strpos( $styles, $contract ) ) {
 		fwrite( STDERR, "Missing non-clipping responsive color picker contract {$contract}.\n" );
 		exit( 1 );
@@ -125,9 +193,29 @@ foreach ( array( 'contactpanda-admin-ui', 'wp_enqueue_media', 'CONTACTPANDA_ADMI
 	}
 }
 
+if ( false === strpos( $bootstrap, "define( 'CONTACTPANDA_ASSET_VERSION', CONTACTPANDA_VERSION" ) ) {
+	fwrite( STDERR, "Administrator assets must use the installed Basic version for cache invalidation.\n" );
+	exit( 1 );
+}
+
 foreach ( array( 'contactpanda-admin-menu', 'contactpanda-newsletters', 'contactpanda-campaigns', 'contactpanda-flows', 'contactpanda-data-transfer', 'contactpanda-migration', 'contactpanda-settings', 'contactpanda-trash' ) as $contract ) {
 	if ( false === strpos( $plugin, $contract ) ) {
 		fwrite( STDERR, "Missing ContactPanda menu order contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
+$inline_search = file_get_contents( __DIR__ . '/../contactpanda/assets/contactpanda-inline-search.js' );
+foreach ( array( "new URL(config.peopleUrl || window.location.href", "url.searchParams.set('page', 'contactpanda-people')" ) as $contract ) {
+	if ( false === strpos( $inline_search, $contract ) ) {
+		fwrite( STDERR, "Direct contact-filter results must stay in the people list: {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
+foreach ( array( 'render_dashboard_current_mailing', "status IN ('queued','sending','paused')", "status IN ('completed','imported')", 'Current mailing' ) as $contract ) {
+	if ( false === strpos( $plugin, $contract ) ) {
+		fwrite( STDERR, "Missing separate current and completed dashboard mailing contract {$contract}.\n" );
 		exit( 1 );
 	}
 }
