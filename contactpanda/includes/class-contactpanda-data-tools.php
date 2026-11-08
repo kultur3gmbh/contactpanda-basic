@@ -7,10 +7,6 @@ final class ContactPanda_Data_Tools {
 	const CENTRAL_OPTION = 'contactpanda_central_salutation_library';
 	const NOTICE_OPTION  = 'contactpanda_admin_notice_settings';
 
-	public static function vcard_enabled() {
-		return (bool) apply_filters( 'contactpanda_vcard_enabled', false );
-	}
-
 	public static function boot() {
 		add_action( 'admin_menu', array( __CLASS__, 'menu' ), 25 );
 		add_action( 'admin_init', array( __CLASS__, 'redirect_legacy_migration_url' ) );
@@ -22,10 +18,6 @@ final class ContactPanda_Data_Tools {
 		add_action( 'contactpanda_render_misc_settings_section_admin_notices', array( __CLASS__, 'render_notice_settings' ) );
 		add_action( 'admin_post_contactpanda_csv_preview', array( __CLASS__, 'handle_csv_preview' ) );
 		add_action( 'admin_post_contactpanda_csv_import', array( __CLASS__, 'handle_csv_import' ) );
-		if ( self::vcard_enabled() ) {
-			add_action( 'admin_post_contactpanda_vcard_preview', array( __CLASS__, 'handle_vcard_preview' ) );
-			add_action( 'admin_post_contactpanda_vcard_import', array( __CLASS__, 'handle_vcard_import' ) );
-		}
 		add_action( 'admin_post_contactpanda_rollback_import', array( __CLASS__, 'handle_import_rollback' ) );
 		add_action( 'admin_post_contactpanda_merge_preview', array( __CLASS__, 'handle_merge_preview' ) );
 		add_action( 'admin_post_contactpanda_merge_group', array( __CLASS__, 'handle_merge_group' ) );
@@ -84,7 +76,7 @@ final class ContactPanda_Data_Tools {
 			$entity = isset( $_GET['entity'] ) ? sanitize_key( wp_unslash( $_GET['entity'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only import filter.
 			if ( in_array( $entity, array( 'contacts', 'companies' ), true ) ) {
 				self::render_csv_import( $entity );
-				if ( 'contacts' === $entity && self::vcard_enabled() ) self::render_vcard_import();
+				if ( 'contacts' === $entity ) do_action( 'contactpanda_render_contact_import_extensions', '' );
 				self::render_import_history( $entity );
 			} else self::render_migration_tools();
 		}
@@ -127,6 +119,7 @@ final class ContactPanda_Data_Tools {
 	}
 
 	private static function render_export() {
+		if ( apply_filters( 'contactpanda_render_transfer_export', false ) ) return;
 		$people_url = admin_url( 'admin.php?page=contactpanda-people#contactpanda-export' );
 		$companies_url = admin_url( 'admin.php?page=contactpanda-firmen' );
 		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Filtered export', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Open a list, apply the required search and filters, and export exactly that result. This keeps the exported selection visible and verifiable before download.', 'contactpanda' ) . '</p><p><a class="button button-primary" href="' . esc_url( $people_url ) . '">' . esc_html__( 'Filter and export people', 'contactpanda' ) . '</a> <a class="button" href="' . esc_url( $companies_url ) . '">' . esc_html__( 'Open companies', 'contactpanda' ) . '</a></p></section>';
@@ -180,7 +173,7 @@ final class ContactPanda_Data_Tools {
 
 	public static function render_migration_tools() {
 		self::render_csv_import();
-		if ( self::vcard_enabled() ) self::render_vcard_import();
+		do_action( 'contactpanda_render_contact_import_extensions', '' );
 		self::render_import_history();
 	}
 
@@ -270,6 +263,7 @@ final class ContactPanda_Data_Tools {
 			} catch ( Throwable $error ) {
 				$steps = array();
 			}
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			$flows[] = array( 'source_id' => 'groundhogg:funnel:' . $id, 'source_numeric_id' => $id, 'name' => $name ?: sprintf( __( 'Groundhogg flow #%d', 'contactpanda' ), $id ), 'steps' => array_map( array( __CLASS__, 'normalize_groundhogg_step' ), $steps ) );
 		}
 		return $flows;
@@ -329,7 +323,7 @@ final class ContactPanda_Data_Tools {
 		$entity = 'companies' === $entity ? 'companies' : 'contacts';
 		echo '<div class="contactpanda-heading"><div><p class="contactpanda-eyebrow">CRM</p><h1>' . esc_html__( 'Import', 'contactpanda' ) . '</h1><p>' . esc_html__( 'Review every file in a preview before ContactPanda saves any records.', 'contactpanda' ) . '</p></div></div>';
 		self::render_csv_import( $entity, $return_page );
-		if ( 'contacts' === $entity && self::vcard_enabled() ) self::render_vcard_import( $return_page );
+		if ( 'contacts' === $entity ) do_action( 'contactpanda_render_contact_import_extensions', $return_page );
 		self::render_import_history( $entity );
 	}
 
@@ -341,6 +335,7 @@ final class ContactPanda_Data_Tools {
 		foreach ( $runs as $run ) {
 			$records_url = add_query_arg( array( 'page' => 'companies' === $run['entity_type'] ? 'contactpanda-firmen' : 'contactpanda', 'import_run' => absint( $run['id'] ) ), admin_url( 'admin.php' ) );
 			$rollback_url = wp_nonce_url( admin_url( 'admin-post.php?action=contactpanda_rollback_import&run_id=' . absint( $run['id'] ) ), 'contactpanda_rollback_import_' . absint( $run['id'] ) );
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			$summary = sprintf( __( '%1$d created, %2$d updated, %3$d skipped, %4$d errors', 'contactpanda' ), absint( $run['created_count'] ), absint( $run['updated_count'] ), absint( $run['skipped_count'] ), absint( $run['error_count'] ) );
 			echo '<tr><td>' . esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $run['started_at'] ) ) . '</td><td><strong>' . esc_html( strtoupper( $run['source'] ) ) . '</strong><br><small>' . esc_html( $run['original_filename'] ?: '—' ) . '</small></td><td>' . esc_html( 'companies' === $run['entity_type'] ? __( 'Companies', 'contactpanda' ) : __( 'People', 'contactpanda' ) ) . '</td><td>' . esc_html( $summary ) . '<br><small>' . esc_html( $run['status'] ) . '</small></td><td><a href="' . esc_url( $records_url ) . '">' . esc_html__( 'Show records', 'contactpanda' ) . '</a>';
 			if ( 'rolled_back' !== $run['status'] ) echo ' · <a class="contactpanda-rollback-import" href="' . esc_url( $rollback_url ) . '">' . esc_html__( 'Roll back', 'contactpanda' ) . '</a>';
@@ -356,6 +351,7 @@ final class ContactPanda_Data_Tools {
 		check_admin_referer( 'contactpanda_rollback_import_' . $run_id );
 		$result = ContactPanda_Store::rollback_import_run( $run_id );
 		if ( is_wp_error( $result ) ) self::redirect_import_notice( 'error', $result->get_error_message() );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		self::redirect_import_notice( 'success', sprintf( __( 'Import rolled back: %1$d records restored, %2$d new records moved to Trash, %3$d later edits retained as conflicts.', 'contactpanda' ), absint( $result['restored'] ), absint( $result['trashed'] ), absint( $result['conflicts'] ) ) );
 	}
 
@@ -373,10 +369,12 @@ final class ContactPanda_Data_Tools {
 	}
 
 	private static function render_csv_import( $forced_entity = '', $return_page = '' ) {
+		if ( apply_filters( 'contactpanda_render_transfer_import', false, $forced_entity, $return_page ) ) return;
 		$token = isset( $_GET['csv_token'] ) ? sanitize_key( wp_unslash( $_GET['csv_token'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- opaque transient reference.
 		$preview = $token ? get_transient( 'contactpanda_csv_' . get_current_user_id() . '_' . $token ) : false;
 		echo '<section id="contactpanda-import" class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Import CSV data', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Import people or companies from a CSV file. The preview and field mapping are shown before anything is saved. Empty CSV values never erase existing data.', 'contactpanda' ) . '</p>';
 		$report = get_transient( 'contactpanda_csv_report_' . get_current_user_id() );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( is_array( $report ) ) { delete_transient( 'contactpanda_csv_report_' . get_current_user_id() ); echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Last CSV import', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( __( '%1$d created, %2$d updated, %3$d skipped, %4$d errors.', 'contactpanda' ), $report['created'], $report['updated'], $report['skipped'], count( $report['errors'] ) ) ) . '</p>'; if ( $report['errors'] ) { echo '<details><summary>' . esc_html__( 'Show import errors', 'contactpanda' ) . '</summary><ul>'; foreach ( array_slice( $report['errors'], 0, 100 ) as $error ) echo '<li>' . esc_html( $error ) . '</li>'; echo '</ul></details>'; } echo '</div>'; }
 		if ( ! $preview ) {
 			echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-settings-grid"><input type="hidden" name="action" value="contactpanda_csv_preview"><input type="hidden" name="return_page" value="' . esc_attr( $return_page ) . '">';
@@ -390,6 +388,7 @@ final class ContactPanda_Data_Tools {
 		}
 
 		$fields = self::csv_fields( $preview['entity'] );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Import preview', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( __( '%1$d data rows detected using “%2$s” as the delimiter. Map the columns before importing.', 'contactpanda' ), count( $preview['rows'] ), $preview['delimiter_label'] ) ) . '</p></div>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_csv_import"><input type="hidden" name="csv_token" value="' . esc_attr( $token ) . '">';
 		wp_nonce_field( 'contactpanda_csv_import' );
@@ -415,7 +414,8 @@ final class ContactPanda_Data_Tools {
 		$entity = 'companies' === sanitize_key( wp_unslash( $_POST['entity'] ?? '' ) ) ? 'companies' : 'contacts';
 		$mode = sanitize_key( wp_unslash( $_POST['mode'] ?? 'fill' ) );
 		if ( ! in_array( $mode, array( 'skip', 'fill', 'update' ), true ) ) $mode = 'fill';
-		$parsed = self::parse_csv( $_FILES['csv_file']['tmp_name'] );
+		$parsed = apply_filters( 'contactpanda_parse_transfer_upload', null, $_FILES['csv_file']['tmp_name'], sanitize_file_name( $_FILES['csv_file']['name'] ?? '' ) );
+		if ( null === $parsed ) $parsed = self::parse_csv( $_FILES['csv_file']['tmp_name'] );
 		if ( is_wp_error( $parsed ) ) { set_transient( 'contactpanda_database_notice_' . get_current_user_id(), array( 'type' => 'error', 'message' => $parsed->get_error_message() ), MINUTE_IN_SECONDS ); wp_safe_redirect( self::import_url( $return_page ) ); exit; }
 		$token = wp_generate_password( 12, false, false );
 		$parsed['entity'] = $entity; $parsed['mode'] = $mode; $parsed['source_hash'] = hash_file( 'sha256', $_FILES['csv_file']['tmp_name'] ); $parsed['source_name'] = sanitize_file_name( wp_unslash( $_FILES['csv_file']['name'] ?? '' ) ); $parsed['return_page'] = $return_page;
@@ -429,7 +429,10 @@ final class ContactPanda_Data_Tools {
 		$sample = (string) fgets( $handle ); rewind( $handle );
 		$counts = array( ',' => substr_count( $sample, ',' ), ';' => substr_count( $sample, ';' ), "\t" => substr_count( $sample, "\t" ) ); arsort( $counts ); $delimiter = (string) key( $counts );
 		$headers = fgetcsv( $handle, 0, $delimiter ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
-		if ( ! is_array( $headers ) || count( $headers ) < 1 ) { fclose( $handle ); return new WP_Error( 'contactpanda_csv_header', __( 'No CSV header row was detected.', 'contactpanda' ) ); }
+		if ( ! is_array( $headers ) || count( $headers ) < 1 ) {
+			fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing the validated temporary upload stream.
+			return new WP_Error( 'contactpanda_csv_header', __( 'No CSV header row was detected.', 'contactpanda' ) );
+		}
 		$headers = array_map( static function ( $value ) { return sanitize_text_field( preg_replace( '/^\xEF\xBB\xBF/', '', (string) $value ) ); }, $headers );
 		$rows = array();
 		while ( count( $rows ) < 5000 && false !== ( $row = fgetcsv( $handle, 0, $delimiter ) ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fgetcsv
@@ -441,13 +444,13 @@ final class ContactPanda_Data_Tools {
 		return array( 'headers' => $headers, 'rows' => $rows, 'delimiter' => $delimiter, 'delimiter_label' => "\t" === $delimiter ? __( 'tab', 'contactpanda' ) : $delimiter );
 	}
 
-	private static function csv_fields( $entity ) {
+	public static function csv_fields( $entity ) {
 		if ( 'companies' === $entity ) $fields = array( 'name' => __( 'Company name', 'contactpanda' ), 'legal_name' => __( 'Legal name', 'contactpanda' ), 'email' => __( 'Email', 'contactpanda' ), 'phone' => __( 'Phone', 'contactpanda' ), 'website' => __( 'Website', 'contactpanda' ), 'industry' => __( 'Industry', 'contactpanda' ), 'vat_id' => __( 'VAT ID', 'contactpanda' ), 'address_1' => __( 'Street address', 'contactpanda' ), 'address_2' => __( 'Address line 2', 'contactpanda' ), 'postcode' => __( 'Postal code', 'contactpanda' ), 'city' => __( 'City', 'contactpanda' ), 'country' => __( 'Country', 'contactpanda' ) );
 		else $fields = array( 'email' => __( 'Email', 'contactpanda' ), 'first_name' => __( 'First name', 'contactpanda' ), 'last_name' => __( 'Last name', 'contactpanda' ), 'salutation' => __( 'Salutation', 'contactpanda' ), 'title_prefix' => __( 'Title before name', 'contactpanda' ), 'title_suffix' => __( 'Title after name', 'contactpanda' ), 'phone' => __( 'Phone', 'contactpanda' ), 'position' => __( 'Position', 'contactpanda' ), 'company' => __( 'Company', 'contactpanda' ), 'address_1' => __( 'Street address', 'contactpanda' ), 'address_2' => __( 'Address line 2', 'contactpanda' ), 'postcode' => __( 'Postal code', 'contactpanda' ), 'city' => __( 'City', 'contactpanda' ), 'state' => __( 'State', 'contactpanda' ), 'country' => __( 'Country', 'contactpanda' ), 'tags' => __( 'Tags (comma separated)', 'contactpanda' ), 'marketing' => __( 'Marketing consent', 'contactpanda' ) );
 		return array_merge( $fields, ContactPanda_Custom_Fields::csv_fields( $entity ) );
 	}
 
-	private static function guess_header( $field, $headers ) {
+	public static function guess_header( $field, $headers ) {
 		$aliases = array( 'email' => array( 'email', 'e-mail', 'mail' ), 'first_name' => array( 'first name', 'firstname', 'vorname' ), 'last_name' => array( 'last name', 'lastname', 'nachname' ), 'name' => array( 'company', 'company name', 'firma', 'firmenname', 'name' ), 'company' => array( 'company', 'firma' ), 'phone' => array( 'phone', 'telephone', 'telefon' ), 'postcode' => array( 'postcode', 'postal code', 'zip', 'plz' ), 'city' => array( 'city', 'ort', 'stadt' ), 'country' => array( 'country', 'land' ), 'address_1' => array( 'street', 'address', 'adresse', 'strasse', 'straße' ), 'vat_id' => array( 'vat', 'vat id', 'uid', 'uid nummer' ), 'tags' => array( 'tags', 'tag' ), 'marketing' => array( 'marketing', 'newsletter', 'consent', 'zustimmung' ) );
 		if ( 0 === strpos( $field, 'custom__' ) ) {
 			$key = substr( $field, 8 );
@@ -465,6 +468,10 @@ final class ContactPanda_Data_Tools {
 		$return_page = is_array( $data ) ? sanitize_key( $data['return_page'] ?? '' ) : '';
 		if ( '1' !== ( $_POST['confirmed'] ?? '' ) ) self::redirect_import_notice( 'error', __( 'Confirm the field mapping before importing.', 'contactpanda' ), $return_page, array( 'csv_token' => $token ) );
 		if ( ! is_array( $data ) ) self::redirect_import_notice( 'error', __( 'The import preview expired. Upload the CSV file again.', 'contactpanda' ), $return_page );
+		if ( isset( $_POST['mode'] ) && in_array( $_POST['mode'], array( 'skip', 'fill', 'update' ), true ) ) $data['mode'] = sanitize_key( $_POST['mode'] );
+		foreach ( (array) ( $_POST['mapping'] ?? array() ) as $field => $index ) {
+			if ( '' !== (string) $index && ( ! ctype_digit( (string) $index ) || ! array_key_exists( (int) $index, $data['headers'] ) ) ) self::redirect_import_notice( 'error', __( 'Invalid field mapping.', 'contactpanda' ), $return_page, array( 'csv_token' => $token ) );
+		}
 		$mapping = isset( $_POST['mapping'] ) && is_array( $_POST['mapping'] ) ? array_map( 'absint', wp_unslash( $_POST['mapping'] ) ) : array();
 		$required = 'companies' === $data['entity'] ? 'name' : 'email';
 		if ( ! isset( $_POST['mapping'][ $required ] ) || '' === (string) $_POST['mapping'][ $required ] ) self::redirect_import_notice( 'error', __( 'Map the required identifying field before importing.', 'contactpanda' ), $return_page, array( 'csv_token' => $token ) );
@@ -476,6 +483,7 @@ final class ContactPanda_Data_Tools {
 			$before_id = is_array( $before_record ) ? absint( $before_record['id'] ?? 0 ) : absint( $before_record );
 			$before = $before_id ? ContactPanda_Store::snapshot_for_import( $data['entity'], $before_id ) : array();
 			$result = self::import_csv_record( $data['entity'], $record, $data['mode'], $data['source_hash'] . ':' . ( $number + 2 ) );
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			if ( is_wp_error( $result ) ) { $report['errors'][] = sprintf( __( 'Row %1$d: %2$s', 'contactpanda' ), $number + 2, $result->get_error_message() ); continue; }
 			$report[ $result ]++;
 			$after_record = 'companies' === $data['entity'] ? ContactPanda_Store::company_by_name( $record['name'] ?? '' ) : ContactPanda_Store::contact_by_email( $record['email'] ?? '' );
@@ -485,13 +493,17 @@ final class ContactPanda_Data_Tools {
 		if ( $run_id ) { ContactPanda_Store::finish_import_run( $run_id, $report ); $report['run_id'] = $run_id; }
 		delete_transient( 'contactpanda_csv_' . get_current_user_id() . '_' . $token );
 		set_transient( 'contactpanda_csv_report_' . get_current_user_id(), $report, HOUR_IN_SECONDS );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		self::redirect_import_notice( 'success', sprintf( __( 'CSV import completed: %1$d created, %2$d updated, %3$d skipped, %4$d errors.', 'contactpanda' ), $report['created'], $report['updated'], $report['skipped'], count( $report['errors'] ) ), $return_page );
 	}
 
 	private static function import_csv_record( $entity, $record, $mode, $source_id ) {
+		if ( ContactPanda_Store::standalone() && ContactPanda_Store::import_blocked( $entity, 'companies' === $entity ? ( $record['name'] ?? '' ) : ( $record['email'] ?? '' ) ) ) return 'skipped';
 		if ( 'companies' === $entity ) {
 			if ( ! ContactPanda_Store::standalone() ) return ContactPanda_Plugin::extension_import_company( $record, $mode, $source_id );
 			$name = sanitize_text_field( $record['name'] ?? '' ); if ( '' === $name ) return new WP_Error( 'contactpanda_csv_name', __( 'Company name is missing.', 'contactpanda' ) );
+			$deleted_id = ContactPanda_Store::company_by_name( $name, true );
+			if ( $deleted_id && ! ContactPanda_Store::company( $deleted_id ) ) return 'skipped';
 			$existing_id = ContactPanda_Store::company_by_name( $name );
 			$existing = $existing_id ? ContactPanda_Store::company( $existing_id ) : false;
 			$result = ContactPanda_Store::import_company_row( $record, $mode, $source_id );
@@ -504,188 +516,20 @@ final class ContactPanda_Data_Tools {
 		}
 		$email = strtolower( sanitize_email( $record['email'] ?? '' ) ); if ( ! is_email( $email ) ) return new WP_Error( 'contactpanda_csv_email', __( 'A valid email address is required.', 'contactpanda' ) );
 		if ( ! ContactPanda_Store::standalone() ) return ContactPanda_Plugin::extension_import_contact( $record, $mode, $source_id );
+		$including_deleted = ContactPanda_Store::contact_by_email( $email, true );
+		if ( $including_deleted && ! empty( $including_deleted['deleted_at'] ) ) return 'skipped';
 		$current = ContactPanda_Store::contact_by_email( $email ); if ( $current && 'skip' === $mode ) return 'skipped';
 		$payload = array( 'email' => $email, 'source' => 'csv', 'meta' => array_merge( array( 'csv_source_id' => $source_id ), ContactPanda_Custom_Fields::custom_meta_from_record( $record, 'contacts', $current, $mode ) ) );
 		$map = array( 'first_name', 'last_name', 'position' ); foreach ( $map as $field ) if ( ! $current || ( ! empty( $record[ $field ] ) && ( 'update' === $mode || empty( $current[ $field ] ) ) ) ) $payload[ $field ] = $record[ $field ] ?? '';
 		foreach ( array( 'salutation' => 'anrede', 'title_prefix' => 'titel_vorangestellt', 'title_suffix' => 'titel_nachgestellt', 'phone' => 'primary_phone' ) as $input => $field ) if ( ! empty( $record[ $input ] ) && ( 'update' === $mode || empty( $current['meta'][ $field ] ) ) ) $payload[ $field ] = $record[ $input ];
 		$id = $current ? absint( $current['id'] ) : ContactPanda_Store::create_contact( $payload ); if ( is_wp_error( $id ) || ! $id ) return new WP_Error( 'contactpanda_csv_contact', __( 'Person could not be saved.', 'contactpanda' ) );
 		if ( $current ) ContactPanda_Store::update_contact( $id, $payload );
-		$address = array(); foreach ( array( 'address_1', 'address_2', 'postcode', 'city', 'state', 'country' ) as $field ) $address[ $field ] = ! empty( $record[ $field ] ) ? $record[ $field ] : ( $current['meta'][ $field ] ?? '' ); ContactPanda_Store::update_contact_address( $id, $address );
+		$address = array(); foreach ( array( 'address_1', 'address_2', 'postcode', 'city', 'state', 'country' ) as $field ) $address[ $field ] = isset( $record[ $field ] ) && '' !== $record[ $field ] && ( 'update' === $mode || empty( $current['meta'][ $field ] ) ) ? $record[ $field ] : ( $current['meta'][ $field ] ?? '' ); ContactPanda_Store::update_contact_address( $id, $address );
 		if ( ! empty( $record['company'] ) ) ContactPanda_Store::link_contact_company_name( $email, $record['company'] );
 		if ( ! empty( $record['tags'] ) ) foreach ( preg_split( '/[,;]+/', $record['tags'] ) as $tag ) { $tag_id = ContactPanda_Store::create_tag( trim( $tag ) ); if ( $tag_id ) ContactPanda_Store::assign_tag( $id, $tag_id ); }
 		$current_status = sanitize_key( (string) ( $current['optin_status'] ?? '' ) );
 		$protected_statuses = array( 'unsubscribed', 'hard_bounce', 'bounced', 'spam', 'complained', 'blocked' );
 		if ( ! empty( $record['marketing'] ) && in_array( strtolower( $record['marketing'] ), array( '1', 'yes', 'ja', 'true', 'confirmed' ), true ) && ! in_array( $current_status, $protected_statuses, true ) && 'confirmed' !== $current_status ) ContactPanda_Store::record_consent( $id, 'granted', 'csv_import', current_time( 'Y-m-d' ), __( 'Imported from a confirmed CSV field.', 'contactpanda' ) );
-		return $current ? 'updated' : 'created';
-	}
-
-	private static function render_vcard_import( $return_page = '' ) {
-		$token = isset( $_GET['vcard_token'] ) ? sanitize_key( wp_unslash( $_GET['vcard_token'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- opaque transient reference.
-		$preview = $token ? get_transient( 'contactpanda_vcard_' . get_current_user_id() . '_' . $token ) : false;
-		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Import vCard contacts', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Import Apple Contacts and other vCard/VCF files. ContactPanda shows a preview first, matches existing people without deleting data, and never changes the source file.', 'contactpanda' ) . '</p>';
-		$report = get_transient( 'contactpanda_vcard_report_' . get_current_user_id() );
-		if ( is_array( $report ) ) {
-			delete_transient( 'contactpanda_vcard_report_' . get_current_user_id() );
-			echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Last vCard import', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( __( '%1$d created, %2$d updated, %3$d skipped, %4$d errors.', 'contactpanda' ), $report['created'], $report['updated'], $report['skipped'], count( $report['errors'] ) ) ) . '</p>';
-			if ( $report['errors'] ) { echo '<details><summary>' . esc_html__( 'Show import errors', 'contactpanda' ) . '</summary><ul>'; foreach ( array_slice( $report['errors'], 0, 100 ) as $error ) echo '<li>' . esc_html( $error ) . '</li>'; echo '</ul></details>'; }
-			echo '</div>';
-		}
-		if ( ! $preview ) {
-			echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-settings-grid"><input type="hidden" name="action" value="contactpanda_vcard_preview"><input type="hidden" name="return_page" value="' . esc_attr( $return_page ) . '">';
-			wp_nonce_field( 'contactpanda_vcard_preview' );
-			echo '<label><span>' . esc_html__( 'Duplicate handling', 'contactpanda' ) . '</span><select name="mode"><option value="fill">' . esc_html__( 'Fill missing values', 'contactpanda' ) . '</option><option value="skip">' . esc_html__( 'Skip existing records', 'contactpanda' ) . '</option><option value="update">' . esc_html__( 'Update with non-empty vCard values', 'contactpanda' ) . '</option></select></label>';
-			echo '<label class="contactpanda-file-drop"><span class="dashicons dashicons-id-alt" aria-hidden="true"></span><strong>' . esc_html__( 'Drop a vCard file here', 'contactpanda' ) . '</strong><span>' . esc_html__( 'or click to select a VCF file', 'contactpanda' ) . '</span><input type="file" name="vcard_file" accept=".vcf,.vcard,text/vcard,text/x-vcard" required><small class="contactpanda-file-drop-name"></small></label><p class="contactpanda-file-drop-actions"><button class="button button-primary">' . esc_html__( 'Upload and preview', 'contactpanda' ) . '</button></p></form></section>';
-			return;
-		}
-		echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Import preview', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( _n( '%d contact was found. No data has been changed yet.', '%d contacts were found. No data has been changed yet.', count( $preview['records'] ), 'contactpanda' ), count( $preview['records'] ) ) ) . '</p></div>';
-		echo '<div class="contactpanda-csv-preview"><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Name', 'contactpanda' ) . '</th><th>' . esc_html__( 'Email', 'contactpanda' ) . '</th><th>' . esc_html__( 'Phone', 'contactpanda' ) . '</th><th>' . esc_html__( 'Company', 'contactpanda' ) . '</th></tr></thead><tbody>';
-		foreach ( array_slice( $preview['records'], 0, 10 ) as $record ) echo '<tr><td>' . esc_html( trim( $record['first_name'] . ' ' . $record['last_name'] ) ) . '</td><td>' . esc_html( $record['email'] ) . '</td><td>' . esc_html( $record['phone'] ) . '</td><td>' . esc_html( $record['company'] ) . '</td></tr>';
-		echo '</tbody></table></div><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_vcard_import"><input type="hidden" name="vcard_token" value="' . esc_attr( $token ) . '">';
-		wp_nonce_field( 'contactpanda_vcard_import' );
-		echo '<p><label><strong>' . esc_html__( 'Optional tags for all imported contacts', 'contactpanda' ) . '</strong><br><input class="regular-text" type="text" name="tags" placeholder="' . esc_attr__( 'Tags separated by commas', 'contactpanda' ) . '"></label></p><p><label><input type="checkbox" name="confirmed" value="1" required> ' . esc_html__( 'I checked the vCard preview and want to start the non-destructive import.', 'contactpanda' ) . '</label></p><p><button class="button button-primary">' . esc_html__( 'Start import', 'contactpanda' ) . '</button> <a class="button" href="' . esc_url( self::import_url( $preview['return_page'] ?? '' ) ) . '">' . esc_html__( 'Cancel', 'contactpanda' ) . '</a></p></form></section>';
-	}
-
-	public static function handle_vcard_preview() {
-		if ( ! self::vcard_enabled() ) wp_die( esc_html__( 'vCard import requires ContactPanda Plus.', 'contactpanda' ), '', array( 'response' => 403 ) );
-		self::require_admin( 'contactpanda_vcard_preview' );
-		$return_page = sanitize_key( wp_unslash( $_POST['return_page'] ?? '' ) );
-		if ( ! in_array( $return_page, array( 'contactpanda', 'contactpanda-firmen' ), true ) ) $return_page = '';
-		if ( empty( $_FILES['vcard_file']['tmp_name'] ) || ! is_uploaded_file( $_FILES['vcard_file']['tmp_name'] ) || (int) $_FILES['vcard_file']['size'] > 5 * MB_IN_BYTES ) self::redirect_import_notice( 'error', __( 'Select a vCard file no larger than 5 MB.', 'contactpanda' ), $return_page );
-		$contents = file_get_contents( $_FILES['vcard_file']['tmp_name'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- protected upload stream.
-		$records = self::parse_vcard_contents( (string) $contents );
-		if ( is_wp_error( $records ) ) self::redirect_import_notice( 'error', $records->get_error_message(), $return_page );
-		$mode = sanitize_key( wp_unslash( $_POST['mode'] ?? 'fill' ) );
-		if ( ! in_array( $mode, array( 'skip', 'fill', 'update' ), true ) ) $mode = 'fill';
-		$token = wp_generate_password( 12, false, false );
-		set_transient( 'contactpanda_vcard_' . get_current_user_id() . '_' . $token, array( 'records' => $records, 'mode' => $mode, 'return_page' => $return_page, 'source_name' => sanitize_file_name( wp_unslash( $_FILES['vcard_file']['name'] ?? '' ) ), 'source_hash' => hash( 'sha256', (string) $contents ) ), HOUR_IN_SECONDS );
-		wp_safe_redirect( self::import_url( $return_page, array( 'vcard_token' => $token ) ) ); exit;
-	}
-
-	/** Parse vCard 2.1, 3.0, and 4.0 text without retaining the source file. */
-	public static function parse_vcard_contents( $contents ) {
-		$contents = preg_replace( '/^\xEF\xBB\xBF/', '', (string) $contents );
-		$contents = str_replace( array( "\r\n", "\r" ), "\n", $contents );
-		$physical = explode( "\n", $contents );
-		$lines = array();
-		foreach ( $physical as $line ) {
-			if ( $lines && ( preg_match( '/^[ \t]/', $line ) || '=' === substr( end( $lines ), -1 ) ) ) {
-				$previous = array_pop( $lines );
-				$lines[] = ( '=' === substr( $previous, -1 ) ? substr( $previous, 0, -1 ) : $previous ) . ltrim( $line );
-			} else {
-				$lines[] = $line;
-			}
-		}
-		$cards = array(); $card = null;
-		foreach ( $lines as $line ) {
-			if ( 'BEGIN:VCARD' === strtoupper( trim( $line ) ) ) { $card = array(); continue; }
-			if ( 'END:VCARD' === strtoupper( trim( $line ) ) ) { if ( is_array( $card ) ) $cards[] = $card; $card = null; continue; }
-			if ( ! is_array( $card ) || false === strpos( $line, ':' ) ) continue;
-			list( $descriptor, $value ) = explode( ':', $line, 2 );
-			$parts = explode( ';', $descriptor ); $property = strtoupper( array_shift( $parts ) );
-			if ( false !== strpos( $property, '.' ) ) $property = substr( $property, strrpos( $property, '.' ) + 1 );
-			$params = strtoupper( implode( ';', $parts ) );
-			if ( false !== strpos( $params, 'QUOTED-PRINTABLE' ) ) $value = quoted_printable_decode( $value );
-			if ( preg_match( '/CHARSET=([^;:]+)/i', $params, $match ) && 'UTF-8' !== strtoupper( $match[1] ) ) {
-				if ( function_exists( 'mb_convert_encoding' ) ) $value = mb_convert_encoding( $value, 'UTF-8', $match[1] );
-				elseif ( function_exists( 'iconv' ) ) $value = iconv( $match[1], 'UTF-8//IGNORE', $value );
-			}
-			$value = str_replace( array( '\\n', '\\N', '\\,', '\\;', '\\\\' ), array( "\n", "\n", ',', ';', '\\' ), $value );
-			$card[ $property ][] = array( 'value' => $value, 'params' => $params );
-		}
-		$records = array();
-		foreach ( $cards as $index => $item ) {
-			$n = isset( $item['N'][0]['value'] ) ? explode( ';', $item['N'][0]['value'] ) : array();
-			$first = sanitize_text_field( $n[1] ?? '' ); $last = sanitize_text_field( $n[0] ?? '' );
-			$prefix = sanitize_text_field( $n[3] ?? '' ); $suffix = sanitize_text_field( $n[4] ?? '' );
-			if ( ! $first && ! $last && ! empty( $item['FN'][0]['value'] ) ) { $name = preg_split( '/\s+/', trim( $item['FN'][0]['value'] ), 2 ); $first = sanitize_text_field( $name[0] ?? '' ); $last = sanitize_text_field( $name[1] ?? '' ); }
-			$salutation = ''; $prefix_lower = strtolower( remove_accents( $prefix ) );
-			if ( in_array( $prefix_lower, array( 'herr', 'mr', 'mr.' ), true ) ) { $salutation = 'mr'; $prefix = ''; }
-			elseif ( in_array( $prefix_lower, array( 'frau', 'mrs', 'mrs.', 'ms', 'ms.' ), true ) ) { $salutation = 'ms'; $prefix = ''; }
-			elseif ( in_array( $prefix_lower, array( 'familie', 'family' ), true ) ) { $salutation = 'family'; $prefix = ''; }
-			$email = sanitize_email( self::vcard_preferred_value( $item['EMAIL'] ?? array() ) );
-			$phone = preg_replace( '/^tel:/i', '', self::vcard_preferred_value( $item['TEL'] ?? array() ) );
-			$channels = array();
-			foreach ( (array) ( $item['EMAIL'] ?? array() ) as $channel_index => $email_item ) {
-				$channel_value = sanitize_email( $email_item['value'] ?? '' );
-				if ( ! $channel_value ) continue;
-				$params = strtoupper( (string) ( $email_item['params'] ?? '' ) );
-				$channels[] = array( 'id' => 'vcard-' . substr( hash( 'sha256', 'email|' . $channel_index . '|' . strtolower( $channel_value ) ), 0, 20 ), 'type' => 'email', 'label' => false !== strpos( $params, 'WORK' ) ? 'work' : ( false !== strpos( $params, 'HOME' ) ? 'private' : 'other' ), 'value' => $channel_value, 'is_primary' => 0 === strcasecmp( $channel_value, $email ) ? 1 : 0, 'marketing_status' => 'unconfirmed' );
-			}
-			foreach ( (array) ( $item['TEL'] ?? array() ) as $channel_index => $phone_item ) {
-				$channel_value = sanitize_text_field( preg_replace( '/^tel:/i', '', $phone_item['value'] ?? '' ) );
-				if ( ! $channel_value ) continue;
-				$params = strtoupper( (string) ( $phone_item['params'] ?? '' ) );
-				$channel_label = false !== strpos( $params, 'FAX' ) ? 'fax' : ( ( false !== strpos( $params, 'CELL' ) || false !== strpos( $params, 'MOBILE' ) ) ? 'mobile' : ( false !== strpos( $params, 'WORK' ) ? 'work' : ( false !== strpos( $params, 'HOME' ) ? 'private' : 'other' ) ) );
-				$channels[] = array( 'id' => 'vcard-' . substr( hash( 'sha256', 'phone|' . $channel_index . '|' . preg_replace( '/\D+/', '', $channel_value ) ), 0, 20 ), 'type' => 'phone', 'label' => $channel_label, 'value' => $channel_value, 'is_primary' => preg_replace( '/\D+/', '', $channel_value ) === preg_replace( '/\D+/', '', $phone ) ? 1 : 0, 'marketing_status' => '' );
-			}
-			$adr = isset( $item['ADR'][0]['value'] ) ? explode( ';', $item['ADR'][0]['value'] ) : array();
-			$company = isset( $item['ORG'][0]['value'] ) ? explode( ';', $item['ORG'][0]['value'] )[0] : '';
-			$uid = sanitize_text_field( $item['UID'][0]['value'] ?? '' );
-			$identity = $uid ?: wp_json_encode( array( strtolower( $email ), $first, $last, $phone, $company ) );
-			$record = array(
-				'first_name' => $first, 'last_name' => $last, 'email' => strtolower( $email ), 'phone' => sanitize_text_field( $phone ),
-				'salutation' => $salutation, 'title_prefix' => $prefix, 'title_suffix' => $suffix,
-				'position' => sanitize_text_field( $item['TITLE'][0]['value'] ?? '' ), 'company' => sanitize_text_field( $company ),
-				'address_1' => sanitize_text_field( $adr[2] ?? '' ), 'address_2' => sanitize_text_field( trim( ( $adr[0] ?? '' ) . ' ' . ( $adr[1] ?? '' ) ) ),
-				'city' => sanitize_text_field( $adr[3] ?? '' ), 'state' => sanitize_text_field( $adr[4] ?? '' ), 'postcode' => sanitize_text_field( $adr[5] ?? '' ), 'country' => sanitize_text_field( $adr[6] ?? '' ),
-				'note' => sanitize_textarea_field( $item['NOTE'][0]['value'] ?? '' ), 'source_id' => 'vcard:' . hash( 'sha256', (string) $identity ), 'contact_channels' => $channels,
-			);
-			if ( ! array_filter( array( $record['first_name'], $record['last_name'], $record['email'], $record['phone'] ) ) ) continue;
-			$records[] = $record;
-		}
-		return $records ? $records : new WP_Error( 'contactpanda_vcard_empty', __( 'No readable contacts were found in the vCard file.', 'contactpanda' ) );
-	}
-
-	private static function vcard_preferred_value( $values ) {
-		foreach ( (array) $values as $value ) if ( false !== strpos( $value['params'] ?? '', 'PREF' ) ) return sanitize_text_field( $value['value'] ?? '' );
-		return sanitize_text_field( $values[0]['value'] ?? '' );
-	}
-
-	public static function handle_vcard_import() {
-		if ( ! self::vcard_enabled() ) wp_die( esc_html__( 'vCard import requires ContactPanda Plus.', 'contactpanda' ), '', array( 'response' => 403 ) );
-		self::require_admin( 'contactpanda_vcard_import' );
-		$token = sanitize_key( wp_unslash( $_POST['vcard_token'] ?? '' ) ); $data = get_transient( 'contactpanda_vcard_' . get_current_user_id() . '_' . $token );
-		$return_page = is_array( $data ) ? sanitize_key( $data['return_page'] ?? '' ) : '';
-		if ( '1' !== ( $_POST['confirmed'] ?? '' ) ) self::redirect_import_notice( 'error', __( 'Confirm the vCard preview before importing.', 'contactpanda' ), $return_page, array( 'vcard_token' => $token ) );
-		if ( ! is_array( $data ) ) self::redirect_import_notice( 'error', __( 'The vCard preview expired. Upload the file again.', 'contactpanda' ), $return_page );
-		$tags = sanitize_text_field( wp_unslash( $_POST['tags'] ?? '' ) );
-		$report = array( 'created' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => array() );
-		$run_id = ContactPanda_Store::begin_import_run( 'vcard', 'contacts', $data['source_name'] ?? '', $data['source_hash'] ?? '' );
-		foreach ( $data['records'] as $index => $record ) {
-			if ( $tags ) $record['tags'] = $tags;
-			$before_record = ! empty( $record['email'] ) ? ContactPanda_Store::contact_by_email( $record['email'] ) : ContactPanda_Store::contact_by_meta( 'vcard_source_id', $record['source_id'] );
-			$before_id = absint( $before_record['id'] ?? 0 );
-			$before = $before_id ? ContactPanda_Store::snapshot_for_import( 'contacts', $before_id ) : array();
-			$result = self::import_vcard_record( $record, $data['mode'] );
-			if ( is_wp_error( $result ) ) { $report['errors'][] = sprintf( __( 'Contact %1$d: %2$s', 'contactpanda' ), $index + 1, $result->get_error_message() ); continue; }
-			$report[ $result ]++;
-			$after_record = ! empty( $record['email'] ) ? ContactPanda_Store::contact_by_email( $record['email'] ) : ContactPanda_Store::contact_by_meta( 'vcard_source_id', $record['source_id'] );
-			$record_id = absint( $after_record['id'] ?? 0 );
-			if ( $run_id && $record_id ) ContactPanda_Store::log_import_item( $run_id, 'contacts', $record_id, $result, $before, ContactPanda_Store::snapshot_for_import( 'contacts', $record_id ), $record['source_id'] );
-		}
-		if ( $run_id ) { ContactPanda_Store::finish_import_run( $run_id, $report ); $report['run_id'] = $run_id; }
-		delete_transient( 'contactpanda_vcard_' . get_current_user_id() . '_' . $token ); set_transient( 'contactpanda_vcard_report_' . get_current_user_id(), $report, HOUR_IN_SECONDS );
-		self::redirect_import_notice( 'success', sprintf( __( 'vCard import completed: %1$d created, %2$d updated, %3$d skipped, %4$d errors.', 'contactpanda' ), $report['created'], $report['updated'], $report['skipped'], count( $report['errors'] ) ), $return_page );
-	}
-
-	private static function import_vcard_record( $record, $mode ) {
-		if ( ! ContactPanda_Store::standalone() ) {
-			if ( ! is_email( $record['email'] ?? '' ) ) return new WP_Error( 'contactpanda_vcard_groundhogg_email', __( 'Groundhogg requires an email address for vCard imports.', 'contactpanda' ) );
-			return ContactPanda_Plugin::extension_import_contact( $record, $mode, $record['source_id'] );
-		}
-		$current = ! empty( $record['email'] ) ? ContactPanda_Store::contact_by_email( $record['email'] ) : false;
-		if ( ! $current ) $current = ContactPanda_Store::contact_by_meta( 'vcard_source_id', $record['source_id'] );
-		if ( $current && 'skip' === $mode ) return 'skipped';
-		$payload = array( 'source' => 'vcard', 'meta' => array( 'vcard_source_id' => $record['source_id'] ) );
-		if ( ! empty( $record['contact_channels'] ) && ( ! $current || 'update' === $mode || empty( $current['meta']['contactpanda_contact_channels'] ) ) ) $payload['meta']['contactpanda_contact_channels'] = $record['contact_channels'];
-		foreach ( array( 'email', 'first_name', 'last_name', 'position' ) as $field ) if ( ! $current || ( '' !== (string) ( $record[ $field ] ?? '' ) && ( 'update' === $mode || empty( $current[ $field ] ) ) ) ) $payload[ $field ] = $record[ $field ] ?? '';
-		foreach ( array( 'salutation' => 'anrede', 'title_prefix' => 'titel_vorangestellt', 'title_suffix' => 'titel_nachgestellt', 'phone' => 'primary_phone', 'note' => 'vcard_note' ) as $input => $field ) if ( ! empty( $record[ $input ] ) && ( 'update' === $mode || empty( $current['meta'][ $field ] ) ) ) $payload['meta'][ $field ] = $record[ $input ];
-		$id = $current ? absint( $current['id'] ) : ContactPanda_Store::create_contact( $payload );
-		if ( is_wp_error( $id ) || ! $id ) return new WP_Error( 'contactpanda_vcard_contact', __( 'Person could not be saved.', 'contactpanda' ) );
-		if ( $current ) ContactPanda_Store::update_contact( $id, $payload );
-		$address = array(); foreach ( array( 'address_1', 'address_2', 'postcode', 'city', 'state', 'country' ) as $field ) $address[ $field ] = ! empty( $record[ $field ] ) && ( 'update' === $mode || empty( $current['meta'][ $field ] ) ) ? $record[ $field ] : ( $current['meta'][ $field ] ?? '' ); ContactPanda_Store::update_contact_address( $id, $address );
-		if ( ! empty( $record['company'] ) ) { $company_id = ContactPanda_Store::company_by_name( $record['company'] ); if ( ! $company_id ) $company_id = ContactPanda_Store::create_company( array( 'name' => $record['company'], 'legal_name' => $record['company'] ) ); if ( $company_id ) ContactPanda_Store::link_company_contact( $company_id, $id, $record['position'] ?? '' ); }
-		if ( ! empty( $record['tags'] ) ) foreach ( preg_split( '/[,;]+/', $record['tags'] ) as $tag ) { $tag_id = ContactPanda_Store::create_tag( trim( $tag ) ); if ( $tag_id ) ContactPanda_Store::assign_tag( $id, $tag_id ); }
 		return $current ? 'updated' : 'created';
 	}
 
@@ -702,6 +546,7 @@ final class ContactPanda_Data_Tools {
 		$records = 'contacts' === $entity ? ContactPanda_Store::search_contacts( $search, 50, 0 )['contacts'] : array_values( array_filter( ContactPanda_Store::companies(), static function ( $company ) use ( $search ) { return false !== stripos( (string) $company['name'], $search ); } ) );
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_merge_preview"><input type="hidden" name="entity" value="' . esc_attr( $entity ) . '">'; wp_nonce_field( 'contactpanda_merge_preview' );
 		echo '<table class="widefat striped"><thead><tr><th class="check-column"></th><th>' . esc_html__( 'Record', 'contactpanda' ) . '</th><th>' . esc_html__( 'Details', 'contactpanda' ) . '</th></tr></thead><tbody>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		foreach ( $records as $record ) { $id = absint( $record['id'] ); $name = 'contacts' === $entity ? trim( $record['first_name'] . ' ' . $record['last_name'] ) : $record['name']; $details = 'contacts' === $entity ? $record['email'] : trim( ( $record['city'] ?? '' ) . ' ' . ( $record['vat_id'] ?? '' ) ); echo '<tr><td><input type="checkbox" name="ids[]" value="' . esc_attr( $id ) . '"></td><td>' . esc_html( $name ?: sprintf( __( 'Record #%d', 'contactpanda' ), $id ) ) . '</td><td>' . esc_html( $details ) . '</td></tr>'; }
 		if ( ! $records ) echo '<tr><td colspan="3">' . esc_html__( 'No matching records found.', 'contactpanda' ) . '</td></tr>';
 		echo '</tbody></table><p><button class="button button-primary">' . esc_html__( 'Compare selected records', 'contactpanda' ) . '</button></p></form></section>';
@@ -838,6 +683,7 @@ final class ContactPanda_Data_Tools {
 		}
 		$result = ContactPanda_Store::merge_records( $state['entity'], $selected_ids, $primary_id, $choices, $resolved, $channels, $primary_channels );
 		if ( is_wp_error( $result ) ) self::redirect_duplicate_notice( 'error', $result->get_error_message(), array( 'merge_token' => $token ) );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		delete_transient( 'contactpanda_merge_' . get_current_user_id() . '_' . $token ); self::redirect_duplicate_notice( 'success', sprintf( __( '%d duplicate fragments were merged and moved to Trash.', 'contactpanda' ), $result['merged'] ) );
 	}
 
@@ -852,6 +698,7 @@ final class ContactPanda_Data_Tools {
 		echo '<p class="contactpanda-central-library-actions"><button class="button button-primary" name="save" value="1">' . esc_html__( 'Save library settings', 'contactpanda' ) . '</button>';
 		if ( ! empty( $settings['enabled'] ) ) echo ' <button class="button" name="sync" value="1">' . esc_html__( 'Update central library now', 'contactpanda' ) . '</button>';
 		echo '</p></form>';
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( $settings['version'] || $settings['updated_at'] ) echo '<p class="description">' . esc_html( sprintf( __( 'Installed central version: %1$s. Last check: %2$s.', 'contactpanda' ), $settings['version'] ?: '—', $settings['updated_at'] ?: '—' ) ) . '</p>';
 		if ( $settings['error'] ) echo '<div class="notice notice-warning inline"><p>' . esc_html( $settings['error'] ) . '</p></div>';
 		echo '</section>';
@@ -871,11 +718,13 @@ final class ContactPanda_Data_Tools {
 		if ( ! $settings['auto'] ) wp_clear_scheduled_hook( 'contactpanda_central_salutation_sync' );
 		if ( $enabled && ! empty( $_POST['sync'] ) ) {
 			$result = self::sync_central_library();
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			set_transient( 'contactpanda_database_notice_' . get_current_user_id(), array( 'type' => is_wp_error( $result ) ? 'error' : 'success', 'message' => is_wp_error( $result ) ? $result->get_error_message() : sprintf( __( 'Central library updated: %d new names added.', 'contactpanda' ), $result ) ), MINUTE_IN_SECONDS );
 		}
 		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=misc&misc_section=salutations' ) ); exit;
 	}
 
+	/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 	public static function handle_central_sync() { self::require_admin( 'contactpanda_sync_central_salutations' ); $result = self::sync_central_library(); set_transient( 'contactpanda_database_notice_' . get_current_user_id(), array( 'type' => is_wp_error( $result ) ? 'error' : 'success', 'message' => is_wp_error( $result ) ? $result->get_error_message() : sprintf( __( 'Central library updated: %d new names added.', 'contactpanda' ), $result ) ), MINUTE_IN_SECONDS ); wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=misc&misc_section=salutations' ) ); exit; }
 	public static function scheduled_central_sync() { $settings = (array) get_option( self::CENTRAL_OPTION, array() ); if ( ! empty( $settings['enabled'] ) && ! empty( $settings['auto'] ) ) self::sync_central_library(); }
 
@@ -883,10 +732,12 @@ final class ContactPanda_Data_Tools {
 		$settings = wp_parse_args( (array) get_option( self::CENTRAL_OPTION, array() ), array( 'enabled' => 0, 'source_url' => '', 'version' => '', 'updated_at' => '', 'last_success_at' => '', 'error' => '' ) );
 		if ( empty( $settings['enabled'] ) ) return new WP_Error( 'contactpanda_central_disabled', __( 'Enable the central library before updating it.', 'contactpanda' ) );
 		// The public library contains no customer data and may be replaced by a filtered URL.
+		// phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- This documented, administrator-enabled external service supplies public salutation data and receives no site or customer data.
 		$url = apply_filters( 'contactpanda_central_salutation_library_url', 'https://raw.githubusercontent.com/kultur3gmbh/contactpanda-salutations/main/salutations.json' );
-		$response = wp_safe_remote_get( $url, array( 'timeout' => 15, 'user-agent' => 'ContactPanda/' . CONTACTPANDA_VERSION ) );
+		$response = wp_safe_remote_get( $url, array( 'timeout' => 15, 'user-agent' => 'ContactPanda/' . CONTACTPANDA_VERSION ) ); // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Optional, administrator-enabled synchronization from the documented public salutation library.
 		if ( is_wp_error( $response ) || 200 !== wp_remote_retrieve_response_code( $response ) ) {
 			$reason = is_wp_error( $response ) ? sanitize_text_field( $response->get_error_message() ) : sprintf( 'HTTP %d', wp_remote_retrieve_response_code( $response ) );
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			$settings['error'] = sprintf( __( 'The central library could not be downloaded (%s). Your local library was not changed.', 'contactpanda' ), $reason );
 			$settings['updated_at'] = current_time( 'mysql' );
 			update_option( self::CENTRAL_OPTION, $settings, false );
@@ -906,12 +757,12 @@ final class ContactPanda_Data_Tools {
 	}
 
 	public static function render_notice_settings() {
-		$settings = wp_parse_args( (array) get_option( self::NOTICE_OPTION, array() ), array( 'enabled' => 0 ) ); $hidden = (array) get_user_meta( get_current_user_id(), 'contactpanda_hidden_admin_notices', true );
+		$settings = wp_parse_args( (array) get_option( self::NOTICE_OPTION, array() ), array( 'enabled' => 0 ) );
 		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Optional notice cleanup', 'contactpanda' ) . '</h2><p>' . esc_html__( 'ContactPanda can add a Hide link to non-critical promotional, license-key, and upgrade reminders. Error messages, security warnings, and WordPress core update notices are never hidden.', 'contactpanda' ) . '</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_admin_notice_settings">'; wp_nonce_field( 'contactpanda_admin_notice_settings' );
-		echo '<label><input type="checkbox" name="enabled" value="1"' . checked( ! empty( $settings['enabled'] ), true, false ) . '> ' . esc_html__( 'Allow me to hide non-critical reminders', 'contactpanda' ) . '</label><p><label><input type="checkbox" name="restore" value="1"> ' . esc_html( sprintf( __( 'Restore all hidden reminders for my account (%d)', 'contactpanda' ), count( $hidden ) ) ) . '</label></p><p><button class="button button-primary">' . esc_html__( 'Save notice settings', 'contactpanda' ) . '</button></p></form></section>';
+		echo '<label class="contactpanda-setting-row"><span><strong>' . esc_html__( 'Display of admin notices', 'contactpanda' ) . '</strong></span><select name="notice_mode"><option value="all"' . selected( empty( $settings['enabled'] ), true, false ) . '>' . esc_html__( 'Show all admin notices', 'contactpanda' ) . '</option><option value="hide_optional"' . selected( ! empty( $settings['enabled'] ), true, false ) . '>' . esc_html__( 'Allow hiding non-critical admin notices', 'contactpanda' ) . '</option></select><small>' . esc_html__( 'Switching to “Show all admin notices” automatically restores notices previously hidden for your user account. Security, error, legal, and WordPress core notices can never be hidden.', 'contactpanda' ) . '</small></label><p><button class="button button-primary"><span class="dashicons dashicons-saved" aria-hidden="true"></span>' . esc_html__( 'Save notice settings', 'contactpanda' ) . '</button></p></form></section>';
 	}
 
-	public static function handle_notice_settings() { self::require_admin( 'contactpanda_admin_notice_settings' ); update_option( self::NOTICE_OPTION, array( 'enabled' => empty( $_POST['enabled'] ) ? 0 : 1 ), false ); if ( ! empty( $_POST['restore'] ) ) delete_user_meta( get_current_user_id(), 'contactpanda_hidden_admin_notices' ); wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=other&other_section=admin_notices' ) ); exit; }
+	public static function handle_notice_settings() { self::require_admin( 'contactpanda_admin_notice_settings' ); $enabled = 'hide_optional' === sanitize_key( wp_unslash( $_POST['notice_mode'] ?? 'all' ) ); update_option( self::NOTICE_OPTION, array( 'enabled' => $enabled ? 1 : 0 ), false ); if ( ! $enabled ) delete_user_meta( get_current_user_id(), 'contactpanda_hidden_admin_notices' ); wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=other&other_section=admin_notices' ) ); exit; }
 
 	public static function enqueue_notice_helper() {
 		$settings = (array) get_option( self::NOTICE_OPTION, array() );

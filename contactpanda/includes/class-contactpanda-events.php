@@ -35,6 +35,20 @@ final class ContactPanda_Events {
 		);
 	}
 
+	/**
+	 * Backward-compatible labelled source list used by earlier Plus releases.
+	 *
+	 * Keep the compact boolean map in sources() for internal feature detection,
+	 * while extensions may continue to render the established labels.
+	 */
+	public static function available_sources() {
+		$labels = array(
+			'tec'    => 'The Events Calendar',
+			'amelia' => 'Amelia',
+		);
+		return array_intersect_key( $labels, self::sources() );
+	}
+
 	public static function source() {
 		$sources = array_keys( self::sources() );
 		if ( 1 === count( $sources ) ) {
@@ -49,8 +63,8 @@ final class ContactPanda_Events {
 	}
 
 	public static function tec_available() {
-		$calendar = class_exists( 'Tribe__Events__Main' ) || defined( 'TRIBE_EVENTS_FILE' );
-		$tickets  = function_exists( 'tribe_attendees' ) && ( class_exists( 'Tribe__Tickets__Main' ) || defined( 'EVENT_TICKETS_VERSION' ) || class_exists( 'TEC\\Tickets\\Main' ) );
+		$calendar = class_exists( 'Tribe__Events__Main' ) || defined( 'TRIBE_EVENTS_FILE' ) || ( function_exists( 'post_type_exists' ) && post_type_exists( 'tribe_events' ) );
+		$tickets  = class_exists( 'Tribe__Tickets__Main' ) || defined( 'EVENT_TICKETS_VERSION' ) || defined( 'TRIBE_TICKETS_VERSION' ) || defined( 'TRIBE_TICKETS_FILE' ) || class_exists( 'TEC\\Tickets\\Main' );
 		return $calendar && $tickets;
 	}
 
@@ -183,7 +197,7 @@ final class ContactPanda_Events {
 	private static function tec_contact_event_map( $map, $contacts ) {
 		$identity = self::contact_identity_maps( $contacts );
 		$attendees = self::tec_attendees( array_keys( $identity['users'] ), array_keys( $identity['emails'] ) );
-		$repository = tribe_attendees();
+		$repository = self::tec_repository();
 		foreach ( $attendees as $attendee ) {
 			$attendee_id = self::tec_attendee_id( $attendee );
 			$event_id = self::tec_event_id( $attendee_id, $repository );
@@ -207,7 +221,7 @@ final class ContactPanda_Events {
 	private static function tec_contact_events( $contact ) {
 		$identity = self::contact_identity_maps( array( $contact ) );
 		$attendees = self::tec_attendees( array_keys( $identity['users'] ), array_keys( $identity['emails'] ) );
-		$repository = tribe_attendees();
+		$repository = self::tec_repository();
 		$found = array();
 		foreach ( $attendees as $attendee ) {
 			$attendee_id = self::tec_attendee_id( $attendee );
@@ -405,6 +419,9 @@ final class ContactPanda_Events {
 			$queries[] = array( 'holder_email', $chunk );
 		}
 		foreach ( $queries as $query ) {
+			if ( ! function_exists( 'tribe_attendees' ) ) {
+				break;
+			}
 			try {
 				$repository = tribe_attendees();
 				$repository->per_page( 1000 );
@@ -417,16 +434,70 @@ final class ContactPanda_Events {
 				// Optional integrations must never take down ContactPanda.
 			}
 		}
-		$clauses = array( 'relation' => 'OR' );
-		if ( $user_ids ) $clauses[] = array( 'key' => '_tribe_tickets_attendee_user_id', 'value' => array_map( 'absint', $user_ids ), 'compare' => 'IN' );
-		foreach ( array( '_tribe_rsvp_email', '_tribe_tpp_email', '_tribe_tickets_email', '_tribe_wooticket_email', '_tec_tickets_commerce_attendee_email' ) as $key ) {
-			if ( $emails ) $clauses[] = array( 'key' => $key, 'value' => array_map( 'sanitize_email', $emails ), 'compare' => 'IN' );
-		}
-		if ( count( $clauses ) > 1 ) {
-			$ids = get_posts( array( 'post_type' => 'any', 'post_status' => 'any', 'fields' => 'ids', 'posts_per_page' => 2000, 'no_found_rows' => true, 'suppress_filters' => true, 'update_post_meta_cache' => false, 'update_post_term_cache' => false, 'meta_query' => $clauses ) ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- bounded compatibility fallback.
-			foreach ( (array) $ids as $id ) $attendees[ absint( $id ) ] = absint( $id );
+		// Event Tickets stores attendee records in private post types. A WP_Query
+		// with post_type=any excludes those post types on several current plugin
+		// versions, so use their stable attendee metadata as the compatibility
+		// index instead. This remains read-only and works with every table prefix.
+		foreach ( self::tec_attendee_meta_ids( $user_ids, $emails ) as $id ) {
+			$attendees[ $id ] = $id;
 		}
 		return array_values( $attendees );
+	}
+
+	/**
+	 * Find attendee post IDs without relying on public post-type visibility.
+	 */
+	private static function tec_attendee_meta_ids( $user_ids, $emails ) {
+		global $wpdb;
+		if ( ! isset( $wpdb->postmeta ) || ! method_exists( $wpdb, 'prepare' ) || ! method_exists( $wpdb, 'get_col' ) ) {
+			return array();
+		}
+
+		$conditions = array();
+		$values     = array();
+		$user_ids   = array_values( array_unique( array_filter( array_map( 'absint', (array) $user_ids ) ) ) );
+		$emails     = array_values( array_unique( array_filter( array_map( 'sanitize_email', (array) $emails ) ) ) );
+		if ( $user_ids ) {
+			$conditions[] = '(meta_key = %s AND meta_value IN (' . implode( ', ', array_fill( 0, count( $user_ids ), '%s' ) ) . '))';
+			$values[]     = '_tribe_tickets_attendee_user_id';
+			$values       = array_merge( $values, array_map( 'strval', $user_ids ) );
+		}
+		foreach ( array( '_tribe_rsvp_email', '_tribe_tpp_email', '_tribe_tickets_email', '_tribe_wooticket_email', '_tec_tickets_commerce_attendee_email' ) as $key ) {
+			if ( ! $emails ) {
+				break;
+			}
+			$conditions[] = '(meta_key = %s AND meta_value IN (' . implode( ', ', array_fill( 0, count( $emails ), '%s' ) ) . '))';
+			$values[]     = $key;
+			$values       = array_merge( $values, $emails );
+		}
+		if ( ! $conditions ) {
+			return array();
+		}
+
+		$sql = "SELECT DISTINCT post_id FROM {$wpdb->postmeta} WHERE " . implode( ' OR ', $conditions ) . ' LIMIT 2000'; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- core table property and generated placeholders only.
+		$ids = $wpdb->get_col( $wpdb->prepare( $sql, $values ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		return array_values( array_unique( array_filter( array_map( 'absint', (array) $ids ) ) ) );
+	}
+
+	/**
+	 * Return the optional Event Tickets attendee repository when available.
+	 *
+	 * Recent Event Tickets releases do not expose tribe_attendees() during
+	 * every admin request. The metadata fallback below remains fully usable in
+	 * that case, so callers receive a harmless empty object instead of failing.
+	 */
+	private static function tec_repository() {
+		if ( function_exists( 'tribe_attendees' ) ) {
+			try {
+				$repository = tribe_attendees();
+				if ( is_object( $repository ) ) {
+					return $repository;
+				}
+			} catch ( Throwable $error ) {
+				// Continue with the read-only post-meta compatibility adapter.
+			}
+		}
+		return new stdClass();
 	}
 
 	private static function contact_identity_maps( $contacts ) {
@@ -438,6 +509,17 @@ final class ContactPanda_Events {
 			$user_id = absint( self::value( $contact, array( 'user_id', 'get_user_id' ) ) );
 			if ( $user_id ) $users[ $user_id ][] = $id;
 			$contact_emails = array( self::value( $contact, array( 'email', 'get_email' ) ) );
+			$meta = is_array( $contact ) && isset( $contact['meta'] ) && is_array( $contact['meta'] ) ? $contact['meta'] : array();
+			if ( ! empty( $meta['merged_email_aliases'] ) && is_array( $meta['merged_email_aliases'] ) ) {
+				$contact_emails = array_merge( $contact_emails, $meta['merged_email_aliases'] );
+			}
+			if ( ! empty( $meta['contactpanda_contact_channels'] ) && is_array( $meta['contactpanda_contact_channels'] ) ) {
+				foreach ( $meta['contactpanda_contact_channels'] as $channel ) {
+					if ( is_array( $channel ) && 'email' === ( $channel['type'] ?? '' ) ) {
+						$contact_emails[] = $channel['value'] ?? '';
+					}
+				}
+			}
 			if ( $user_id ) {
 				$user = get_user_by( 'id', $user_id );
 				if ( $user ) $contact_emails = array_merge( $contact_emails, array( $user->user_email, get_user_meta( $user->ID, 'billing_email', true ) ) );

@@ -47,7 +47,7 @@ final class ContactPanda_Identity_Store {
 		$now = current_time( 'mysql' );
 		if ( ! empty( $args['is_primary'] ) ) $wpdb->update( $table, array( 'is_primary' => 0, 'updated_at' => $now ), array( 'contact_id' => $contact_id, 'channel_type' => $type ) );
 		$sql = "INSERT INTO `{$table}` (contact_id,channel_type,label,channel_value,normalized_value,is_primary,status,consent_status,verified_at,source,created_at,updated_at) VALUES (%d,%s,%s,%s,%s,%d,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE label=VALUES(label),channel_value=VALUES(channel_value),is_primary=VALUES(is_primary),status=VALUES(status),consent_status=VALUES(consent_status),verified_at=VALUES(verified_at),source=VALUES(source),updated_at=VALUES(updated_at)";
-		return false !== $wpdb->query( $wpdb->prepare( $sql, $contact_id, $type, sanitize_key( $args['label'] ), $value, $normalized, empty( $args['is_primary'] ) ? 0 : 1, sanitize_key( $args['status'] ), sanitize_key( $args['consent_status'] ), $args['verified_at'] ?: null, sanitize_key( $args['source'] ), $now, $now ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table.
+		return false !== $wpdb->query( $wpdb->prepare( $sql, $contact_id, $type, sanitize_key( $args['label'] ), $value, $normalized, empty( $args['is_primary'] ) ? 0 : 1, sanitize_key( $args['status'] ), sanitize_key( $args['consent_status'] ), $args['verified_at'] ?: null, sanitize_key( $args['source'] ), $now, $now ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- internal table; all values are prepared.
 	}
 
 	public static function add_identity( $contact_id, $provider, $identity_type, $external_id, $args = array() ) {
@@ -63,7 +63,7 @@ final class ContactPanda_Identity_Store {
 		$args = wp_parse_args( $args, array( 'is_primary' => 0, 'status' => 'active', 'metadata' => array(), 'source' => 'contactpanda' ) );
 		$now = current_time( 'mysql' );
 		$sql = "INSERT INTO `{$table}` (contact_id,provider,identity_type,external_id,is_primary,status,metadata_json,source,created_at,updated_at) VALUES (%d,%s,%s,%s,%d,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE contact_id=VALUES(contact_id),is_primary=VALUES(is_primary),status=VALUES(status),metadata_json=VALUES(metadata_json),source=VALUES(source),updated_at=VALUES(updated_at)";
-		return false !== $wpdb->query( $wpdb->prepare( $sql, $contact_id, $provider, $identity_type, $external_id, empty( $args['is_primary'] ) ? 0 : 1, sanitize_key( $args['status'] ), wp_json_encode( (array) $args['metadata'] ), sanitize_key( $args['source'] ), $now, $now ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table.
+		return false !== $wpdb->query( $wpdb->prepare( $sql, $contact_id, $provider, $identity_type, $external_id, empty( $args['is_primary'] ) ? 0 : 1, sanitize_key( $args['status'] ), wp_json_encode( (array) $args['metadata'] ), sanitize_key( $args['source'] ), $now, $now ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- internal table; all values are prepared.
 	}
 
 	public static function sync_contact( $contact_id ) {

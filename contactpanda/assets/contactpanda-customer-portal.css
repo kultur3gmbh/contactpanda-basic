@@ -196,6 +196,26 @@
 	margin-top: 1rem;
 }
 
+.contactpanda-preferences-form fieldset {
+	display: grid;
+	gap: .6rem;
+	margin: 0;
+	padding: 1rem;
+	border: 1px solid #dcdcde;
+	border-radius: 8px;
+}
+
+.contactpanda-preferences-form legend {
+	padding: 0 .35rem;
+	font-weight: 700;
+}
+
+.contactpanda-preferences-form fieldset label {
+	display: flex;
+	align-items: flex-start;
+	gap: .55rem;
+}
+
 /* The WooCommerce account endpoint supplies its own page container. */
 .contactpanda-portal-account {
 	max-width: none;

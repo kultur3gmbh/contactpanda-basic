@@ -116,8 +116,8 @@
 				if (config.campaignMode) {
 					resultButton.removeAttribute('href'); resultButton.setAttribute('aria-disabled', 'true'); statusElement.textContent = '';
 				} else {
-					var url = new URL(window.location.href);
-					url.searchParams.set('page', 'contactpanda'); url.searchParams.set('contactpanda_filter', result.data.filter);
+					var url = new URL(config.peopleUrl || window.location.href, window.location.origin);
+					url.searchParams.set('page', 'contactpanda-people'); url.searchParams.set('contactpanda_filter', result.data.filter);
 					url.searchParams.delete('segment'); url.searchParams.delete('contactpanda_page');
 					resultButton.href = url.toString(); resultButton.setAttribute('aria-disabled', 'false'); statusElement.textContent = '';
 				}
@@ -126,6 +126,12 @@
 	}
 
 	document.addEventListener('click', function (event) {
+		var showResults = event.target.closest('.contactpanda-show-filter-results');
+		if (showResults && showResults.getAttribute('aria-disabled') === 'false' && showResults.href && showResults.href !== '#') {
+			event.preventDefault();
+			window.location.assign(showResults.href);
+			return;
+		}
 		var open = event.target.closest('.contactpanda-open-inline-search');
 		if (open) { var openModal = panel.closest('.contactpanda-search-modal'); if (openModal) openModal.hidden = false; panel.hidden = false; panel.classList.add('is-open'); if (!state.rules.length) { state.rules.push({field: '', operator: '', value: ''}); renderRules(); } return; }
 		if (event.target.closest('.contactpanda-close-inline-search')) { var modal = panel.closest('.contactpanda-search-modal'); if (modal) modal.hidden = true; else { panel.hidden = true; panel.classList.remove('is-open'); } return; }

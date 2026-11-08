@@ -43,7 +43,7 @@ final class ContactPanda_MCP {
 
 	public static function render_settings() {
 		$endpoint = rest_url( self::ROUTE . '/mcp' );
-		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'MCP interface', 'contactpanda' ) . '</h2><p>' . esc_html__( 'This central interface provides the available ContactPanda tools from ContactPanda and every active family plugin. Paid actions appear only when the corresponding license is active.', 'contactpanda' ) . '</p><label><span>' . esc_html__( 'MCP endpoint', 'contactpanda' ) . '</span><input class="large-text code" readonly value="' . esc_attr( $endpoint ) . '"></label><p class="description">' . esc_html__( 'Use a dedicated WordPress application password for an authorized administrator or shop manager. Revoke that password to disable access immediately.', 'contactpanda' ) . '</p></section>';
+		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'MCP interface', 'contactpanda' ) . '</h2><p>' . esc_html__( 'This central interface provides the available ContactPanda tools from ContactPanda and every active family plugin. Additional actions appear when the corresponding extension is installed and active.', 'contactpanda' ) . '</p><label><span>' . esc_html__( 'MCP endpoint', 'contactpanda' ) . '</span><input class="large-text code" readonly value="' . esc_attr( $endpoint ) . '"></label><p class="description">' . esc_html__( 'Use a dedicated WordPress application password for an authorized administrator or shop manager. Revoke that password to disable access immediately.', 'contactpanda' ) . '</p></section>';
 		self::render_audit();
 	}
 

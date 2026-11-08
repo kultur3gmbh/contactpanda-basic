@@ -209,6 +209,7 @@ final class ContactPanda_Schema {
 			meta_value longtext NULL,
 			PRIMARY KEY  (meta_id),
 			KEY contact_id (contact_id),
+			KEY contact_key (contact_id,meta_key),
 			KEY meta_key (meta_key)
 		) $charset;";
 

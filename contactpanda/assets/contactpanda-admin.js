@@ -1,5 +1,10 @@
 (function () {
 	document.addEventListener('change', function (event) {
+		if (event.target.matches('.contactpanda-custom-field-form select[name="field_type"]')) {
+			var options = event.target.closest('form').querySelector('.contactpanda-custom-field-options');
+			if (options) options.hidden = event.target.value !== 'select';
+			return;
+		}
 		if (!event.target.matches('#screen-options-wrap input.hide-column-tog') || !window.CONTACTPANDA_CONFIG || !CONTACTPANDA_CONFIG.screenId) return;
 		var hidden = [];
 		document.querySelectorAll('#screen-options-wrap input.hide-column-tog').forEach(function (box) { if (!box.checked) hidden.push(box.value); });
@@ -7,6 +12,15 @@
 		data.set('action', 'contactpanda_save_hidden_columns'); data.set('nonce', CONTACTPANDA_CONFIG.columnsNonce); data.set('screen', CONTACTPANDA_CONFIG.screenId);
 		hidden.forEach(function (column) { data.append('hidden[]', column); });
 		fetch(CONTACTPANDA_CONFIG.ajaxUrl, {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}, body: data.toString()});
+	});
+
+	document.addEventListener('click', function (event) {
+		var copy = event.target.closest('.contactpanda-copy-shortcode');
+		if (!copy) return;
+		var value = copy.getAttribute('data-copy') || '';
+		if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(value);
+		copy.classList.add('is-copied');
+		window.setTimeout(function () { copy.classList.remove('is-copied'); }, 1500);
 	});
 	'use strict';
 	var i18n = (window.CONTACTPANDA_CONFIG && CONTACTPANDA_CONFIG.i18n) || {};
@@ -85,8 +99,18 @@
 		if (button.classList.contains('contactpanda-open-consent')) return openConsent(button.closest('.contactpanda-marketing'));
 		if (button.classList.contains('contactpanda-close-consent')) return closeConsent(button.closest('.contactpanda-marketing'));
 		if (button.classList.contains('contactpanda-save-consent')) return saveConsent(button.closest('.contactpanda-marketing'));
-		if (button.classList.contains('contactpanda-open-bulk')) return document.getElementById('contactpanda-bulk-action').value === 'newsletter' ? openNewsletterSelection() : openBulkMarketing();
+		if (button.classList.contains('contactpanda-open-bulk')) {
+			var bulkAction = document.getElementById('contactpanda-bulk-action').value;
+			if (bulkAction === 'newsletter') return openNewsletterSelection();
+			if (bulkAction === 'trash') return bulkTrashPeople();
+			if (bulkAction === 'tags_add' || bulkAction === 'tags_remove') return openBulkTags(bulkAction);
+			return openBulkMarketing();
+		}
 		if (button.classList.contains('contactpanda-close-bulk')) return closeBulkMarketing();
+		if (button.classList.contains('contactpanda-close-bulk-tags')) return closeBulkTags();
+		if (button.classList.contains('contactpanda-save-bulk-tags')) return saveBulkTags();
+		if (button.classList.contains('contactpanda-bulk-tag-suggestion')) return selectBulkTag(button);
+		if (button.classList.contains('contactpanda-remove-bulk-tag')) return removeBulkTag(button);
 		if (button.classList.contains('contactpanda-close-newsletter-selection')) return closeNewsletterSelection();
 		if (button.classList.contains('contactpanda-select-all-matching')) return selectAllMatchingPeople();
 		if (button.classList.contains('contactpanda-save-bulk')) return saveBulkMarketing();
@@ -103,18 +127,13 @@
 		if (button.classList.contains('contactpanda-preview-order')) return previewRecord(button, 'contactpanda_preview_order', 'order_id', button.dataset.order, tr('order', 'Order'));
 		if (button.classList.contains('contactpanda-preview-event')) return previewRecord(button, 'contactpanda_preview_event', 'event_id', button.dataset.event, tr('event', 'Event'));
 		if (button.classList.contains('contactpanda-close-preview')) return closePreviewFrame();
-		if (button.classList.contains('contactpanda-open-roles')) return toggleLocalModal(button.closest('.contactpanda-master-data').querySelector('.contactpanda-roles-modal'), true);
-		if (button.classList.contains('contactpanda-close-roles')) return toggleLocalModal(button.closest('.contactpanda-roles-modal'), false);
-		if (button.classList.contains('contactpanda-save-roles')) return saveRoles(button);
 		if (button.classList.contains('contactpanda-open-user-account')) return toggleLocalModal(button.closest('.contactpanda-master-data').querySelector('.contactpanda-user-account-modal'), true);
 		if (button.classList.contains('contactpanda-close-user-account')) return toggleLocalModal(button.closest('.contactpanda-user-account-modal'), false);
 		if (button.classList.contains('contactpanda-save-user-account')) return saveUserAccount(button);
 		if (button.classList.contains('contactpanda-tag-suggestion')) return manageTag(button, 'add');
 		if (button.classList.contains('contactpanda-tags-summary')) return openTags(button.closest('.contactpanda-tags-card'));
 		if (button.classList.contains('contactpanda-close-tags')) return closeTags(button.closest('.contactpanda-tags-card'));
-		if (button.classList.contains('contactpanda-role-suggestion')) return addRole(button);
 		if (button.classList.contains('contactpanda-remove-tag')) return manageTag(button, 'remove');
-		if (button.classList.contains('contactpanda-remove-role')) return button.closest('.contactpanda-role-token').remove();
 		if (button.classList.contains('contactpanda-save-address')) return saveAddress(button.closest('.contactpanda-address-form'));
 		if (button.classList.contains('contactpanda-salutation-value')) return openSalutation(button.closest('.contactpanda-salutation-field'));
 		if (button.classList.contains('contactpanda-cancel-salutation')) return closeSalutation(button.closest('.contactpanda-salutation-field'));
@@ -355,7 +374,8 @@
 	document.addEventListener('submit', function (event) {
 		if (!event.target.classList.contains('contactpanda-output-form')) return;
 		var form = event.target;
-		form.querySelector('input[name="action"]').value = event.submitter && event.submitter.classList.contains('contactpanda-export-vcard') ? 'contactpanda_export_contacts_vcard' : 'contactpanda_export_contacts';
+		if (event.submitter && event.submitter.classList.contains('contactpanda-export-vcard')) form.querySelector('input[name="action"]').value = 'contactpanda_export_contacts_vcard';
+		else if (event.submitter && event.submitter.value === 'xlsx') form.querySelector('input[name="action"]').value = 'contactpanda_export_contacts';
 		var selectedScope = form.querySelector('input[name="scope"]:checked');
 		var selected = selectedContactIds();
 		if (selectedScope && selectedScope.value === 'selected' && !selected.length) {
@@ -583,7 +603,7 @@
 		allMatchingPeopleSelected = true;
 		var label = toolbar.querySelector('.contactpanda-bulk-selection');
 		var link = toolbar.querySelector('.contactpanda-select-all-matching');
-		if (label) label.textContent = format(tr('peopleSelected', '%d people selected'), Number(toolbar.dataset.total || 0));
+		if (label) label.textContent = format(tr('peopleSelected', '%d selected people'), Number(toolbar.dataset.total || 0));
 		if (link) link.hidden = true;
 		updateBulkSelection();
 	}
@@ -603,14 +623,36 @@
 		}
 		if (label && !allMatchingPeopleSelected) label.textContent = selected.length === 1 ? tr('onePersonSelected', '1 person selected') : format(tr('peopleSelected', '%d people selected'), selected.length);
 		if (allMatching) allMatching.hidden = allMatchingPeopleSelected || !selectAll || !selectAll.checked || !toolbar || Number(toolbar.dataset.total || 0) <= checkboxes.length;
-		if (button) button.disabled = !(selected.length || allMatchingPeopleSelected) || !action || ['marketable', 'newsletter'].indexOf(action.value) === -1 || (action.value === 'marketable' && allMatchingPeopleSelected);
+		if (button) button.disabled = !(selected.length || allMatchingPeopleSelected) || !action || ['marketable', 'newsletter', 'trash', 'tags_add', 'tags_remove'].indexOf(action.value) === -1 || (['marketable', 'trash', 'tags_add', 'tags_remove'].indexOf(action.value) !== -1 && allMatchingPeopleSelected);
 		var outputModal = document.querySelector('.contactpanda-output-modal');
 		if (outputModal) {
 			var selectedOption = outputModal.querySelector('input[name="scope"][value="selected"]');
 			var selectedLabel = outputModal.querySelector('.contactpanda-output-selected-label');
 			if (selectedOption) selectedOption.disabled = !selected.length;
-			if (selectedLabel) selectedLabel.textContent = selected.length === 1 ? tr('onePersonSelected', '1 person selected') : format(tr('peopleSelected', '%d people selected'), selected.length);
+			if (selectedLabel) selectedLabel.textContent = selected.length === 0 ? tr('noPersonSelected', 'No person selected') : (selected.length === 1 ? tr('onePersonSelected', '1 selected person') : format(tr('peopleSelected', '%d selected people'), selected.length));
 		}
+	}
+
+	function bulkTrashPeople() {
+		var ids = selectedContactIds();
+		if (!ids.length || allMatchingPeopleSelected || !CONTACTPANDA_CONFIG.trashUrl || !CONTACTPANDA_CONFIG.trashNonce) return;
+		if (!window.confirm(format(tr('confirmBulkTrash', 'Move %d selected people to Trash? They can be restored from Trash.'), ids.length))) return;
+		var form = document.createElement('form');
+		form.method = 'post';
+		form.action = CONTACTPANDA_CONFIG.trashUrl;
+		[
+			['action', 'contactpanda_record_action'],
+			['entity', 'contacts'],
+			['operation', 'trash'],
+			['confirmed', '1'],
+			['_wpnonce', CONTACTPANDA_CONFIG.trashNonce],
+			['return_url', window.location.href]
+		].forEach(function (pair) {
+			var input = document.createElement('input'); input.type = 'hidden'; input.name = pair[0]; input.value = pair[1]; form.appendChild(input);
+		});
+		ids.forEach(function (id) { var input = document.createElement('input'); input.type = 'hidden'; input.name = 'ids[]'; input.value = id; form.appendChild(input); });
+		document.body.appendChild(form);
+		form.submit();
 	}
 
 	function openNewsletterSelection() {
@@ -619,6 +661,7 @@
 		if (!modal || !toolbar || !CONTACTPANDA_CONFIG.campaignUrl) return;
 		var ids = selectedContactIds();
 		var url = new URL(CONTACTPANDA_CONFIG.campaignUrl, window.location.href);
+		url.searchParams.set('contactpanda_modal', '1');
 		if (allMatchingPeopleSelected) url.searchParams.set('people_selection', toolbar.dataset.listToken || '');
 		else url.searchParams.set('contact_ids', ids.join(','));
 		modal.querySelector('.contactpanda-newsletter-selection-frame').src = url.toString();
@@ -669,7 +712,7 @@
 		document.body.classList.add('contactpanda-modal-open');
 		modal.querySelector('.contactpanda-bulk-confirmed').checked = false;
 		modal.querySelector('.contactpanda-modal-message').textContent = '';
-		modal.querySelector('.contactpanda-bulk-modal-count strong').textContent = ids.length === 1 ? tr('onePersonSelected', '1 person selected') : format(tr('peopleSelected', '%d people selected'), ids.length);
+		modal.querySelector('.contactpanda-bulk-modal-count strong').textContent = ids.length === 0 ? tr('noPersonSelected', 'No person selected') : (ids.length === 1 ? tr('onePersonSelected', '1 selected person') : format(tr('peopleSelected', '%d selected people'), ids.length));
 		modal.querySelector('.contactpanda-bulk-source').focus();
 	}
 
@@ -703,6 +746,102 @@
 				message.textContent = result.data.message;
 				message.classList.add('is-success');
 				window.setTimeout(function () { window.location.reload(); }, 1600);
+			})
+			.catch(function (error) {
+				button.disabled = false;
+				message.textContent = error.message;
+			});
+	}
+
+	function openBulkTags(action) {
+		var ids = selectedContactIds();
+		var modal = document.querySelector('.contactpanda-bulk-tags-modal');
+		if (!ids.length || !modal) return;
+		modal.dataset.operation = action === 'tags_remove' ? 'remove' : 'add';
+		modal.hidden = false;
+		document.body.classList.add('contactpanda-modal-open');
+		modal.querySelectorAll('.contactpanda-bulk-tag-token').forEach(function (token) { token.remove(); });
+		modal.querySelectorAll('.contactpanda-bulk-tag-suggestion').forEach(function (suggestion) { suggestion.hidden = false; });
+		var input = modal.querySelector('.contactpanda-bulk-tags-input');
+		var message = modal.querySelector('.contactpanda-modal-message');
+		var title = modal.querySelector('#contactpanda-bulk-tags-title');
+		var save = modal.querySelector('.contactpanda-save-bulk-tags');
+		if (input) input.value = '';
+		if (message) { message.textContent = ''; message.classList.remove('is-success'); }
+		if (title) title.textContent = modal.dataset.operation === 'remove' ? tr('removeTagsFromSelected', 'Remove tags from selected people') : tr('addTagsToSelected', 'Add tags to selected people');
+		if (save) {
+			save.disabled = true;
+			var actionLabel = save.querySelector('.contactpanda-bulk-tags-action-label');
+			if (actionLabel) actionLabel.textContent = modal.dataset.operation === 'remove' ? tr('removeTags', 'Remove tags') : tr('addTags', 'Add tags');
+		}
+		var count = modal.querySelector('.contactpanda-bulk-tags-count strong');
+		if (count) count.textContent = ids.length === 1 ? tr('onePersonSelected', '1 selected person') : format(tr('peopleSelected', '%d selected people'), ids.length);
+		if (input) input.focus();
+	}
+
+	function closeBulkTags() {
+		var modal = document.querySelector('.contactpanda-bulk-tags-modal');
+		if (modal) modal.hidden = true;
+		document.body.classList.remove('contactpanda-modal-open');
+	}
+
+	function selectBulkTag(button) {
+		var modal = button.closest('.contactpanda-bulk-tags-modal');
+		var field = modal && modal.querySelector('.contactpanda-token-field');
+		if (!modal || !field || field.querySelector('.contactpanda-bulk-tag-token[data-tag="' + button.dataset.tag + '"]')) return;
+		var token = document.createElement('span');
+		token.className = 'contactpanda-tag contactpanda-bulk-tag-token';
+		token.dataset.tag = button.dataset.tag;
+		token.appendChild(document.createTextNode(button.dataset.name || button.textContent));
+		var remove = document.createElement('button');
+		remove.type = 'button';
+		remove.className = 'button-link contactpanda-remove-bulk-tag';
+		remove.setAttribute('aria-label', tr('removeSelectedTag', 'Remove selected tag'));
+		remove.textContent = '×';
+		token.appendChild(remove);
+		field.insertBefore(token, field.querySelector('.contactpanda-bulk-tags-input'));
+		button.hidden = true;
+		var input = modal.querySelector('.contactpanda-bulk-tags-input');
+		if (input) { input.value = ''; updateTokenSuggestions(input); input.focus(); }
+		var save = modal.querySelector('.contactpanda-save-bulk-tags');
+		if (save) save.disabled = false;
+	}
+
+	function removeBulkTag(button) {
+		var modal = button.closest('.contactpanda-bulk-tags-modal');
+		var token = button.closest('.contactpanda-bulk-tag-token');
+		if (!modal || !token) return;
+		var suggestion = modal.querySelector('.contactpanda-bulk-tag-suggestion[data-tag="' + token.dataset.tag + '"]');
+		if (suggestion) suggestion.hidden = false;
+		token.remove();
+		var save = modal.querySelector('.contactpanda-save-bulk-tags');
+		if (save) save.disabled = !modal.querySelector('.contactpanda-bulk-tag-token');
+	}
+
+	function saveBulkTags() {
+		var modal = document.querySelector('.contactpanda-bulk-tags-modal');
+		var ids = selectedContactIds();
+		if (!modal || !ids.length) return;
+		var tags = Array.prototype.map.call(modal.querySelectorAll('.contactpanda-bulk-tag-token'), function (token) { return token.dataset.tag; });
+		if (!tags.length) return;
+		var button = modal.querySelector('.contactpanda-save-bulk-tags');
+		var message = modal.querySelector('.contactpanda-modal-message');
+		var data = new URLSearchParams();
+		data.set('action', 'contactpanda_bulk_manage_contact_tags');
+		data.set('nonce', CONTACTPANDA_CONFIG.nonce);
+		data.set('operation', modal.dataset.operation || 'add');
+		ids.forEach(function (id) { data.append('contact_ids[]', id); });
+		tags.forEach(function (id) { data.append('tag_ids[]', id); });
+		button.disabled = true;
+		message.classList.remove('is-success');
+		message.textContent = tr('updatingTags', 'Updating tags…');
+		fetch(CONTACTPANDA_CONFIG.ajaxUrl, requestOptions(data))
+			.then(parseResponse)
+			.then(function (result) {
+				if (!result.success) throw new Error(result.data && result.data.message ? result.data.message : tr('tagActionFailed', 'Tag action failed.'));
+				message.textContent = result.data.message;
+				message.classList.add('is-success');
+				window.setTimeout(function () { window.location.reload(); }, 1200);
 			})
 			.catch(function (error) {
 				button.disabled = false;
@@ -961,10 +1100,6 @@
 		}
 	}
 
-	function selectedRoles(modal) {
-		return Array.prototype.slice.call(modal.querySelectorAll('.contactpanda-role-token')).map(function (token) { return token.dataset.role; });
-	}
-
 	function updateTokenSuggestions(input) {
 		var entry = input.closest('.contactpanda-token-entry');
 		var suggestions = entry ? entry.querySelector('.contactpanda-token-suggestions') : null;
@@ -972,9 +1107,7 @@
 		var query = input.value.trim().toLocaleLowerCase();
 		var matches = 0;
 		suggestions.querySelectorAll('.contactpanda-token-suggestion').forEach(function (suggestion) {
-			var assigned = suggestion.dataset.tag
-				? !!entry.querySelector('.contactpanda-tag[data-tag="' + suggestion.dataset.tag + '"]')
-				: !!entry.querySelector('.contactpanda-role-token[data-role="' + suggestion.dataset.role + '"]');
+			var assigned = !!entry.querySelector('.contactpanda-tag[data-tag="' + suggestion.dataset.tag + '"]');
 			var visible = !!query && !assigned && suggestion.dataset.name.toLocaleLowerCase().indexOf(query) !== -1 && matches < 10;
 			suggestion.hidden = !visible;
 			if (visible) matches += 1;
@@ -986,55 +1119,6 @@
 		var entry = input ? input.closest('.contactpanda-token-entry') : null;
 		var suggestions = entry ? entry.querySelector('.contactpanda-token-suggestions') : null;
 		if (suggestions) suggestions.hidden = true;
-	}
-
-	function addRole(trigger) {
-		var picker = trigger.closest('.contactpanda-role-picker');
-		if (!picker) return;
-		var input = picker.querySelector('.contactpanda-role-input');
-		var message = picker.querySelector('.contactpanda-role-picker-message');
-		var value = trigger.dataset.name || input.value.trim();
-		var option = trigger.classList.contains('contactpanda-role-suggestion') ? trigger : Array.prototype.slice.call(picker.querySelectorAll('.contactpanda-role-suggestion')).find(function (item) {
-			return item.dataset.name.toLocaleLowerCase() === value.toLocaleLowerCase();
-		});
-		if (!option || !option.dataset.role) {
-			message.textContent = tr('selectSuggestedRole', 'Please select a suggested WordPress role.');
-			return;
-		}
-		if (picker.querySelector('.contactpanda-role-token[data-role="' + option.dataset.role + '"]')) {
-			message.textContent = tr('roleAlreadyAssigned', 'This role is already assigned.');
-			input.value = '';
-			return;
-		}
-		var token = document.createElement('span');
-		token.className = 'contactpanda-role-token';
-		token.dataset.role = option.dataset.role;
-		token.appendChild(document.createTextNode(option.dataset.name));
-		var remove = document.createElement('button');
-		remove.type = 'button';
-		remove.className = 'button-link contactpanda-remove-role';
-		remove.setAttribute('aria-label', format(tr('removeRole', 'Remove role %s'), option.dataset.name));
-		remove.innerHTML = '&times;';
-		token.appendChild(remove);
-		picker.querySelector('.contactpanda-token-field').insertBefore(token, input);
-		input.value = '';
-		closeTokenSuggestions(input);
-		message.textContent = '';
-		input.focus();
-	}
-
-	function saveRoles(button) {
-		var modal = button.closest('.contactpanda-roles-modal');
-		var panel = modal.querySelector('.contactpanda-modal-panel');
-		var roles = selectedRoles(modal);
-		if (!roles.length || !window.confirm(tr('confirmSaveRoles', 'Save the selected roles and the resulting permissions for this account?'))) return;
-		var data = new URLSearchParams();
-		data.set('action', 'contactpanda_update_user_roles');
-		data.set('nonce', CONTACTPANDA_CONFIG.nonce);
-		data.set('contact_id', panel.dataset.contact);
-		data.set('user_id', panel.dataset.user);
-		roles.forEach(function (role) { data.append('roles[]', role); });
-		saveAccountRequest(button, modal, data);
 	}
 
 	function saveUserAccount(button) {
@@ -1051,7 +1135,6 @@
 		if (mode === 'create') {
 			data.set('username', modal.querySelector('.contactpanda-account-username').value);
 			data.set('send_invite', modal.querySelector('.contactpanda-account-invite').checked ? '1' : '0');
-			selectedRoles(modal).forEach(function (role) { data.append('roles[]', role); });
 		}
 		saveAccountRequest(button, modal, data);
 	}
@@ -1285,6 +1368,49 @@
 	});
 
 	document.addEventListener('submit', function (event) {
+		if (event.target.matches('.contactpanda-migration-progress-form:not(.contactpanda-live-migration-form):not(.contactpanda-groundhogg-migration-form)')) {
+			var form = event.target, button = form.querySelector('button[type="submit"]');
+			if (form.dataset.running === '1') { event.preventDefault(); return; }
+			form.dataset.running = '1';
+			if (button) { button.disabled = true; button.dataset.originalLabel = button.textContent; button.textContent = tr('migrationRunning', 'Migration running…'); }
+			var status = document.createElement('span'); status.className = 'contactpanda-inline-migration-progress'; status.setAttribute('role', 'status'); status.innerHTML = '<span class="spinner is-active" aria-hidden="true"></span><span>' + tr('migrationProgressHint', 'Source data is being read, matched, and saved. Please keep this page open.') + '</span>';
+			form.appendChild(status);
+			return;
+		}
+		if (event.target.matches('.contactpanda-live-migration-form')) {
+			event.preventDefault();
+			var liveForm = event.target;
+			if (liveForm.dataset.running === '1') return;
+			liveForm.dataset.running = '1';
+			var liveButton = liveForm.querySelector('button[type="submit"]');
+			var liveProgress = liveForm.closest('.contactpanda-card').querySelector('.contactpanda-migration-progress');
+			if (liveButton) liveButton.disabled = true;
+			if (liveProgress) liveProgress.hidden = false;
+			var pollLiveMigration = function () {
+				var progressData = new URLSearchParams(); progressData.set('action', 'contactpanda_migration_progress'); progressData.set('nonce', CONTACTPANDA_CONFIG.nonce);
+				fetch(CONTACTPANDA_CONFIG.ajaxUrl, requestOptions(progressData)).then(parseResponse).then(function (result) {
+					if (!result.success || !liveProgress) return;
+					var value = Math.max(0, Math.min(100, parseInt(result.data.percent || 0, 10)));
+					liveProgress.querySelector('strong').textContent = result.data.stage || tr('migrationPreparing', 'Preparing migration…');
+					liveProgress.querySelector('progress').value = value;
+					liveProgress.querySelector('span').textContent = value + '%';
+					liveProgress.querySelector('small').textContent = result.data.total ? String(result.data.processed) + ' / ' + String(result.data.total) : String(result.data.processed || '');
+				}).catch(function () {});
+			};
+			pollLiveMigration();
+			var liveTimer = window.setInterval(pollLiveMigration, 1000);
+			var liveData = new FormData(liveForm);
+			fetch(CONTACTPANDA_CONFIG.ajaxUrl, {method: 'POST', body: liveData, credentials: 'same-origin'}).then(parseResponse).then(function (result) {
+				window.clearInterval(liveTimer);
+				if (!result.success || !result.data || !result.data.redirect) throw new Error(result.data && result.data.message ? result.data.message : tr('invalidServerResponse', 'The server returned an invalid response.'));
+				window.location.href = result.data.redirect;
+			}).catch(function (error) {
+				window.clearInterval(liveTimer); liveForm.dataset.running = '0';
+				if (liveButton) liveButton.disabled = false;
+				if (liveProgress) { liveProgress.querySelector('strong').textContent = error.message; liveProgress.querySelector('small').textContent = ''; }
+			});
+			return;
+		}
 		if (event.target.matches('.contactpanda-groundhogg-migration-form')) {
 			event.preventDefault();
 			var migrationForm = event.target;
@@ -1351,6 +1477,21 @@
 	});
 
 	document.addEventListener('click', function (event) {
+		var settingsTab = event.target.closest('[data-contactpanda-settings-tab]');
+		if (settingsTab) {
+			var navigation = settingsTab.closest('[data-contactpanda-settings-tabs]');
+			var selected = settingsTab.dataset.contactpandaSettingsTab;
+			if (!navigation || !selected) return;
+			navigation.querySelectorAll('[data-contactpanda-settings-tab]').forEach(function (button) {
+				var active = button === settingsTab;
+				button.classList.toggle('is-active', active);
+				button.setAttribute('aria-selected', active ? 'true' : 'false');
+			});
+			document.querySelectorAll('[data-contactpanda-settings-panel]').forEach(function (panel) {
+				panel.hidden = panel.dataset.contactpandaSettingsPanel !== selected;
+			});
+			return;
+		}
 		var link = event.target.closest('.contactpanda-delete-tag-link');
 		if (!link) return;
 		var template = tr('confirmDeleteTag', 'Delete the tag “%1$s”? It is currently assigned to %2$d people. The people themselves will not be deleted.');
@@ -1359,6 +1500,25 @@
 	});
 
 	document.addEventListener('change', function (event) {
+		if (event.target.matches('[data-contactpanda-language-select]')) {
+			var container = event.target.closest('[data-contactpanda-language-sections]');
+			if (container) container.querySelectorAll('[data-contactpanda-language]').forEach(function (section) {
+				section.hidden = section.dataset.contactpandaLanguage !== event.target.value;
+			});
+			return;
+		}
+		if (event.target.matches('[data-contactpanda-legal-form]')) {
+			var representative = event.target.closest('form').querySelector('[data-contactpanda-representative-field]');
+			if (representative) {
+				var labels = {};
+				try { labels = JSON.parse(representative.dataset.labels || '{}'); } catch (error) {}
+				var selected = event.target.value;
+				representative.hidden = selected === 'individual';
+				var label = representative.querySelector('[data-contactpanda-representative-label]');
+				if (label) label.textContent = labels[selected] || labels.other || '';
+			}
+			return;
+		}
 		if (!event.target.matches('.contactpanda-file-drop input[type="file"]')) return;
 		var drop = event.target.closest('.contactpanda-file-drop');
 		var name = drop && drop.querySelector('.contactpanda-file-drop-name');
@@ -1388,4 +1548,30 @@
 		input.files = event.dataTransfer.files;
 		input.dispatchEvent(new Event('change', { bubbles: true }));
 	});
+}());
+
+// Keep the people-list bulk button usable even when another admin component
+// stops propagation of the delegated change event.
+(function () {
+	'use strict';
+	function syncPeopleBulkButton() {
+		var action = document.getElementById('contactpanda-bulk-action');
+		var button = document.querySelector('.contactpanda-open-bulk');
+		if (!action || !button) return;
+		var selected = document.querySelectorAll('.contactpanda-person-select:checked').length;
+		var supported = ['marketable', 'newsletter', 'trash', 'tags_add', 'tags_remove'].indexOf(action.value) !== -1;
+		button.disabled = !selected || !supported;
+		button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
+		button.classList.toggle('is-disabled', button.disabled);
+	}
+	document.addEventListener('change', function (event) {
+		if (event.target.id === 'contactpanda-bulk-action' || event.target.classList.contains('contactpanda-person-select') || event.target.classList.contains('contactpanda-select-all')) {
+			window.setTimeout(syncPeopleBulkButton, 0);
+		}
+	});
+	document.addEventListener('click', function (event) {
+		if (event.target.closest('.contactpanda-person-select, .contactpanda-select-all')) window.setTimeout(syncPeopleBulkButton, 0);
+	});
+	if ('loading' === document.readyState) document.addEventListener('DOMContentLoaded', syncPeopleBulkButton);
+	else syncPeopleBulkButton();
 }());
