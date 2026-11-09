@@ -1,13 +1,203 @@
 === ContactPanda Basic ===
-Developer: Kultur3 GmbH
+Contributors: kultur3gmbh
+Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
+Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.8.75
+Stable tag: 0.9.30
 License: GPLv3
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-A user-friendly contact and company CRM for WordPress with a free, reduced newsletter workflow, a WooCommerce customer overview, optional Groundhogg compatibility, and stable extension APIs for the ContactPanda product family.
+Manage people, companies, consent, newsletters and customer history directly in WordPress.
+
+== Description ==
+
+ContactPanda Basic provides an independent contact and company database for WordPress. It can also use Groundhogg as its leading contact source, presents WooCommerce customer and order summaries without changing source orders, and reads supported event and ticket systems without modifying their records.
+
+Optional integrations are detected at runtime and remain hidden when their source plugin is unavailable. ContactPanda Basic remains fully usable without a paid ContactPanda extension.
+
+== External services ==
+
+ContactPanda Basic works without an external ContactPanda account. The following narrowly scoped services are used only for the described features:
+
+* ContactPanda news: opening the ContactPanda dashboard requests the public RSS feed from `https://mycontactpanda.com/feed/`. The request sends the normal technical connection data, such as the site server's IP address, but no contacts, email lists, orders, or customer records. The service is operated by Kultur3 GmbH; privacy information is available at `https://mycontactpanda.com/datenschutz/`.
+* EU VIES VAT validation: when an administrator or registrant explicitly validates a VAT ID, the country code and VAT number are sent to the European Commission VIES service at `https://ec.europa.eu/taxation_customs/vies/services/checkVatService`. No other ContactPanda profile data is sent. The European Commission privacy policy is available at `https://commission.europa.eu/privacy-policy-websites-managed-european-commission_en`.
+* Optional salutation library: when an administrator explicitly imports the central salutation library, ContactPanda downloads a public JSON file from `https://raw.githubusercontent.com/kultur3gmbh/contactpanda-salutations/main/salutations.json`. No site or customer data is included in that request beyond normal technical connection data. GitHub's privacy statement is available at `https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement`.
+* YouTube preview images: when an email template contains a YouTube video URL, its public preview image may be loaded from `https://i.ytimg.com/` while previewing or displaying that content. The visitor's browser sends normal technical connection data to Google. Google's privacy policy is available at `https://policies.google.com/privacy`.
+* WhatsApp links: a deliberately configured WhatsApp button opens `https://wa.me/` with the destination number and, when configured, the prepared message. Data is sent only after a user follows that link. WhatsApp's privacy information is available at `https://www.whatsapp.com/legal/privacy-policy`.
 
 == Changelog ==
+
+= 0.9.30 =
+* Fixed import tags and stable shared drag-and-drop controls.
+
+= 0.9.28 =
+* Added protected new-only repeat migrations from Groundhogg and extension contracts for Plus Excel transfers.
+* Import safeguards retain trashed records and remember future permanent deletions using salted identifiers.
+* Adds a direct evaluation link and color-coded recipient interactions for every mailing.
+* Improves recipient status localization and report clarity.
+
+= 0.9.26 =
+* Direct contact filters now open their results in the people list instead of returning to the dashboard.
+* The dashboard separates active or paused mailings from the most recently completed mailing.
+
+= 0.9.25 =
+* Improves the settings, integration, customer-portal, contact-filter, tag, campaign, salutation, and custom-field interfaces.
+* Adds consistent dialogs and safer deletion choices for custom fields.
+* Fixes registration navigation, filtered-result actions, and selection labels.
+
+= 0.9.24 =
+* Structures and fully localizes the mandatory central spam-protection settings.
+* Shows only the configuration fields required by the selected provider.
+* Automatically protects Contact Form 7 submissions through its official spam-filter interface.
+
+= 0.9.23 =
+* Adds central, provider-neutral spam protection for public signup and registration forms.
+* Standardizes left-aligned icon and text entries in element-based editors.
+
+= 0.9.22 =
+* Refined the shared editor layouts, newsletter composer controls, and system-email foundations used by ContactPanda Plus.
+
+= 0.9.21 =
+* Aligns the System E-Mail workspace, active tabs, wide administration layouts, and shared editor controls with the current Panda family design system.
+* Prevents color controls and functional panels from being clipped in narrow editor sidebars.
+
+= 0.9.19 =
+* Removes the last legacy newsletter-logo media handler so single-image fields use only the shared responsive Panda image picker.
+
+= 0.9.18 =
+* Unifies the responsive family image picker and removes permanent image URL fields.
+* Adds an optional external-image link action without expanding the settings layout.
+
+= 0.9.17 =
+
+* Completes the WordPress.org validation metadata for the GitHub updater transition.
+
+= 0.9.16 =
+
+* Restores automatic updates for installations distributed through GitHub while keeping the WordPress.org package free of external update code.
+
+= 0.9.15 =
+
+* Adds recoverable bulk deletion to the people list with explicit administrator confirmation.
+* Uses centrally maintained sender details in newsletter campaigns and supports language-specific double-opt-in reminders.
+* Completes the wide responsive settings layout, neutral active states, centered action icons, and larger reminder editor.
+
+= 0.9.14 =
+
+* Expands the email editor with consistent image ratios, gallery fitting, captions, social links, headings, video controls, and divider styles.
+* Keeps preview, saved templates, and delivered email markup aligned.
+
+= 0.9.13 =
+
+* Completes the current WordPress.org validation cleanup and shared Panda UI consolidation.
+* Keeps free and optional extension code cleanly separated while preserving the public extension contracts.
+
+= 0.9.12 =
+
+* Adds the shared two-column Panda editor contract and central standard-block registry.
+* Makes the newsletter-template workspace use independent canvas and inspector panels without scroll jumps.
+* Refines the shared compact color picker with a square color area and narrower sliders.
+
+= 0.9.11 =
+* Consolidates the neutral Panda administration controls and keeps action icons centered in every supported button layout.
+* Makes shared color and image controls responsive and reusable by standalone Panda extensions.
+
+= 0.9.10 =
+
+* Adds the official WordPress Plugin Check to continuous validation for WordPress.org readiness.
+* Verifies that the public package remains free of protected updater and licensing code.
+
+= 0.9.9 =
+
+* Keeps the complete free feature set independent of paid extensions.
+* Removes external update and licensing code from the WordPress.org package.
+* Preserves stable extension points for separately installed ContactPanda products.
+
+= 0.9.8 =
+* Applies the neutral-grey action style to every large administration button, regardless of its label.
+* Detects action words anywhere in descriptive button labels and adds the matching shared icon.
+
+= 0.9.7 =
+* Adds a one-time protected-update bridge for PandaWoo Pro 0.6.x installations covered by a ContactPanda All-in Suite license.
+* Hands update ownership back to PandaWoo Pro automatically from version 0.7.2 onward.
+
+= 0.9.6 =
+* Standardizes large labelled actions across the Panda family with neutral-grey styling, consistent icons, responsive wrapping, and the concise “Save draft” label.
+* Keeps compact row actions separate from primary page and form actions.
+
+= 0.9.5 =
+* Caches dashboard totals and initializes large administration modules only when their screens or actions need them.
+* Adds central Site Health diagnostics for family versions, protected updates, licenses, and optional privacy-safe runtime measurements.
+
+= 0.9.4 =
+* Adds context-aware lazy loading for administration, public, REST, AJAX, and cron requests.
+* Adds bounded background batches, opt-in memory profiling, and protected-update backoff.
+* Keeps ordinary Basic requests within the documented 128 MB memory profile.
+
+= 0.9.3 =
+* Makes ContactPanda the canonical owner of VAT IDs for people and companies without creating artificial company records.
+* Restores complete private and business registration in Basic and provides a built-in customer portal without a required WordPress page.
+* Adds compatibility APIs for tax and shop extensions while preserving historical WooCommerce orders and invoices.
+* Improves the responsive people list, updater product icons, and German administration labels.
+
+= 0.9.2 =
+* Adds a standard newsletter signup block with one-line and two-line layouts.
+* Removes WooCommerce customer account registration from the free plugin runtime; PandaWoo now owns commerce registration.
+* Keeps ContactPanda Basic independently usable without paid extensions.
+
+= 0.9.1 =
+* Consolidates email defaults and system-email design into one settings area; custom header and footer composition is available with ContactPanda Plus.
+* Replaces company-only master data with inclusive website-owner settings, including legal-form-aware representatives and a country selector.
+* Keeps payment, document, stamp, and signature data out of Basic while preserving existing values for ContactPanda Business.
+* Shows SMS, WhatsApp, email-delivery, and user-role management settings only when the required ContactPanda Plus module is available.
+
+= 0.9.0 =
+* Provides the release candidate for the public ContactPanda Basic 1.0 line while preserving the extension APIs required by current Plus and Business releases.
+* Removes the retired intermediate product from protected family update registration without deleting historical data.
+* Includes the corrected event-attendee identities, quick filters, and WooCommerce order summaries validated in 0.8.85.
+
+= 0.8.85 =
+* Corrects event-attendee counts and quick filters in the people list, including merged email identities.
+* Keeps WooCommerce order totals consistent between the people list and person details by retaining cancelled and failed historical orders.
+* Restores the labelled event-source compatibility contract used by supported extensions and repairs the complete validation suite.
+
+= 0.8.84 =
+* Adds reusable newsletter templates with duplication, preview, search, and a visual template gallery.
+* Expands event blocks with manual or dynamic selection, time period, category, featured-only, sorting, count, and image presentation controls.
+* Makes protected self-hosted updates use a verified local package when the license server and WordPress run on the same site.
+
+= 0.8.83 =
+* Adds visible live progress for The Newsletter Plugin migration.
+* Keeps editable migrated templates separate from immutable historical mailing archives.
+
+= 0.8.82 =
+* Adds a repeatable WordPress-user migration that links people by email and completes only missing profile values.
+* Adds a safe WooCommerce company-data adoption action and clearer migration progress and completion reporting.
+* Preserves transparent system-email colors, centers the standard footer, and standardizes compact administration pagination.
+
+= 0.8.81 =
+* Normalizes current and historical product names so existing paid licenses unlock the same modules reliably.
+* Improves Event Tickets attendee discovery without modifying source event or ticket records.
+
+= 0.8.80 =
+* Detects current The Events Calendar and Event Tickets installations even when the legacy attendee repository function is unavailable.
+* Preserves the read-only event-ticket metadata fallback for customer and event links.
+* Extends Newsletter Plugin migration reporting for reusable email sources and historical mailings.
+
+= 0.8.79 =
+* Added centralized user and role permissions for contacts, marketing, analytics, support, projects, and settings.
+* Expanded the preference center for channels, topics, and correspondence language without bypassing double opt-in.
+* Improved the shared permission contracts used by Plus and Business.
+
+= 0.8.78 =
+
+* Coordinates the family hotfix that keeps legacy Pro and the merged Business package safe during staged updates.
+
+= 0.8.77 =
+
+* Finalizes the Basic, Plus, Business, and future Members product structure.
+* Moves the former Pro CRM and support ownership to ContactPanda Business without deleting existing data.
 
 = 0.8.75 =
 * Finalizes the ContactPanda Basic product, repository, package, and updater naming contract while retaining the stable WordPress.org plugin identifier.
@@ -554,24 +744,6 @@ A user-friendly contact and company CRM for WordPress with a free, reduced newsl
 * The Events Calendar and Event Tickets Plus adapter moved behind a ContactPanda Plus interface; Basic no longer contains third-party attendee queries.
 * Added extensible settings tabs and event data filters so future modules can be added without editing the Basic plugin.
 * Disabling ContactPanda Plus hides its modules but never deletes contacts, orders, event data, templates, or settings.
-
-= 0.9.2 =
-* Text blocks now provide a formatting toolbar directly above the selected block and can be edited immediately inside the email canvas.
-* Image blocks expose alignment and width controls directly on the block and in the sidebar; widths can use pixels or percent.
-* Added an optional WooCommerce product block for two or four products selected from latest, category, producer/brand or product attribute, featured, sale, or manual sources.
-* Product blocks query current WooCommerce product images, names, prices, and links without duplicating product data in ContactPanda.
-* When WooCommerce is unavailable, the product block is hidden from the palette while existing product blocks remain intact and display a clear notice.
-* The people list displays email addresses as plain text with a separate mailto icon and suppresses Groundhogg's global email detector throughout ContactPanda.
-
-= 0.9.1 =
-* Rebuilt the newsletter template editor as a three-part visual composer with draggable content blocks, an email canvas, and a contextual settings sidebar.
-* Rich-text blocks now use the WordPress WYSIWYG editor, while image blocks select files directly from the WordPress media library.
-* Blocks can be inserted, reordered by drag and drop, duplicated, removed, aligned, and edited without leaving the visual email canvas.
-* Added a dedicated Newsletter settings tab for sender details, company and legal data, logo, colors, typography, email width, and a fixed footer.
-* The company footer is locked in the template editor and automatically includes configured legal links and the unsubscribe link.
-* WooCommerce email colors, sender details, header image, and footer text can be copied into ContactPanda without creating a permanent WooCommerce dependency.
-* Existing 0.9.0 templates remain readable and receive the extended block properties when next saved.
-* Hidden shipping-address fields are disabled and never remain required; copied billing values are cleared when a customer switches to a genuinely separate shipping address.
 
 = 0.9.0 =
 * Groundhogg tags are now read page by page without the former fixed limit; regular tags are no longer hidden merely because their names match WordPress roles.

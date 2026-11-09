@@ -3,7 +3,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Database contract shared by the licensed Basic newsletter and Plus.
+ * Database contract shared by the free Basic newsletter and optional extensions.
  *
  * Newsletter data deliberately lives in its own tables so activating or
  * disconnecting a licence never changes CRM, WooCommerce, or source data.

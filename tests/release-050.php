@@ -22,7 +22,7 @@ foreach ( array( 'contactpanda-migration', 'render_migration', 'render_migration
 	}
 }
 
-foreach ( array( 'integration_section=groundhogg', 'Leading data source', 'ContactPanda database', 'Groundhogg frontend mode' ) as $contract ) {
+foreach ( array( "'data_source'", 'Leading data source', 'ContactPanda database', 'Groundhogg frontend mode' ) as $contract ) {
 	if ( false === strpos( $registration, $contract ) ) {
 		fwrite( STDERR, "Missing data-source contract {$contract}.\n" );
 		exit( 1 );

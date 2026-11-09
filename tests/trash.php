@@ -13,7 +13,7 @@ function sanitize_key( $value ) { return preg_replace( '/[^a-z0-9_\-]/', '', str
 function wp_unslash( $value ) { return stripslashes( $value ); }
 function wp_die( $message, $title = '', $args = array() ) { throw new RuntimeException( $message ); }
 function check_admin_referer( $action ) { if ( empty( $GLOBALS['nonce'] ) ) throw new RuntimeException( 'Invalid nonce' ); }
-class ContactPanda_Store { public static function standalone() { return 'standalone' === $GLOBALS['mode']; } }
+class ContactPanda_Store { public static $blocked = array(); public static function block_reimport( $entity, $identity ) { self::$blocked[] = array($entity, $identity); } public static function standalone() { return 'standalone' === $GLOBALS['mode']; } }
 require __DIR__ . '/../contactpanda/includes/class-contactpanda-schema.php';
 require __DIR__ . '/../contactpanda/includes/class-contactpanda-trash.php';
 

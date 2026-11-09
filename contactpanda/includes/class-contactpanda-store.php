@@ -27,6 +27,70 @@ final class ContactPanda_Store {
 		return $result;
 	}
 
+	/**
+	 * Copy legacy WooCommerce/user VAT metadata into the canonical owner fields.
+	 *
+	 * The migration only fills empty fields and never rewrites source metadata,
+	 * orders, invoices, or already classified ContactPanda records. Company VAT
+	 * IDs are recovered from the historic primary-contact storage convention;
+	 * unlinked people retain personal ownership of their VAT ID.
+	 */
+	public static function migrate_legacy_vat_ids() {
+		if ( ! self::standalone() || get_option( 'contactpanda_vat_owner_migration_093', false ) ) {
+			return;
+		}
+
+		global $wpdb;
+		$tables = ContactPanda_Schema::table_names();
+		$keys   = (array) apply_filters( 'contactpanda_vat_user_meta_keys', array( 'billing_vat', 'b2b_uid' ), false, false );
+		$keys   = array_values( array_unique( array_filter( array_map( 'sanitize_key', $keys ) ) ) );
+		if ( empty( $keys ) ) {
+			update_option( 'contactpanda_vat_owner_migration_093', current_time( 'mysql' ), false );
+			return;
+		}
+
+		$legacy_vat = static function ( $user_id ) use ( $keys ) {
+			foreach ( $keys as $key ) {
+				$value = strtoupper( preg_replace( '/[^A-Z0-9]/', '', (string) get_user_meta( $user_id, $key, true ) ) );
+				if ( '' !== $value ) return $value;
+			}
+			return '';
+		};
+		$status_for = static function ( $user_id, $vat_id ) {
+			$verified = (string) get_user_meta( $user_id, 'contactpanda_vat_verified_hash', true );
+			return $verified && hash_equals( $verified, hash( 'sha256', $vat_id ) ) ? 'valid' : 'unverified';
+		};
+
+		$companies = (array) $wpdb->get_results(
+			"SELECT co.id, c.wp_user_id FROM `{$tables['companies']}` co INNER JOIN `{$tables['company_contacts']}` cc ON cc.company_id=co.id AND cc.is_primary_company=1 INNER JOIN `{$tables['contacts']}` c ON c.id=cc.contact_id WHERE (co.vat_id IS NULL OR co.vat_id='') AND c.wp_user_id>0 AND co.deleted_at IS NULL",
+			ARRAY_A
+		); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- exact internal table names.
+		foreach ( $companies as $company ) {
+			$vat_id = $legacy_vat( absint( $company['wp_user_id'] ) );
+			if ( '' === $vat_id ) continue;
+			self::update_company( absint( $company['id'] ), 'vat_id', $vat_id );
+			self::update_company( absint( $company['id'] ), 'vat_status', $status_for( absint( $company['wp_user_id'] ), $vat_id ) );
+		}
+
+		$people = (array) $wpdb->get_results(
+			"SELECT c.id, c.wp_user_id FROM `{$tables['contacts']}` c WHERE (c.vat_id IS NULL OR c.vat_id='') AND c.wp_user_id>0 AND c.deleted_at IS NULL AND NOT EXISTS (SELECT 1 FROM `{$tables['company_contacts']}` cc WHERE cc.contact_id=c.id)",
+			ARRAY_A
+		); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- exact internal table names.
+		foreach ( $people as $person ) {
+			$vat_id = $legacy_vat( absint( $person['wp_user_id'] ) );
+			if ( '' === $vat_id ) continue;
+			self::update_contact(
+				absint( $person['id'] ),
+				array(
+					'vat_id'     => $vat_id,
+					'vat_status' => $status_for( absint( $person['wp_user_id'] ), $vat_id ),
+				)
+			);
+		}
+
+		update_option( 'contactpanda_vat_owner_migration_093', current_time( 'mysql' ), false );
+	}
+
 	public static function search_contacts( $search = '', $limit = 50, $offset = 0 ) {
 		global $wpdb;
 		$tables = ContactPanda_Schema::table_names();
@@ -34,13 +98,13 @@ final class ContactPanda_Store {
 		$params = array();
 		if ( '' !== trim( $search ) ) {
 			$like = '%' . $wpdb->esc_like( trim( $search ) ) . '%';
-			$where .= " AND (first_name LIKE %s OR last_name LIKE %s OR email LIKE %s OR EXISTS (SELECT 1 FROM `{$tables['contactmeta']}` custom_meta WHERE custom_meta.contact_id = `{$tables['contacts']}`.id AND custom_meta.meta_key LIKE %s AND custom_meta.meta_value LIKE %s))";
+			$where .= " AND (first_name LIKE %s OR last_name LIKE %s OR email LIKE %s OR id IN (SELECT custom_meta.contact_id FROM `{$tables['contactmeta']}` custom_meta WHERE custom_meta.meta_key LIKE %s AND custom_meta.meta_value LIKE %s))";
 			$params = array( $like, $like, $like, ContactPanda_Custom_Fields::PREFIX . '%', $like );
 		}
 		$count_sql = "SELECT COUNT(*) FROM `{$tables['contacts']}` WHERE {$where}";
-		$total = $params ? (int) $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) ) : (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table and fixed clauses.
+		$total = $params ? (int) $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) ) : (int) $wpdb->get_var( $count_sql ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- internal allowlisted table and fixed clauses; values are prepared when present.
 		$sql = "SELECT * FROM `{$tables['contacts']}` WHERE {$where} ORDER BY last_name ASC, first_name ASC LIMIT %d OFFSET %d";
-		$rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( $params, array( absint( $limit ), absint( $offset ) ) ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table and fixed clauses.
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( $params, array( absint( $limit ), absint( $offset ) ) ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- internal allowlisted table and fixed clauses; all values are prepared.
 		return array( 'contacts' => array_map( array( __CLASS__, 'hydrate_contact' ), (array) $rows ), 'total_items' => $total );
 	}
 
@@ -176,6 +240,7 @@ final class ContactPanda_Store {
 			if ( count( $ids ) < 2 ) continue;
 			$group_reasons = array();
 			foreach ( $reasons as $key => $reason ) { list( $a, $b ) = array_map( 'absint', explode( ':', $key ) ); if ( in_array( $a, $ids, true ) && in_array( $b, $ids, true ) ) $group_reasons[] = $reason; }
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			$result[] = array( 'ids' => $ids, 'names' => array_map( static function ( $id ) use ( $names ) { return $names[ $id ] ?: sprintf( __( 'Record #%d', 'contactpanda' ), $id ); }, $ids ), 'reasons' => array_values( array_unique( $group_reasons ) ) );
 			if ( count( $result ) >= absint( $limit ) ) break;
 		}
@@ -219,10 +284,24 @@ final class ContactPanda_Store {
 		global $wpdb;
 		$table = ContactPanda_Schema::table_names()['contacts'];
 		$core = array();
-		$map = array( 'first_name' => 'first_name', 'last_name' => 'last_name', 'position' => 'position', 'user_id' => 'wp_user_id' );
+		$map = array(
+			'first_name'      => 'first_name',
+			'last_name'       => 'last_name',
+			'position'        => 'position',
+			'user_id'         => 'wp_user_id',
+			'vat_id'          => 'vat_id',
+			'vat_status'      => 'vat_status',
+			'vat_verified_at' => 'vat_verified_at',
+		);
 		foreach ( $map as $input => $column ) {
 			if ( array_key_exists( $input, $data ) ) {
-				$core[ $column ] = 'user_id' === $input ? absint( $data[ $input ] ) : sanitize_text_field( $data[ $input ] );
+				if ( 'user_id' === $input ) {
+					$core[ $column ] = absint( $data[ $input ] );
+				} elseif ( 'vat_verified_at' === $input ) {
+					$core[ $column ] = empty( $data[ $input ] ) ? null : sanitize_text_field( $data[ $input ] );
+				} else {
+					$core[ $column ] = sanitize_text_field( $data[ $input ] );
+				}
 			}
 		}
 		if ( array_key_exists( 'email', $data ) ) {
@@ -375,7 +454,7 @@ final class ContactPanda_Store {
 		global $wpdb;
 		$tables = ContactPanda_Schema::table_names();
 		$sql = "SELECT r.company_id,r.contact_id,r.relationship_type,r.position,r.is_primary,r.is_primary_company,c.name,c.legal_name,c.website FROM `{$tables['company_contacts']}` r INNER JOIN `{$tables['companies']}` c ON c.id=r.company_id WHERE r.contact_id=%d AND c.deleted_at IS NULL ORDER BY r.is_primary_company DESC,c.name ASC";
-		return (array) $wpdb->get_results( $wpdb->prepare( $sql, absint( $contact_id ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table names.
+		return (array) $wpdb->get_results( $wpdb->prepare( $sql, absint( $contact_id ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- internal table names; the only value is prepared.
 	}
 
 	public static function remove_company_contact( $company_id, $contact_id ) {
@@ -415,9 +494,10 @@ final class ContactPanda_Store {
 	public static function update_company( $id, $field, $value ) {
 		global $wpdb;
 		$tables = ContactPanda_Schema::table_names();
-		$map = array( 'name' => 'name', 'domain' => 'website', 'phone' => 'phone_number', 'industry' => 'industry', 'street' => 'street', 'address_2' => 'address_2', 'postcode' => 'postcode', 'city' => 'city', 'country' => 'country' );
+		$map = array( 'name' => 'name', 'domain' => 'website', 'phone' => 'phone_number', 'industry' => 'industry', 'street' => 'street', 'address_2' => 'address_2', 'postcode' => 'postcode', 'city' => 'city', 'country' => 'country', 'uid' => 'vat_id', 'vat_id' => 'vat_id', 'vat_status' => 'vat_status', 'vat_verified_at' => 'vat_verified_at' );
 		if ( isset( $map[ $field ] ) ) {
-			return false !== $wpdb->update( $tables['companies'], array( $map[ $field ] => $value, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => absint( $id ) ) );
+			$stored_value = 'vat_verified_at' === $field && empty( $value ) ? null : sanitize_text_field( $value );
+			return false !== $wpdb->update( $tables['companies'], array( $map[ $field ] => $stored_value, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => absint( $id ) ) );
 		}
 		return self::set_company_meta( $id, $field, $value );
 	}
@@ -496,18 +576,19 @@ final class ContactPanda_Store {
 
 	public static function salutations( $language = '', $limit = 0, $offset = 0, $search = '' ) {
 		global $wpdb;
-		$language = self::salutation_language( $language );
+		$all_languages = 'all' === sanitize_key( $language );
+		$language = $all_languages ? '' : self::salutation_language( $language );
 		$table = ContactPanda_Schema::table_names()['salutations'];
 		if ( self::ready() ) {
-			$where = 'language=%s'; $args = array( $language );
+			$where = $all_languages ? '1=1' : 'language=%s'; $args = $all_languages ? array() : array( $language );
 			if ( $search ) { $where .= ' AND first_name LIKE %s'; $args[] = '%' . $wpdb->esc_like( $search ) . '%'; }
 			$sql = "SELECT * FROM `{$table}` WHERE {$where} ORDER BY first_name ASC"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table name and fixed clause.
 			if ( $limit ) { $sql .= ' LIMIT %d OFFSET %d'; $args[] = absint( $limit ); $args[] = absint( $offset ); }
-			return (array) $wpdb->get_results( $wpdb->prepare( $sql, $args ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- prepared dynamic parameters.
+			return (array) $wpdb->get_results( $wpdb->prepare( $sql, $args ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- internal table and fixed clauses; all dynamic values are prepared.
 		}
 		$rows = array();
 		foreach ( (array) get_option( 'contactpanda_salutation_library', array() ) as $key => $row ) {
-			if ( $language !== ( $row['language'] ?? 'de' ) || ( $search && false === stripos( $row['first_name'] ?? '', $search ) ) ) continue;
+			if ( ( ! $all_languages && $language !== ( $row['language'] ?? 'de' ) ) || ( $search && false === stripos( $row['first_name'] ?? '', $search ) ) ) continue;
 			$row['id'] = (string) $key;
 			$rows[] = $row;
 		}
@@ -551,7 +632,7 @@ final class ContactPanda_Store {
 	/** Return one salutation-library row by its local identifier. */
 	public static function salutation( $id ) {
 		global $wpdb;
-		if ( self::ready() ) return $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM `' . ContactPanda_Schema::table_names()['salutations'] . '` WHERE id=%d', absint( $id ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table name.
+		if ( self::ready() ) return $wpdb->get_row( $wpdb->prepare( 'SELECT * FROM `' . ContactPanda_Schema::table_names()['salutations'] . '` WHERE id=%d', absint( $id ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared -- internal table name; the identifier is prepared.
 		$library = (array) get_option( 'contactpanda_salutation_library', array() );
 		$key = sanitize_text_field( (string) $id );
 		if ( ! isset( $library[ $key ] ) ) return false;
@@ -721,6 +802,7 @@ final class ContactPanda_Store {
 					ContactPanda_Identity_Store::sync_contact( $primary_id );
 				}
 				$wpdb->query( $wpdb->prepare( "UPDATE `{$table}` SET deleted_at=%s, updated_at=%s WHERE id IN (" . implode( ',', array_fill( 0, count( $donors ), '%d' ) ) . ')', array_merge( array( $now, $now ), $donors ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table and numeric placeholders.
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				self::add_activity( $primary_id, 0, 'merge', __( 'Contact records merged', 'contactpanda' ), sprintf( __( 'Source record IDs moved to Trash: %s', 'contactpanda' ), implode( ', ', $donors ) ) );
 			} else {
 				$fields = array( 'name', 'legal_name', 'industry', 'website', 'email', 'phone_number', 'vat_id', 'street', 'address_2', 'postcode', 'city', 'country' );
@@ -753,6 +835,7 @@ final class ContactPanda_Store {
 				foreach ( array_unique( $affected_contacts ) as $contact_id ) self::ensure_primary_company( $contact_id );
 				self::set_company_meta( $primary_id, 'merged_company_ids', $ids );
 				$wpdb->query( $wpdb->prepare( "UPDATE `{$table}` SET deleted_at=%s, updated_at=%s WHERE id IN (" . implode( ',', array_fill( 0, count( $donors ), '%d' ) ) . ')', array_merge( array( $now, $now ), $donors ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				self::add_activity( 0, $primary_id, 'merge', __( 'Company records merged', 'contactpanda' ), sprintf( __( 'Source record IDs moved to Trash: %s', 'contactpanda' ), implode( ', ', $donors ) ) );
 			}
 			if ( class_exists( 'ContactPanda_Identity_Store' ) && ! ContactPanda_Identity_Store::record_merge( $entity, $primary_id, $donors, $snapshot ) ) throw new Exception( 'merge_history' );
@@ -939,6 +1022,7 @@ final class ContactPanda_Store {
 		self::set_contact_meta( $contact_id, $channel . '_marketing_status', 'granted' === $status ? 'confirmed' : 'revoked' );
 		self::set_contact_meta( $contact_id, $channel . '_marketing_' . ( 'granted' === $status ? 'confirmed' : 'revoked' ) . '_at', $date );
 		self::set_contact_meta( $contact_id, $channel . '_marketing_source', sanitize_text_field( $source ) );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		return self::add_activity( $contact_id, 0, 'consent', sprintf( 'granted' === $status ? __( '%s marketing consent granted', 'contactpanda' ) : __( '%s marketing consent revoked', 'contactpanda' ), strtoupper( $channel ) ), $note );
 	}
 
@@ -1056,7 +1140,18 @@ final class ContactPanda_Store {
 		$contact = self::contact_by_email( $data['email'] );
 		$contact_id = $contact ? (int) $contact['id'] : self::create_contact( array_merge( $data, array( 'user_id' => $user_id, 'source' => 'registration', 'optin_status' => 'unconfirmed' ) ) );
 		if ( is_wp_error( $contact_id ) ) return $contact_id;
-		self::update_contact( $contact_id, array( 'user_id' => $user_id, 'position' => $data['position'], 'primary_phone' => $data['phone'], 'anrede' => $data['salutation'] ?? '' ) );
+		self::update_contact(
+			$contact_id,
+			array(
+				'user_id'         => $user_id,
+				'position'        => $data['position'],
+				'primary_phone'   => $data['phone'],
+				'anrede'          => $data['salutation'] ?? '',
+				'vat_id'          => empty( $data['company'] ) ? ( $data['vat_id'] ?? '' ) : '',
+				'vat_status'      => empty( $data['company'] ) && ! empty( $data['vat_verified'] ) ? 'valid' : ( empty( $data['company'] ) && ! empty( $data['vat_id'] ) ? 'unverified' : 'unchecked' ),
+				'vat_verified_at' => empty( $data['company'] ) && ! empty( $data['vat_verified'] ) ? current_time( 'mysql' ) : '',
+			)
+		);
 		self::update_contact_address(
 			$contact_id,
 			array(
@@ -1069,7 +1164,12 @@ final class ContactPanda_Store {
 			$company_id = self::company_by_name( $data['company'], true );
 			if ( $company_id && ! self::company( $company_id ) ) return $contact_id;
 			if ( ! $company_id ) $company_id = self::create_company( array( 'name' => $data['company'], 'industry' => $data['industry'], 'website' => $data['website'], 'vat_id' => $data['vat_id'] ) );
-			if ( $company_id ) { self::update_company_profile( $company_id, $data ); self::link_company_contact( $company_id, $contact_id, $data['position'] ?? '', true ); }
+			if ( $company_id ) {
+				self::update_company_profile( $company_id, $data );
+				self::update_company( $company_id, 'vat_status', ! empty( $data['vat_verified'] ) ? 'valid' : ( empty( $data['vat_id'] ) ? 'unchecked' : 'unverified' ) );
+				self::update_company( $company_id, 'vat_verified_at', ! empty( $data['vat_verified'] ) ? current_time( 'mysql' ) : '' );
+				self::link_company_contact( $company_id, $contact_id, $data['position'] ?? '', true );
+			}
 		}
 		return $contact_id;
 	}
@@ -1077,6 +1177,15 @@ final class ContactPanda_Store {
 	public static function groundhogg_migration_preview() {
 		if ( ! self::ready() || ( ! function_exists( 'wp_get_ability' ) && ! class_exists( '\\Groundhogg\\Contact' ) ) ) return new WP_Error( 'contactpanda_migration_unavailable', __( 'The migration prerequisites are not available.', 'contactpanda' ) );
 		$counts = self::counts();
+		$last = (array) get_option( 'contactpanda_last_migration_report', array() );
+		$cutoff = get_option( 'contactpanda_groundhogg_successful_cutoff', '' ) ?: ( empty( $last['errors'] ) ? ( $last['completed_at'] ?? '' ) : '' );
+		$new_contacts = 0; $new_companies = 0;
+		$contacts = self::groundhogg_contacts_for_migration();
+		foreach ( $contacts as $row ) {
+			$id = absint( self::value( $row, array( 'id', 'ID' ) ) ); $email = sanitize_email( self::value( $row, array( 'email' ) ) );
+			$created = self::source_datetime( self::value( $row, array( 'date_created', 'created_at', 'created' ) ) );
+			if ( $id && ! self::contact_by_source_id($id) && ! self::contact_by_email($email,true) && ! self::import_blocked('contacts',$email) && ( ! $cutoff || ( $created && $created > $cutoff ) ) ) $new_contacts++;
+		}
 		$company_count = 0;
 		$offset = 0;
 		$seen = array();
@@ -1087,10 +1196,16 @@ final class ContactPanda_Store {
 			if ( $rows && isset( $seen[ $fingerprint ] ) ) break;
 			$seen[ $fingerprint ] = true;
 			$company_count += count( $rows );
+			foreach ( $rows as $company ) {
+				$id = absint(self::value($company,array('id','ID'))); $name = self::value($company,array('name','company_name')); $created = self::source_datetime(self::value($company,array('date_created','created_at','created')));
+				if ( $id && $name && ! self::company_by_source_id($id) && ! self::company_by_name($name,true) && ! self::import_blocked('companies',$name) && ( ! $cutoff || ( $created && $created > $cutoff ) ) ) $new_companies++;
+			}
 			$offset += count( $rows );
 		} while ( 100 === count( $rows ) && $offset < 1000000 );
 		return array(
-			'contacts'           => count( self::groundhogg_contacts_for_migration() ),
+			'contacts'           => count( $contacts ),
+			'new_contacts'       => $new_contacts,
+			'new_companies'      => $new_companies,
 			'companies'          => $company_count,
 			'tags'               => count( self::groundhogg_tags() ),
 			'existing_contacts'  => absint( $counts['contacts'] ?? 0 ),
@@ -1099,8 +1214,12 @@ final class ContactPanda_Store {
 		);
 	}
 
-	public static function migrate_groundhogg( $include_extensions = true ) {
+	public static function migrate_groundhogg( $include_extensions = true, $policy = 'update' ) {
 		global $wpdb;
+		$new_only = 'new' === $policy;
+		$last = (array) get_option( 'contactpanda_last_migration_report', array() );
+		$cutoff = get_option( 'contactpanda_groundhogg_successful_cutoff', '' ) ?: ( empty( $last['errors'] ) ? ( $last['completed_at'] ?? '' ) : '' );
+		$started_at = current_time( 'mysql' );
 		if ( ! self::ready() || ( ! function_exists( 'wp_get_ability' ) && ! class_exists( '\\Groundhogg\\Contact' ) ) ) return new WP_Error( 'contactpanda_migration_unavailable', __( 'The migration prerequisites are not available.', 'contactpanda' ) );
 		$report = array( 'contacts' => 0, 'source_contacts' => 0, 'companies' => 0, 'tags' => 0, 'source_tags' => 0, 'custom_fields' => 0, 'assignments' => 0, 'source_assignments' => 0, 'missing_tags' => array(), 'skipped_tags' => array(), 'skipped' => 0, 'errors' => 0 );
 		$source_map = array();
@@ -1121,10 +1240,12 @@ final class ContactPanda_Store {
 			$name = self::value( $source_tag, array( 'name', 'tag_name' ) );
 			$source_tag_id = absint( self::value( $source_tag, array( 'id', 'tag_id', 'ID' ) ) );
 			if ( $source_tag_id && in_array( $source_tag_id, $system_tag_ids, true ) ) {
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				$report['skipped_tags'][] = sprintf( __( 'Internal Groundhogg status tag “%s” was intentionally omitted.', 'contactpanda' ), $name ?: '#' . $source_tag_id );
 				continue;
 			}
 			if ( ! $name || ! $source_tag_id ) {
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				$report['missing_tags'][] = $source_tag_id ? sprintf( __( 'Tag ID %d has no name.', 'contactpanda' ), $source_tag_id ) : __( 'A Groundhogg tag has no readable ID.', 'contactpanda' );
 				continue;
 			}
@@ -1132,6 +1253,7 @@ final class ContactPanda_Store {
 			if ( $new_tag_id ) {
 				$source_tag_map[ $source_tag_id ] = $new_tag_id;
 			} else {
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				$report['missing_tags'][] = sprintf( __( 'Tag “%s” could not be stored.', 'contactpanda' ), $name );
 			}
 		}
@@ -1151,6 +1273,8 @@ final class ContactPanda_Store {
 				$contact = self::contact_by_source_id( $source_id );
 				if ( ! $contact && $email ) $contact = self::contact_by_email( $email, true );
 				if ( $contact && ! empty( $contact['deleted_at'] ) ) { $report['skipped']++; continue; }
+				$created_for_import = self::source_datetime( self::value( $row, array( 'date_created', 'created_at', 'created' ) ) );
+				if ( self::import_blocked( 'contacts', $email ) || ( $new_only && ( $contact || ( $cutoff && ( ! $created_for_import || $created_for_import <= $cutoff ) ) ) ) ) { $report['skipped']++; continue; }
 				$preserve_source_timestamps = ! $contact || 'groundhogg' === ( $contact['source'] ?? '' ) || $source_id === absint( $contact['groundhogg_contact_id'] ?? 0 );
 				$optin = self::optin_value( $row );
 				$source_meta = self::groundhogg_source_meta( $row );
@@ -1182,6 +1306,7 @@ final class ContactPanda_Store {
 							self::assign_tag( $contact_id, $source_tag_map[ $source_tag_id ] );
 							$report['assignments']++;
 						} else {
+							/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 							$report['missing_tags'][] = sprintf( __( 'Tag ID %d is assigned to a contact but was not found in the tag list.', 'contactpanda' ), $source_tag_id );
 						}
 						continue;
@@ -1196,6 +1321,7 @@ final class ContactPanda_Store {
 						continue;
 					}
 					if ( ! $name ) {
+						/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 						$report['missing_tags'][] = sprintf( __( 'An unreadable tag assignment was found on Groundhogg contact %d.', 'contactpanda' ), $source_id );
 						continue;
 					}
@@ -1224,6 +1350,8 @@ final class ContactPanda_Store {
 				if ( ! $name ) { $report['skipped']++; continue; }
 				$source_company_id = absint( self::value( $company, array( 'id', 'ID' ) ) );
 				$company_id = self::company_by_source_id( $source_company_id );
+				$company_created = self::source_datetime( self::value( $company, array( 'date_created', 'created_at', 'created' ) ) );
+				if ( self::import_blocked( 'companies', $name ) || ( $new_only && ( $company_id || self::company_by_name( $name, true ) || ( $cutoff && ( ! $company_created || $company_created <= $cutoff ) ) ) ) ) { $report['skipped']++; continue; }
 				if ( $company_id && ! self::company( $company_id ) ) { $report['skipped']++; continue; }
 				if ( $company_id ) {
 					self::update_company( $company_id, 'name', $name );
@@ -1249,12 +1377,23 @@ final class ContactPanda_Store {
 			do_action( 'contactpanda_groundhogg_migration_progress', array( 'stage' => __( 'Importing companies…', 'contactpanda' ), 'processed' => $company_offset, 'total' => 0, 'percent' => min( 96, 82 + (int) floor( $company_offset / 100 ) ) ) );
 		} while ( $company_rows && $company_offset < 1000000 );
 		$report['completed_at'] = current_time( 'mysql' );
+		$report['policy'] = $policy;
+		if ( empty( $report['errors'] ) ) update_option( 'contactpanda_groundhogg_successful_cutoff', $started_at, false );
 		if ( $include_extensions ) $report = (array) apply_filters( 'contactpanda_groundhogg_migration_report', $report );
 		update_option( 'contactpanda_last_migration_report', $report, false );
 		do_action( 'contactpanda_groundhogg_migration_progress', array( 'stage' => __( 'Migration completed.', 'contactpanda' ), 'processed' => $report['contacts'] + $report['companies'] + $report['tags'], 'total' => $report['contacts'] + $report['companies'] + $report['tags'], 'percent' => 100 ) );
 		return $report;
 	}
 
+	/** Only salted identifiers survive permanent deletion, to prevent accidental re-import. */
+	public static function import_blocked( $entity, $identity ) {
+		if ( '' === trim( (string) $identity ) ) return false;
+		$key = hash_hmac( 'sha256', $entity . ':' . strtolower( trim( $identity ) ), wp_salt( 'auth' ) );
+		return (bool) get_option( 'contactpanda_import_block_' . $key, false );
+	}
+	public static function block_reimport( $entity, $identity ) {
+		if ( '' !== trim( (string) $identity ) ) update_option( 'contactpanda_import_block_' . hash_hmac( 'sha256', $entity . ':' . strtolower( trim( $identity ) ), wp_salt( 'auth' ) ), 1, false );
+	}
 	private static function new_uuid() {
 		return function_exists( 'wp_generate_uuid4' ) ? wp_generate_uuid4() : sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x', wp_rand( 0, 0xffff ), wp_rand( 0, 0xffff ), wp_rand( 0, 0xffff ), wp_rand( 0, 0x0fff ) | 0x4000, wp_rand( 0, 0x3fff ) | 0x8000, wp_rand( 0, 0xffff ), wp_rand( 0, 0xffff ), wp_rand( 0, 0xffff ) );
 	}

@@ -37,7 +37,14 @@ function maybe_unserialize( $value ) { return $value; }
 function wp_generate_uuid4() { return '00000000-0000-4000-8000-000000000000'; }
 function get_user_by( $field, $value ) { return false; }
 function get_user_meta( $user_id, $key, $single ) { return ''; }
-function wc_get_order_statuses() { return array( 'wc-completed' => 'Completed', 'wc-cancelled' => 'Cancelled' ); }
+function wc_get_order_statuses() {
+	return array(
+		'wc-completed'      => 'Completed',
+		'wc-cancelled'      => 'Cancelled',
+		'wc-failed'         => 'Failed',
+		'wc-checkout-draft' => 'Checkout draft',
+	);
+}
 function wc_price( $value ) { return number_format( (float) $value, 2, '.', '' ); }
 function wc_get_orders( $args ) {
 	$GLOBALS['summary_queries'][] = $args;
@@ -90,6 +97,8 @@ foreach ( $GLOBALS['summary_queries'] as $query ) {
 	verify( isset( $query['customer'] ) && is_array( $query['customer'] ) && $query['customer'], 'Every WooCommerce query is customer-filtered.' );
 	verify( ! isset( $query['field_query'] ) && ! isset( $query['paged'] ), 'Summary query uses the portable WooCommerce customer and page arguments.' );
 	verify( isset( $query['page'] ) && in_array( $query['page'], array( 1, 2 ), true ), 'WooCommerce result pagination advances with the supported page argument.' );
+	verify( in_array( 'wc-cancelled', $query['status'], true ) && in_array( 'wc-failed', $query['status'], true ), 'Historical cancelled and failed orders remain visible in person summaries.' );
+	verify( ! in_array( 'wc-checkout-draft', $query['status'], true ), 'Incomplete checkout drafts are not counted as orders.' );
 }
 
 echo "WooCommerce order summary query tests passed.\n";

@@ -142,8 +142,10 @@ final class ContactPanda_Basic_Segments {
 				'checking' => __( 'Counting matching people…', 'contactpanda' ),
 				'complete' => __( 'Complete all filters', 'contactpanda' ),
 				'showOne' => __( 'Search finds 1 person – show now', 'contactpanda' ),
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				'showMany' => __( 'Search finds %d people – show now', 'contactpanda' ),
 				'campaignOne' => __( '1 matching person', 'contactpanda' ),
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				'campaignMany' => __( '%d matching people', 'contactpanda' ),
 				'countFailed' => __( 'The matching people could not be counted.', 'contactpanda' ),
 				'enterName' => __( 'Please enter a name for this search.', 'contactpanda' ),
@@ -368,7 +370,10 @@ final class ContactPanda_Basic_Segments {
 		if ( 'marketable' === $field ) return ContactPanda_Plugin::extension_is_marketable( $contact ) ? 'yes' : 'no';
 		if ( 'has_account' === $field ) return $user ? 'yes' : 'no';
 		if ( 'user_role' === $field ) return $user ? (array) $user->roles : array();
-		if ( 'uid' === $field ) return $user ? ( get_user_meta( $user_id, 'billing_vat', true ) ?: get_user_meta( $user_id, 'b2b_uid', true ) ) : self::inline_meta( $contact, array( 'vat_id', 'uid' ) );
+		if ( 'uid' === $field ) {
+			$value = self::inline_meta( $contact, array( 'vat_id', 'uid' ) );
+			return $value ?: ( $user ? ( get_user_meta( $user_id, 'billing_vat', true ) ?: get_user_meta( $user_id, 'b2b_uid', true ) ) : '' );
+		}
 		if ( 'email_confirmed' === $field ) {
 			$value = self::inline_meta( $contact, array( 'email_confirmed', 'contactpanda_email_verified' ) );
 			if ( '' === (string) $value && $user ) $value = get_user_meta( $user_id, 'contactpanda_email_verified', true );
@@ -811,10 +816,19 @@ final class ContactPanda_Basic_Segments {
 		wp_nonce_field( 'contactpanda_save_segment' );
 		$relation_legend = 'companies' === $entity ? __( 'Companies must match', 'contactpanda' ) : __( 'People must match', 'contactpanda' );
 		echo '<div class="contactpanda-segment-header"><label><span>' . esc_html__( 'Name of this search', 'contactpanda' ) . '</span><input class="regular-text" required name="name" value="' . esc_attr( $edit['name'] ?? '' ) . '" placeholder="' . esc_attr__( 'e.g. Coffee customers without an event booking', 'contactpanda' ) . '"></label><fieldset><legend>' . esc_html( $relation_legend ) . '</legend><label><input type="radio" name="relation_mode" value="and"' . checked( $edit['relation_mode'] ?? 'and', 'and', false ) . '> ' . esc_html__( 'all conditions', 'contactpanda' ) . '</label><label><input type="radio" name="relation_mode" value="or"' . checked( $edit['relation_mode'] ?? '', 'or', false ) . '> ' . esc_html__( 'at least one condition', 'contactpanda' ) . '</label></fieldset></div>';
+		if ( 'contacts' === $entity ) {
+			$state = self::editor_state( $rules, $edit['relation_mode'] ?? 'and' );
+			echo '<input type="hidden" name="inline_state" value="' . esc_attr( wp_json_encode( $state ) ) . '">';
+			$config = self::inline_config(); $config['activeState'] = $state;
+			wp_enqueue_script( 'contactpanda-inline-search', CONTACTPANDA_URL . 'assets/contactpanda-inline-search.js', array(), CONTACTPANDA_ASSET_VERSION, true );
+			wp_localize_script( 'contactpanda-inline-search', 'CONTACTPANDA_INLINE_SEARCH', $config );
+			self::render_inline_search( self::encode_filter( $state ), 0, true );
+		} else {
 		echo '<div class="contactpanda-segment-rules">';
 		foreach ( $rules as $index => $rule ) { self::render_rule( $index, $rule, $entity ); }
 		echo '</div><button type="button" class="button contactpanda-add-segment-rule"><span class="dashicons dashicons-plus-alt2"></span>' . esc_html__( 'Add condition', 'contactpanda' ) . '</button>';
 		echo '<template class="contactpanda-segment-rule-template">'; self::render_rule( 999, array( 'type' => '', 'value' => '' ), $entity ); echo '</template>';
+		}
 		echo '<div class="contactpanda-segment-actions"><button type="submit" class="button button-primary" name="run_search" value="1">' . esc_html__( 'Save and show results', 'contactpanda' ) . '</button><button type="submit" class="button">' . esc_html__( 'Save search', 'contactpanda' ) . '</button></div></form></div></div>';
 
 		echo '<section class="contactpanda-card contactpanda-saved-searches"><div class="contactpanda-toolbar"><h2>' . esc_html__( 'Saved searches', 'contactpanda' ) . '</h2><span class="contactpanda-count">' . esc_html( count( self::all() ) ) . '</span></div><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Name', 'contactpanda' ) . '</th><th>' . esc_html__( 'Type', 'contactpanda' ) . '</th><th>' . esc_html__( 'Combination', 'contactpanda' ) . '</th><th>' . esc_html__( 'Conditions', 'contactpanda' ) . '</th><th>' . esc_html__( 'Actions', 'contactpanda' ) . '</th></tr></thead><tbody>';
@@ -839,6 +853,7 @@ final class ContactPanda_Basic_Segments {
 			foreach ( $types as $key => $label ) { echo '<option value="' . esc_attr( $key ) . '"' . selected( $type, $key, false ) . '>' . esc_html( $label ) . '</option>'; }
 			echo '</optgroup>';
 		}
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
 		echo '</select></label><label><span>' . esc_html__( 'Value', 'contactpanda' ) . '</span><span class="contactpanda-segment-value">' . self::value_control( $type, $index, $value ) . '</span></label><button type="button" class="button-link contactpanda-remove-segment-rule" aria-label="' . esc_attr__( 'Remove condition', 'contactpanda' ) . '"><span class="dashicons dashicons-no-alt"></span></button></div>';
 	}
 
@@ -911,6 +926,12 @@ final class ContactPanda_Basic_Segments {
 		return array( 'typeOptions' => self::type_options(), 'valueLabels' => self::value_labels(), 'choose' => __( 'Please select', 'contactpanda' ), 'number' => __( 'Value', 'contactpanda' ) );
 	}
 
+	public static function editor_state( $rules, $relation ) {
+		$map = array( 'product_purchased' => array('product','purchased'), 'product_not_purchased' => array('product','not_purchased'), 'product_category' => array('product_category','purchased'), 'order_count_min' => array('order_count','gte'), 'order_total_min' => array('order_total','gte'), 'ordered_within_days' => array('ordered_within_days','within'), 'not_ordered_within_days' => array('ordered_within_days','not_within'), 'event_booked' => array('event','is'), 'event_attended' => array('event','is'), 'event_not_attended' => array('event','is'), 'event_count_min' => array('event_count','gte'), 'event_category' => array('event_category','is'), 'event_within_days' => array('event_within_days','within') );
+		$out = array(); foreach ( (array) $rules as $rule ) { if ( isset($rule['field']) ) $out[]=$rule; elseif ( isset($map[$rule['type']??'']) ) { $m=$map[$rule['type']]; $out[]=array('field'=>$m[0],'operator'=>$m[1],'value'=>(string)$rule['value']); } }
+		return array('relation'=>'or'===$relation?'or':'and','rules'=>$out);
+	}
+
 	public static function save() {
 		if ( ! current_user_can( self::capability() ) ) { wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ) ); }
 		check_admin_referer( 'contactpanda_save_segment' );
@@ -928,6 +949,7 @@ final class ContactPanda_Basic_Segments {
 			$value = 'companies' === $entity ? sanitize_text_field( wp_unslash( $rule['value'] ?? '' ) ) : (float) wp_unslash( $rule['value'] ?? 0 );
 			if ( in_array( $type, $allowed_types, true ) && ( 'companies' === $entity ? '' !== $value : $value >= 0 ) ) { $rules[] = array( 'type' => $type, 'value' => $value ); }
 		}
+		if ( 'contacts' === $entity && isset( $_POST['inline_state'] ) ) { $state = self::sanitize_state( json_decode( wp_unslash( $_POST['inline_state'] ), true ) ?: array() ); $rules = $state['rules']; $mode = $state['relation']; }
 		if ( '' === $name || ! $rules ) {
 			wp_die( esc_html__( 'Please enter a name and at least one complete condition.', 'contactpanda' ), esc_html__( 'Search could not be saved', 'contactpanda' ), array( 'back_link' => true ) );
 		}
@@ -950,5 +972,5 @@ final class ContactPanda_Basic_Segments {
 		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=misc&misc_section=saved_searches' ) ); exit;
 	}
 
-	private static function capability() { return class_exists( 'WooCommerce' ) ? 'manage_woocommerce' : 'manage_options'; }
+	private static function capability() { return class_exists( 'ContactPanda_Capabilities' ) ? ContactPanda_Capabilities::for_area( 'marketing' ) : ( class_exists( 'WooCommerce' ) ? 'manage_woocommerce' : 'manage_options' ); }
 }

@@ -28,21 +28,17 @@ ContactPanda
     │   ├── vollständiger visueller Formular-Builder
     │   ├── Messaging- und E-Mail-Gateways
     │   └── erweiterte Integrationen
-    ├── ContactPanda Pro
-    │   ├── Kundenverwaltung und Kundengruppen
-    │   ├── Support Desk und Kundenportal
-    │   ├── Verträge und Abonnements
-    │   ├── wiederkehrende Zahlungen
-    │   └── Berechtigungs- und Audit-Unterbau
     ├── ContactPanda Business
-    │   └── Projekte, Aufgaben, Zeiten, Budgets und Freigaben
+	│   ├── Kundenverwaltung, Support Desk und Kundenportal
+	│   ├── Berechtigungs- und Audit-Unterbau
+	│   └── Projekte, Aufgaben, Zeiten, Budgets und Freigaben
     └── ContactPanda Members
         └── Mitglieder, Gruppen, Beiträge und Vereinsverwaltung
 ```
 
 ## Daten- und Modulzuständigkeit
 
-Basic ist alleiniger Eigentümer des CRM- und Newsletter-Schemas. Plus verwendet diese bestehenden Tabellen über die öffentlichen Basic-Schnittstellen und legt keine zweite Kopie von Vorlagen, Kampagnen, Empfängern, Sperren oder Versandstatistiken an. Plus besitzt ausschließlich seine Automatisierungs-, Formular-, Zustell- und Nachrichtenstrukturen. Pro besitzt Kunden-, Support-, Vertrags-, Abonnement-, Zahlungs-, Portal-, Berechtigungs- und Audit-Daten. Business und Members referenzieren diesen Pro-Unterbau und führen keine parallelen Kunden-, Rollen-, Vertrags- oder Zahlungsmodelle ein.
+Basic ist alleiniger Eigentümer des CRM- und Newsletter-Schemas. Plus verwendet diese bestehenden Tabellen über die öffentlichen Basic-Schnittstellen und legt keine zweite Kopie von Vorlagen, Kampagnen, Empfängern, Sperren oder Versandstatistiken an. Plus besitzt ausschließlich seine Automatisierungs-, Formular-, Zustell- und Nachrichtenstrukturen. Business besitzt Kunden-, Support-, Portal-, Berechtigungs- und Audit-Daten sowie die Projektverwaltung. Members ergänzt die Mitgliederverwaltung, ohne parallele Personendaten anzulegen.
 
 Basic ist außerdem Eigentümer des allgemeinen Kunden- und Präferenzportals. Jeder angemeldete WordPress-Benutzer kann darauf zugreifen, unabhängig davon, wie das Konto erstellt wurde und ob WooCommerce oder ein anderes ContactPanda-Paket aktiv ist. Newsletter-, Newsletter-Voranmeldungs- und Seasons-Anmeldungen erzeugen dagegen ausschließlich einen ContactPanda-Kontakt beziehungsweise dessen Abonnements und niemals automatisch ein WordPress-Konto. Ein WordPress-Konto entsteht erst durch eine vom Benutzer ausdrücklich gewählte Kunden- oder sonstige Kontoregistrierung, beispielsweise über WooCommerce. Die öffentliche Erstellung neuer WordPress-Konten und deren Registrierungsregeln bleiben eine vom Portal getrennte Funktion. Vollständige Profildaten werden nur für den angemeldeten Benutzer angezeigt. Die Zuordnung zum ContactPanda-Kontakt erfolgt vorrangig über eine gespeicherte Benutzerverknüpfung und nur ersatzweise über eine eindeutige, normalisierte E-Mail-Adresse; mehrdeutige Treffer werden niemals automatisch zusammengeführt. Reine Newsletter- und Seasons-Empfänger erhalten über einen zweckgebundenen, widerrufbaren und zeitlich begrenzten persönlichen Link ausschließlich Zugriff auf ein reduziertes Präferenzzentrum und müssen dafür kein WordPress-Konto anlegen. Shortcode, serverseitig gerenderter WordPress-Block, WooCommerce-Einbindung und optionale Avada-, Elementor- und Divi-Elemente verwenden denselben Renderer und dieselben serverseitigen Befehle. Die Einbindungen dürfen nur Darstellung und Kontext bestimmen, aber keine eigene Validierungs-, Double-Opt-in-, Tag-, Zustimmungs- oder Speicherlogik besitzen. Die Detailplanung steht in `docs/customer-portal-plan.md`.
 

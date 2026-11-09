@@ -17,7 +17,6 @@ delete_option( 'contactpanda_general_settings' );
 delete_option( 'contactpanda_registration_settings' );
 delete_option( 'contactpanda_db_version' );
 delete_option( 'contactpanda_last_migration_report' );
-delete_option( 'contactpanda_license_state' );
 delete_option( 'contactpanda_newsletter_settings' );
 
 global $wpdb;
