@@ -10,10 +10,10 @@ function current_time( $format ) { return '2026-10-16 12:00:00'; }
 function __( $value, $domain = '' ) { return $value; }
 function esc_html__( $value, $domain = '' ) { return $value; }
 function sanitize_key( $value ) { return preg_replace( '/[^a-z0-9_\-]/', '', strtolower( $value ) ); }
-function wp_unslash( $value ) { return stripslashes( $value ); }
+function wp_unslash( $value ) { return is_array( $value ) ? array_map( 'wp_unslash', $value ) : stripslashes( $value ); }
 function wp_die( $message, $title = '', $args = array() ) { throw new RuntimeException( $message ); }
 function check_admin_referer( $action ) { if ( empty( $GLOBALS['nonce'] ) ) throw new RuntimeException( 'Invalid nonce' ); }
-class ContactPanda_Store { public static function standalone() { return 'standalone' === $GLOBALS['mode']; } }
+class ContactPanda_Store { public static $blocked = array(); public static function block_reimport( $entity, $identity ) { self::$blocked[] = array($entity, $identity); } public static function standalone() { return 'standalone' === $GLOBALS['mode']; } }
 require __DIR__ . '/../contactpanda/includes/class-contactpanda-schema.php';
 require __DIR__ . '/../contactpanda/includes/class-contactpanda-trash.php';
 
@@ -26,7 +26,7 @@ class TrashDB {
 	public $engine = 'InnoDB';
 	public function prepare( $sql, ...$args ) {
 		if ( isset( $args[0] ) && is_array( $args[0] ) ) $args = $args[0];
-		foreach ( $args as $arg ) $sql = preg_replace_callback( '/%[ds]/', function ( $match ) use ( $arg ) { return '%d' === $match[0] ? (string) (int) $arg : "'" . str_replace( "'", "''", $arg ) . "'"; }, $sql, 1 );
+		foreach ( $args as $arg ) $sql = preg_replace_callback( '/%[dis]/', function ( $match ) use ( $arg ) { if ( '%i' === $match[0] ) return '`' . str_replace( '`', '``', $arg ) . '`'; return '%d' === $match[0] ? (string) (int) $arg : "'" . str_replace( "'", "''", $arg ) . "'"; }, $sql, 1 );
 		return $sql;
 	}
 	public function query( $sql ) {
@@ -67,6 +67,7 @@ function verify( $condition, $label ) { if ( ! $condition ) throw new RuntimeExc
 function fixture() {
 	$GLOBALS['admin'] = true; $GLOBALS['mode'] = 'standalone';
 	$db = new TrashDB();
+	$GLOBALS['wpdb'] = $db;
 	foreach ( ContactPanda_Schema::table_names() as $table ) $db->data[ $table ] = array();
 	foreach ( array( 'contacts', 'companies' ) as $entity ) $db->data[ 'fixture_7_cp_' . $entity ] = array( array( 'id' => 1, 'deleted_at' => null ), array( 'id' => 2, 'deleted_at' => '2026-10-15 12:00:00' ) );
 	foreach ( array( 'contactmeta', 'contact_tags', 'consents', 'company_contacts', 'companymeta', 'activities' ) as $name ) $db->data[ 'fixture_7_cp_' . $name ] = array( array( 'id' => 10, 'contact_id' => 2, 'company_id' => 2, 'external_id' => 'sanitized-event-1' ), array( 'id' => 11, 'contact_id' => 1, 'company_id' => 1 ) );

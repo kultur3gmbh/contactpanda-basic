@@ -34,6 +34,14 @@
 .contactpanda-registration-notice.is-error{border-left-color:#b32d2e;background:#fff0f0;color:#8d2021}
 .contactpanda-notice-message{margin:0}.contactpanda-confirmation-pending{margin-top:14px;padding-top:14px;border-top:1px solid currentColor}.contactpanda-confirmation-pending h3{margin:0 0 10px;color:inherit;font-size:1.15em}.contactpanda-confirmation-pending p{margin:7px 0}.contactpanda-pending-actions{display:flex;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-top:16px}.contactpanda-pending-actions form{margin:0}.contactpanda-pending-button{min-height:40px;padding:8px 15px;border:1px solid currentColor;border-radius:5px;background:#fff;color:#185d39;font:inherit;font-weight:700;cursor:pointer}.contactpanda-pending-button:hover,.contactpanda-pending-button:focus{background:#185d39;color:#fff}.contactpanda-registration-notice.is-error .contactpanda-pending-button{color:#8d2021}.contactpanda-registration-notice.is-error .contactpanda-pending-button:hover,.contactpanda-registration-notice.is-error .contactpanda-pending-button:focus{background:#8d2021;color:#fff}.contactpanda-pending-correction{min-width:min(100%,320px)}.contactpanda-pending-correction>summary{display:inline-flex;min-height:40px;box-sizing:border-box;align-items:center;padding:8px 15px;border:1px solid currentColor;border-radius:5px;background:transparent;font-weight:700;cursor:pointer}.contactpanda-pending-correction[open]>summary{margin-bottom:12px}.contactpanda-pending-correction form{display:flex;align-items:flex-end;flex-wrap:wrap;gap:10px;padding:14px;border:1px solid rgba(24,93,57,.25);border-radius:6px;background:rgba(255,255,255,.62)}.contactpanda-pending-correction label{display:grid;min-width:220px;flex:1;gap:5px;font-size:13px;font-weight:700}.contactpanda-pending-correction input{box-sizing:border-box;width:100%;min-height:40px;padding:8px 10px;border:1px solid #a7b0ba;border-radius:5px;background:#fff;color:#253342;font:inherit}
 .contactpanda-registration-trap{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important}
+.contactpanda-newsletter-signup{max-width:none}
+.contactpanda-newsletter-signup .contactpanda-form-section{display:grid;gap:14px}
+.contactpanda-newsletter-signup .contactpanda-form-section>h3{grid-column:1/-1}
+.contactpanda-newsletter-layout-one-line .contactpanda-newsletter-fields{grid-template-columns:repeat(4,minmax(150px,1fr))}
+.contactpanda-newsletter-layout-one-line .contactpanda-form-section{padding:18px}
+.contactpanda-newsletter-layout-two-line .contactpanda-newsletter-fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+.contactpanda-newsletter-signup .contactpanda-registration-submit{margin-top:0}
+@media(min-width:900px){.contactpanda-newsletter-layout-one-line{grid-template-columns:minmax(0,1fr) auto;align-items:end}.contactpanda-newsletter-layout-one-line .contactpanda-registration-submit{margin-bottom:18px}.contactpanda-newsletter-layout-two-line .contactpanda-form-section{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.contactpanda-newsletter-layout-two-line .contactpanda-newsletter-fields{grid-column:1/-1}}
 @media(max-width:680px){.contactpanda-form-grid{grid-template-columns:1fr}.contactpanda-form-section{padding:18px}.contactpanda-vat-controls{align-items:stretch;flex-direction:column}.contactpanda-pending-actions,.contactpanda-pending-correction form{align-items:stretch;flex-direction:column}.contactpanda-pending-correction,.contactpanda-pending-correction label,.contactpanda-pending-button{width:100%}}
 
 /* Optional theme inheritance. ContactPanda retains only its layout and uses the
@@ -100,3 +108,27 @@
 }
 
 .contactpanda-virtual-registration{width:min(1120px,calc(100% - 40px));margin:48px auto}.contactpanda-virtual-registration-inner{width:100%}
+
+/* Newsletter layouts follow their actual container, including narrow widget columns. */
+.contactpanda-newsletter-signup{container-type:inline-size;display:block;width:100%;min-width:0;max-width:100%;margin:0;box-sizing:border-box}
+.contactpanda-newsletter-signup *{box-sizing:border-box;min-width:0}
+.contactpanda-newsletter-signup .contactpanda-form-section{display:grid;grid-template-columns:1fr;gap:12px;width:100%;padding:18px}
+.contactpanda-newsletter-signup .contactpanda-newsletter-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px}
+.contactpanda-newsletter-layout-compact .contactpanda-newsletter-fields,.contactpanda-newsletter-layout-two-line .contactpanda-newsletter-fields{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.contactpanda-newsletter-signup .contactpanda-form-check{display:flex;align-items:flex-start;gap:9px;margin:0;width:100%;font:inherit}
+.contactpanda-newsletter-signup .contactpanda-form-check input{flex:0 0 18px;width:18px;height:18px;min-height:18px;margin:3px 0 0}
+.contactpanda-newsletter-signup .contactpanda-form-check span{overflow-wrap:anywhere}
+.contactpanda-newsletter-signup .contactpanda-registration-submit{position:static;float:none;max-width:100%;margin:12px 0 0;white-space:normal;font:inherit;cursor:pointer}
+/* Native theme button classes and public theme variables take precedence over Panda's color. */
+.contactpanda-newsletter-signup .contactpanda-registration-submit:not(.fusion-button):not(.btn){background:var(--wp--preset--color--contrast,var(--button_gradient_top_color,var(--primary-color,#333)));color:var(--wp--preset--color--base,var(--button_accent_color,#fff));border:1px solid currentColor;border-radius:var(--button_border_radius,4px);padding:10px 18px}
+.contactpanda-newsletter-signup .contactpanda-registration-submit:hover,.contactpanda-newsletter-signup .contactpanda-registration-submit:active{background:var(--button_gradient_top_color_hover,var(--wp--preset--color--contrast,#444));color:var(--button_accent_hover_color,var(--wp--preset--color--base,#fff))}
+.contactpanda-newsletter-signup .contactpanda-registration-submit:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.contactpanda-newsletter-dialog{width:min(620px,calc(100% - 24px));max-height:90dvh;overflow:auto;border:1px solid #d5dbe2;border-radius:10px;padding:34px 16px 18px;color:inherit;background:#fff}
+.contactpanda-newsletter-dialog::backdrop{background:rgba(0,0,0,.5)}
+.contactpanda-newsletter-close{position:absolute;top:4px;right:6px;display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:inherit;font:26px/1 sans-serif;cursor:pointer}
+.contactpanda-newsletter-bar{position:fixed;z-index:9999;inset:auto 0 0;padding:16px 40px 16px 18px;background:var(--content_bg_color,#fff);color:inherit;border-top:1px solid #cbd2da;box-shadow:0 -3px 15px #0002;max-height:65dvh;overflow:auto}
+.contactpanda-newsletter-bar[hidden]{display:none!important}.contactpanda-newsletter-bar-mobile{display:none}.contactpanda-newsletter-layout-bar .contactpanda-form-section{border:0;padding:0}.contactpanda-newsletter-layout-bar h3{display:none}
+@container(min-width:1050px){.contactpanda-newsletter-layout-bar .contactpanda-form-section{display:contents}.contactpanda-newsletter-layout-bar{display:flex;align-items:center;gap:12px}.contactpanda-newsletter-layout-bar .contactpanda-newsletter-fields{flex:3;grid-template-columns:repeat(4,minmax(0,1fr))}.contactpanda-newsletter-layout-bar .contactpanda-form-check{flex:1;font-size:12px}.contactpanda-newsletter-layout-bar .contactpanda-registration-submit{margin:0;flex:0 0 auto}}
+@media(max-width:767px){.contactpanda-newsletter-bar-desktop{display:none}.contactpanda-newsletter-bar-mobile{display:inline-flex;align-items:center;justify-content:center}.contactpanda-newsletter-bar{padding:10px 44px 10px 14px;text-align:center}}
+.contactpanda-newsletter-bar{container-type:inline-size}
+.contactpanda-newsletter-signup .contactpanda-registration-submit,.contactpanda-newsletter-bar-mobile{align-items:center;justify-content:center;gap:8px}.contactpanda-newsletter-signup .contactpanda-registration-submit{display:inline-flex}.contactpanda-newsletter-signup .contactpanda-registration-submit .dashicons,.contactpanda-newsletter-bar-mobile .dashicons{flex:0 0 20px;color:inherit}

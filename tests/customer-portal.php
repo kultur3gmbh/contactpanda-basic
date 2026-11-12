@@ -8,14 +8,14 @@ $identity = file_get_contents( $root . '/contactpanda/includes/class-contactpand
 $account  = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-my-account.php' );
 $plugin   = file_get_contents( $root . '/contactpanda/includes/class-contactpanda-plugin.php' );
 
-foreach ( array( 'class-contactpanda-identity.php', 'class-contactpanda-customer-portal.php', 'ContactPanda_Customer_Portal', 'contactpanda_register_family_updaters' ) as $contract ) {
+foreach ( array( 'class-contactpanda-identity.php', 'class-contactpanda-customer-portal.php', 'ContactPanda_Customer_Portal' ) as $contract ) {
 	if ( false === strpos( $main, $contract ) ) {
 		fwrite( STDERR, "Missing Basic portal bootstrap contract {$contract}.\n" );
 		exit( 1 );
 	}
 }
 
-foreach ( array( 'contactpanda_customer_portal_tabs', 'contactpanda_portal_profile_saved', 'contactpanda_portal_subscription_changed', 'contactpanda/customer-portal', 'contactpanda_customer_portal' ) as $contract ) {
+foreach ( array( 'contactpanda_customer_portal_tabs', 'contactpanda_portal_profile_saved', 'contactpanda_portal_subscription_changed', 'contactpanda_portal_preferences_saved', 'contactpanda_portal_save_preferences', 'contactpanda_preference_channels', 'contactpanda_preference_topics', 'contactpanda_preference_languages', 'contactpanda/customer-portal', 'contactpanda_customer_portal' ) as $contract ) {
 	if ( false === strpos( $portal, $contract ) ) {
 		fwrite( STDERR, "Missing customer portal extension contract {$contract}.\n" );
 		exit( 1 );

@@ -29,13 +29,13 @@ final class ContactPanda_Basic_Segments {
 		global $wpdb;
 		ContactPanda_Newsletter_Schema::install();
 		$table = ContactPanda_Newsletter_Schema::table_names()['segments'];
-		return $wpdb->get_results( "SELECT * FROM `{$table}` ORDER BY name ASC", ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table.
+		return $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i ORDER BY name ASC", $table ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 	}
 
 	public static function get( $id ) {
 		global $wpdb;
 		$table = ContactPanda_Newsletter_Schema::table_names()['segments'];
-		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$table}` WHERE id=%d", absint( $id ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table.
+		return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM %i WHERE id=%d", $table, absint( $id ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 	}
 
 	public static function filter_control( $selected ) {
@@ -121,7 +121,7 @@ final class ContactPanda_Basic_Segments {
 	}
 
 	public static function inline_config( $campaign_mode = false ) {
-		$active_state = self::decode_filter( isset( $_GET['contactpanda_filter'] ) ? wp_unslash( $_GET['contactpanda_filter'] ) : '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only UI state.
+		$active_state = self::decode_filter( isset( $_GET['contactpanda_filter'] ) ? sanitize_text_field( wp_unslash( $_GET['contactpanda_filter'] ) ) : '' ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only UI state.
 		if ( ! $active_state['rules'] && ! empty( $_GET['segment'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only saved search.
 			$segment = self::get( absint( $_GET['segment'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$rules = $segment ? json_decode( (string) $segment['rules_json'], true ) : array();
@@ -142,8 +142,10 @@ final class ContactPanda_Basic_Segments {
 				'checking' => __( 'Counting matching people…', 'contactpanda' ),
 				'complete' => __( 'Complete all filters', 'contactpanda' ),
 				'showOne' => __( 'Search finds 1 person – show now', 'contactpanda' ),
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				'showMany' => __( 'Search finds %d people – show now', 'contactpanda' ),
 				'campaignOne' => __( '1 matching person', 'contactpanda' ),
+				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				'campaignMany' => __( '%d matching people', 'contactpanda' ),
 				'countFailed' => __( 'The matching people could not be counted.', 'contactpanda' ),
 				'enterName' => __( 'Please enter a name for this search.', 'contactpanda' ),
@@ -156,8 +158,8 @@ final class ContactPanda_Basic_Segments {
 	}
 
 	public static function ajax_filter_count() {
-		self::guard_inline_ajax();
-		$state = self::sanitize_state( json_decode( (string) wp_unslash( $_POST['state'] ?? '' ), true ) );
+		check_ajax_referer( self::inline_nonce_action(), 'nonce' );
+		$state = self::sanitize_state( map_deep( json_decode( is_string( $_POST['state'] ?? null ) ? wp_unslash( $_POST['state'] ) : '', true ), 'sanitize_text_field' ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON is decoded, every leaf sanitized with map_deep/sanitize_text_field, then sanitize_state allowlists fields/operators and limits the number of rules.
 		if ( ! $state['rules'] ) {
 			wp_send_json_error( array( 'message' => __( 'Please add at least one complete filter.', 'contactpanda' ) ), 400 );
 		}
@@ -167,27 +169,27 @@ final class ContactPanda_Basic_Segments {
 	}
 
 	public static function ajax_save_inline_search() {
-		self::guard_inline_ajax();
+		check_ajax_referer( self::inline_nonce_action(), 'nonce' );
 		$name = sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) );
-		$state = self::sanitize_state( json_decode( (string) wp_unslash( $_POST['state'] ?? '' ), true ) );
+		$state = self::sanitize_state( map_deep( json_decode( is_string( $_POST['state'] ?? null ) ? wp_unslash( $_POST['state'] ) : '', true ), 'sanitize_text_field' ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON is decoded, every leaf sanitized with map_deep/sanitize_text_field, then sanitize_state allowlists fields/operators and limits the number of rules.
 		if ( '' === $name || ! $state['rules'] ) {
 			wp_send_json_error( array( 'message' => __( 'Please enter a name and at least one complete condition.', 'contactpanda' ) ), 400 );
 		}
 		global $wpdb;
 		ContactPanda_Newsletter_Schema::install();
 		$table = ContactPanda_Newsletter_Schema::table_names()['segments'];
-		$inserted = $wpdb->insert( $table, array( 'name' => $name, 'relation_mode' => $state['relation'], 'rules_json' => wp_json_encode( $state['rules'] ), 'created_by' => get_current_user_id(), 'created_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ) );
+		$inserted = $wpdb->insert( $table, array( 'name' => $name, 'relation_mode' => $state['relation'], 'rules_json' => wp_json_encode( $state['rules'] ), 'created_by' => get_current_user_id(), 'created_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points.
 		if ( ! $inserted ) {
 			wp_send_json_error( array( 'message' => __( 'The search could not be saved.', 'contactpanda' ) ), 500 );
 		}
 		wp_send_json_success( array( 'id' => (int) $wpdb->insert_id, 'name' => $name, 'message' => __( 'The search was saved.', 'contactpanda' ) ) );
 	}
 
-	private static function guard_inline_ajax() {
+	private static function inline_nonce_action() {
 		if ( ! current_user_can( self::capability() ) ) {
 			wp_send_json_error( array( 'message' => __( 'You do not have permission.', 'contactpanda' ) ), 403 );
 		}
-		check_ajax_referer( 'contactpanda_inline_search', 'nonce' );
+		return 'contactpanda_inline_search';
 	}
 
 	private static function encode_filter( $state ) {
@@ -354,7 +356,7 @@ final class ContactPanda_Basic_Segments {
 			if ( '' === (string) $value && $user ) $value = get_user_meta( $user_id, 'billing_company', true );
 			if ( '' !== (string) $value || ! ContactPanda_Store::standalone() ) return $value;
 			global $wpdb; $tables = ContactPanda_Schema::table_names();
-			return (string) $wpdb->get_var( $wpdb->prepare( "SELECT c.name FROM `{$tables['companies']}` c INNER JOIN `{$tables['company_contacts']}` cc ON cc.company_id=c.id WHERE cc.contact_id=%d AND c.deleted_at IS NULL ORDER BY cc.is_primary DESC,cc.id ASC LIMIT 1", $contact_id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table names.
+			return (string) $wpdb->get_var( $wpdb->prepare( "SELECT c.name FROM %i c INNER JOIN %i cc ON cc.company_id=c.id WHERE cc.contact_id=%d AND c.deleted_at IS NULL ORDER BY cc.is_primary DESC,cc.id ASC LIMIT 1", $tables['companies'], $tables['company_contacts'], $contact_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		}
 		if ( 'first_name' === $field ) return ContactPanda_Plugin::extension_value( $contact, array( 'first_name', 'get_first_name' ) );
 		if ( 'last_name' === $field ) return ContactPanda_Plugin::extension_value( $contact, array( 'last_name', 'get_last_name' ) );
@@ -368,7 +370,10 @@ final class ContactPanda_Basic_Segments {
 		if ( 'marketable' === $field ) return ContactPanda_Plugin::extension_is_marketable( $contact ) ? 'yes' : 'no';
 		if ( 'has_account' === $field ) return $user ? 'yes' : 'no';
 		if ( 'user_role' === $field ) return $user ? (array) $user->roles : array();
-		if ( 'uid' === $field ) return $user ? ( get_user_meta( $user_id, 'billing_vat', true ) ?: get_user_meta( $user_id, 'b2b_uid', true ) ) : self::inline_meta( $contact, array( 'vat_id', 'uid' ) );
+		if ( 'uid' === $field ) {
+			$value = self::inline_meta( $contact, array( 'vat_id', 'uid' ) );
+			return $value ?: ( $user ? ( get_user_meta( $user_id, 'billing_vat', true ) ?: get_user_meta( $user_id, 'b2b_uid', true ) ) : '' );
+		}
 		if ( 'email_confirmed' === $field ) {
 			$value = self::inline_meta( $contact, array( 'email_confirmed', 'contactpanda_email_verified' ) );
 			if ( '' === (string) $value && $user ) $value = get_user_meta( $user_id, 'contactpanda_email_verified', true );
@@ -580,10 +585,7 @@ final class ContactPanda_Basic_Segments {
 		$order_items = $wpdb->prefix . 'woocommerce_order_items';
 		$order_meta = $wpdb->prefix . 'woocommerce_order_itemmeta';
 		foreach ( array_keys( $result ) as $product_id ) {
-			$order_ids = $wpdb->get_col( $wpdb->prepare(
-				"SELECT DISTINCT oi.order_id FROM `{$order_items}` oi INNER JOIN `{$order_meta}` oim ON oim.order_item_id=oi.order_item_id WHERE oi.order_item_type='line_item' AND oim.meta_key IN ('_product_id','_variation_id') AND CAST(oim.meta_value AS UNSIGNED)=%d",
-				$product_id
-			) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- WooCommerce core tables.
+			$order_ids = $wpdb->get_col( $wpdb->prepare( "SELECT DISTINCT oi.order_id FROM %i oi INNER JOIN %i oim ON oim.order_item_id=oi.order_item_id WHERE oi.order_item_type='line_item' AND oim.meta_key IN ('_product_id','_variation_id') AND CAST(oim.meta_value AS UNSIGNED)=%d", $order_items, $order_meta, $product_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 			foreach ( array_map( 'absint', $order_ids ) as $order_id ) {
 				$order = wc_get_order( $order_id );
 				if ( ! $order || in_array( 'wc-' . $order->get_status(), array( 'wc-cancelled', 'wc-failed', 'wc-checkout-draft' ), true ) ) continue;
@@ -811,10 +813,19 @@ final class ContactPanda_Basic_Segments {
 		wp_nonce_field( 'contactpanda_save_segment' );
 		$relation_legend = 'companies' === $entity ? __( 'Companies must match', 'contactpanda' ) : __( 'People must match', 'contactpanda' );
 		echo '<div class="contactpanda-segment-header"><label><span>' . esc_html__( 'Name of this search', 'contactpanda' ) . '</span><input class="regular-text" required name="name" value="' . esc_attr( $edit['name'] ?? '' ) . '" placeholder="' . esc_attr__( 'e.g. Coffee customers without an event booking', 'contactpanda' ) . '"></label><fieldset><legend>' . esc_html( $relation_legend ) . '</legend><label><input type="radio" name="relation_mode" value="and"' . checked( $edit['relation_mode'] ?? 'and', 'and', false ) . '> ' . esc_html__( 'all conditions', 'contactpanda' ) . '</label><label><input type="radio" name="relation_mode" value="or"' . checked( $edit['relation_mode'] ?? '', 'or', false ) . '> ' . esc_html__( 'at least one condition', 'contactpanda' ) . '</label></fieldset></div>';
+		if ( 'contacts' === $entity ) {
+			$state = self::editor_state( $rules, $edit['relation_mode'] ?? 'and' );
+			echo '<input type="hidden" name="inline_state" value="' . esc_attr( wp_json_encode( $state ) ) . '">';
+			$config = self::inline_config(); $config['activeState'] = $state;
+			wp_enqueue_script( 'contactpanda-inline-search', CONTACTPANDA_URL . 'assets/contactpanda-inline-search.js', array(), CONTACTPANDA_ASSET_VERSION, true );
+			wp_localize_script( 'contactpanda-inline-search', 'CONTACTPANDA_INLINE_SEARCH', $config );
+			self::render_inline_search( self::encode_filter( $state ), 0, true );
+		} else {
 		echo '<div class="contactpanda-segment-rules">';
 		foreach ( $rules as $index => $rule ) { self::render_rule( $index, $rule, $entity ); }
 		echo '</div><button type="button" class="button contactpanda-add-segment-rule"><span class="dashicons dashicons-plus-alt2"></span>' . esc_html__( 'Add condition', 'contactpanda' ) . '</button>';
 		echo '<template class="contactpanda-segment-rule-template">'; self::render_rule( 999, array( 'type' => '', 'value' => '' ), $entity ); echo '</template>';
+		}
 		echo '<div class="contactpanda-segment-actions"><button type="submit" class="button button-primary" name="run_search" value="1">' . esc_html__( 'Save and show results', 'contactpanda' ) . '</button><button type="submit" class="button">' . esc_html__( 'Save search', 'contactpanda' ) . '</button></div></form></div></div>';
 
 		echo '<section class="contactpanda-card contactpanda-saved-searches"><div class="contactpanda-toolbar"><h2>' . esc_html__( 'Saved searches', 'contactpanda' ) . '</h2><span class="contactpanda-count">' . esc_html( count( self::all() ) ) . '</span></div><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Name', 'contactpanda' ) . '</th><th>' . esc_html__( 'Type', 'contactpanda' ) . '</th><th>' . esc_html__( 'Combination', 'contactpanda' ) . '</th><th>' . esc_html__( 'Conditions', 'contactpanda' ) . '</th><th>' . esc_html__( 'Actions', 'contactpanda' ) . '</th></tr></thead><tbody>';
@@ -839,6 +850,7 @@ final class ContactPanda_Basic_Segments {
 			foreach ( $types as $key => $label ) { echo '<option value="' . esc_attr( $key ) . '"' . selected( $type, $key, false ) . '>' . esc_html( $label ) . '</option>'; }
 			echo '</optgroup>';
 		}
+		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
 		echo '</select></label><label><span>' . esc_html__( 'Value', 'contactpanda' ) . '</span><span class="contactpanda-segment-value">' . self::value_control( $type, $index, $value ) . '</span></label><button type="button" class="button-link contactpanda-remove-segment-rule" aria-label="' . esc_attr__( 'Remove condition', 'contactpanda' ) . '"><span class="dashicons dashicons-no-alt"></span></button></div>';
 	}
 
@@ -911,6 +923,12 @@ final class ContactPanda_Basic_Segments {
 		return array( 'typeOptions' => self::type_options(), 'valueLabels' => self::value_labels(), 'choose' => __( 'Please select', 'contactpanda' ), 'number' => __( 'Value', 'contactpanda' ) );
 	}
 
+	public static function editor_state( $rules, $relation ) {
+		$map = array( 'product_purchased' => array('product','purchased'), 'product_not_purchased' => array('product','not_purchased'), 'product_category' => array('product_category','purchased'), 'order_count_min' => array('order_count','gte'), 'order_total_min' => array('order_total','gte'), 'ordered_within_days' => array('ordered_within_days','within'), 'not_ordered_within_days' => array('ordered_within_days','not_within'), 'event_booked' => array('event','is'), 'event_attended' => array('event','is'), 'event_not_attended' => array('event','is'), 'event_count_min' => array('event_count','gte'), 'event_category' => array('event_category','is'), 'event_within_days' => array('event_within_days','within') );
+		$out = array(); foreach ( (array) $rules as $rule ) { if ( isset($rule['field']) ) $out[]=$rule; elseif ( isset($map[$rule['type']??'']) ) { $m=$map[$rule['type']]; $out[]=array('field'=>$m[0],'operator'=>$m[1],'value'=>(string)$rule['value']); } }
+		return array('relation'=>'or'===$relation?'or':'and','rules'=>$out);
+	}
+
 	public static function save() {
 		if ( ! current_user_can( self::capability() ) ) { wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ) ); }
 		check_admin_referer( 'contactpanda_save_segment' );
@@ -923,20 +941,21 @@ final class ContactPanda_Basic_Segments {
 		$rules = array();
 		$allowed_types = array();
 		foreach ( self::rule_groups( $entity ) as $types ) { $allowed_types = array_merge( $allowed_types, array_keys( $types ) ); }
-		foreach ( (array) ( $_POST['rules'] ?? array() ) as $rule ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+		foreach ( (array) wp_unslash( $_POST['rules'] ?? array() ) as $rule ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 			$type = sanitize_key( wp_unslash( $rule['type'] ?? '' ) );
 			$value = 'companies' === $entity ? sanitize_text_field( wp_unslash( $rule['value'] ?? '' ) ) : (float) wp_unslash( $rule['value'] ?? 0 );
 			if ( in_array( $type, $allowed_types, true ) && ( 'companies' === $entity ? '' !== $value : $value >= 0 ) ) { $rules[] = array( 'type' => $type, 'value' => $value ); }
 		}
+		if ( 'contacts' === $entity && isset( $_POST['inline_state'] ) ) { $state = self::sanitize_state( map_deep( json_decode( is_string( $_POST['inline_state'] ) ? wp_unslash( $_POST['inline_state'] ) : '', true ) ?: array(), 'sanitize_text_field' ) ); $rules = $state['rules']; $mode = $state['relation']; } // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON leaves are sanitized before sanitize_state applies the rule schema and limit; raw values are never persisted or interpolated into SQL.
 		if ( '' === $name || ! $rules ) {
 			wp_die( esc_html__( 'Please enter a name and at least one complete condition.', 'contactpanda' ), esc_html__( 'Search could not be saved', 'contactpanda' ), array( 'back_link' => true ) );
 		}
 		$data = array( 'name' => $name, 'entity_type' => $entity, 'relation_mode' => $mode, 'rules_json' => wp_json_encode( $rules ), 'updated_at' => current_time( 'mysql' ) );
 		$table = ContactPanda_Newsletter_Schema::table_names()['segments'];
 		if ( $id ) {
-			$wpdb->update( $table, $data, array( 'id' => $id ) );
+			$wpdb->update( $table, $data, array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		} else {
-			$data['created_by'] = get_current_user_id(); $data['created_at'] = current_time( 'mysql' ); $wpdb->insert( $table, $data ); $id = (int) $wpdb->insert_id;
+			$data['created_by'] = get_current_user_id(); $data['created_at'] = current_time( 'mysql' ); $wpdb->insert( $table, $data ); $id = (int) $wpdb->insert_id; // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points.
 		}
 		$redirect = isset( $_POST['run_search'] ) ? admin_url( 'admin.php?page=' . ( 'companies' === $entity ? 'contactpanda-firmen' : 'contactpanda-people' ) . '&segment=' . absint( $id ) ) : admin_url( 'admin.php?page=contactpanda-settings&tab=misc&misc_section=saved_searches' );
 		wp_safe_redirect( $redirect ); exit;
@@ -946,9 +965,9 @@ final class ContactPanda_Basic_Segments {
 		if ( ! current_user_can( self::capability() ) ) { wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ) ); }
 		check_admin_referer( 'contactpanda_delete_segment' );
 		global $wpdb; $table = ContactPanda_Newsletter_Schema::table_names()['segments'];
-		$wpdb->delete( $table, array( 'id' => absint( $_GET['segment_id'] ?? 0 ) ) );
+		$wpdb->delete( $table, array( 'id' => absint( $_GET['segment_id'] ?? 0 ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=misc&misc_section=saved_searches' ) ); exit;
 	}
 
-	private static function capability() { return class_exists( 'WooCommerce' ) ? 'manage_woocommerce' : 'manage_options'; }
+	private static function capability() { return class_exists( 'ContactPanda_Capabilities' ) ? ContactPanda_Capabilities::for_area( 'marketing' ) : ( class_exists( 'WooCommerce' ) ? 'manage_woocommerce' : 'manage_options' ); }
 }
