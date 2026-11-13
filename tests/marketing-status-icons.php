@@ -5,6 +5,7 @@ function __( $value, $domain = '' ) { return $value; }
 function esc_attr( $value ) { return htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' ); }
 function esc_html( $value ) { return htmlspecialchars( $value, ENT_QUOTES, 'UTF-8' ); }
 function esc_url( $value ) { return $value; }
+function wp_create_nonce( $action ) { return 'fixture-nonce-' . $action; }
 function verify( $condition, $label ) { if ( ! $condition ) throw new RuntimeException( $label ); }
 
 class ContactPanda_Trash {
@@ -14,7 +15,7 @@ class ContactPanda_Trash {
 
 require __DIR__ . '/../contactpanda/includes/class-contactpanda-plugin.php';
 $badge = new ReflectionMethod( 'ContactPanda_Plugin', 'marketing_icon_badge' );
-$badge->setAccessible( true );
+if ( PHP_VERSION_ID < 80100 ) $badge->setAccessible( true );
 
 $allowed = $badge->invoke( null, 'confirmed' );
 verify( false !== strpos( $allowed, 'dashicons-thumbs-up' ) && false !== strpos( $allowed, 'is-positive' ), 'Marketable contact uses the green thumbs-up icon' );
@@ -30,7 +31,7 @@ foreach ( array( 3, 6, 7, 8, 9, 'unsubscribed', 'hard_bounce', 'spam', 'complain
 }
 
 $trash_link = new ReflectionMethod( 'ContactPanda_Plugin', 'render_trash_link' );
-$trash_link->setAccessible( true );
+if ( PHP_VERSION_ID < 80100 ) $trash_link->setAccessible( true );
 ob_start();
 $trash_link->invoke( null, 'contacts', 42, true );
 $trash_button = ob_get_clean();

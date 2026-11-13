@@ -16,9 +16,12 @@ final class ContactPanda_Customer_Portal {
 		add_action( 'admin_post_contactpanda_portal_save_profile', array( __CLASS__, 'save_profile' ) );
 		add_action( 'admin_post_contactpanda_portal_unsubscribe', array( __CLASS__, 'unsubscribe' ) );
 		add_action( 'admin_post_nopriv_contactpanda_portal_unsubscribe', array( __CLASS__, 'unsubscribe' ) );
+		add_action( 'admin_post_contactpanda_portal_save_preferences', array( __CLASS__, 'save_preferences' ) );
+		add_action( 'admin_post_nopriv_contactpanda_portal_save_preferences', array( __CLASS__, 'save_preferences' ) );
 		add_action( 'admin_post_contactpanda_portal_privacy_request', array( __CLASS__, 'privacy_request' ) );
 		add_action( 'admin_post_nopriv_contactpanda_portal_privacy_request', array( __CLASS__, 'privacy_request' ) );
 		add_action( 'template_redirect', array( __CLASS__, 'confirm_email_change' ) );
+		add_action( 'template_redirect', array( __CLASS__, 'render_virtual_portal' ), 20 );
 		add_action( 'fusion_builder_before_init', array( __CLASS__, 'register_avada_element' ) );
 	}
 
@@ -153,13 +156,39 @@ final class ContactPanda_Customer_Portal {
 		$status = $identity['optin_status'] ?? 'unconfirmed';
 		$marketable = ContactPanda_Plugin::extension_is_marketable( $identity['object'] ?: $identity );
 		echo '<section><h2>' . esc_html__( 'Communication', 'contactpanda' ) . '</h2><div class="contactpanda-portal-status ' . ( $marketable ? 'is-active' : 'is-inactive' ) . '"><strong>' . esc_html( $marketable ? __( 'Newsletter subscribed', 'contactpanda' ) : __( 'Newsletter not subscribed', 'contactpanda' ) ) . '</strong><span>' . esc_html( $email ) . '</span></div>';
-		if ( $marketable ) {
-			self::unsubscribe_form( $identity['id'], $email, self::tab_url( 'preferences' ) );
-		} else {
-			echo '<p>' . esc_html__( 'A new newsletter subscription requires a separate double opt-in confirmation.', 'contactpanda' ) . '</p>';
-		}
+		self::preferences_form( $identity, self::tab_url( 'preferences' ), array(), $marketable );
+		if ( ! $marketable ) echo '<p class="description">' . esc_html__( 'Selecting email here does not grant marketing consent. A new newsletter subscription always requires a separate double opt-in confirmation.', 'contactpanda' ) . '</p>';
 		do_action( 'contactpanda_customer_portal_subscriptions', $identity, array( 'authenticated' => true, 'status' => $status ) );
 		echo '</section>';
+	}
+
+	public static function save_preferences() {
+		$preference = self::preference_context();
+		if ( is_user_logged_in() ) {
+			check_admin_referer( 'contactpanda_portal_save_preferences' );
+			$identity = ContactPanda_Identity::resolve_user( get_current_user_id(), true );
+		} else {
+			$identity = $preference;
+			if ( ! $identity ) wp_die( esc_html__( 'This preference link is invalid or expired.', 'contactpanda' ), '', array( 'response' => 403 ) );
+		}
+		if ( is_wp_error( $identity ) || empty( $identity['id'] ) ) wp_die( esc_html__( 'The ContactPanda person could not be resolved.', 'contactpanda' ), '', array( 'response' => 404 ) );
+		$available_channels = array_keys( self::preference_channels() );
+		$available_topics = array_keys( self::preference_topics() );
+		$channels = array_values( array_intersect( $available_channels, array_map( 'sanitize_key', (array) ( $_POST['channels'] ?? array() ) ) ) );
+		$topics = array_values( array_intersect( $available_topics, array_map( 'sanitize_key', (array) ( $_POST['topics'] ?? array() ) ) ) );
+		$language = sanitize_key( wp_unslash( $_POST['correspondence_language'] ?? '' ) );
+		$languages = self::preference_languages();
+		if ( ! isset( $languages[ $language ] ) ) $language = array_key_first( $languages );
+		$was_marketable = ContactPanda_Plugin::extension_is_marketable( $identity['object'] ?: $identity );
+		if ( $was_marketable && ! in_array( 'email', $channels, true ) ) {
+			$email = sanitize_email( $identity['email'] ?? '' );
+			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
+			ContactPanda_Plugin::extension_unsubscribe_contact( $identity['id'], 'preference_centre', sprintf( __( 'Email address %1$s finally unsubscribed through communication preferences at %2$s.', 'contactpanda' ), $email, current_time( 'mysql' ) ), $email );
+		}
+		$data = array( 'channels' => $channels, 'topics' => $topics, 'language' => $language, 'updated_at' => current_time( 'mysql' ) );
+		if ( ! self::store_preferences( $identity, $data ) ) self::redirect_notice( false, __( 'The communication preferences could not be saved.', 'contactpanda' ) );
+		do_action( 'contactpanda_portal_preferences_saved', absint( $identity['id'] ), $data, $identity );
+		self::redirect_notice( true, __( 'Your communication preferences have been saved.', 'contactpanda' ) );
 	}
 
 	public static function render_privacy() {
@@ -202,7 +231,7 @@ final class ContactPanda_Customer_Portal {
 	}
 
 	public static function confirm_email_change() {
-		if ( empty( $_GET['contactpanda_email_confirm'] ) || ! is_user_logged_in() ) return;
+		if ( empty( $_GET['contactpanda_email_confirm'] ) || ! is_user_logged_in() ) return; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Logged-in user must match the stored pending email; the one-time SHA-256 confirmation token and expiry are checked before any update.
 		$user = wp_get_current_user();
 		$pending = get_user_meta( $user->ID, self::EMAIL_META, true );
 		$token = sanitize_text_field( wp_unslash( $_GET['contactpanda_email_confirm'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- one-time confirmation token.
@@ -232,6 +261,7 @@ final class ContactPanda_Customer_Portal {
 		if ( is_wp_error( $identity ) || empty( $identity['id'] ) ) wp_die( esc_html__( 'The ContactPanda person could not be resolved.', 'contactpanda' ), '', array( 'response' => 404 ) );
 		$email = sanitize_email( $identity['email'] ?? '' );
 		$now = current_time( 'mysql' );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		ContactPanda_Plugin::extension_unsubscribe_contact( $identity['id'], 'preference_centre', sprintf( __( 'Email address %1$s finally unsubscribed through the preference centre at %2$s.', 'contactpanda' ), $email, $now ), $email );
 		do_action( 'contactpanda_portal_subscription_changed', $identity['id'], 'newsletter', 'unsubscribed', array( 'source' => 'preference_centre', 'email' => $email ) );
 		self::redirect_notice( true, __( 'The email address has been finally unsubscribed from the newsletter.' , 'contactpanda' ) );
@@ -270,17 +300,39 @@ final class ContactPanda_Customer_Portal {
 	public static function portal_url() {
 		$settings = (array) get_option( ContactPanda_Registration::GENERAL_OPTION, array() );
 		$page_id = absint( $settings['portal_page_id'] ?? 0 );
-		$url = $page_id ? get_permalink( $page_id ) : '';
+		$url = $page_id && 'publish' === get_post_status( $page_id ) ? get_permalink( $page_id ) : '';
 		if ( ! $url && self::is_portal_page() ) {
 			$url = get_permalink( get_queried_object_id() );
 		}
-		return apply_filters( 'contactpanda_customer_portal_url', $url ?: home_url( '/' ) );
+		return apply_filters( 'contactpanda_customer_portal_url', $url ?: self::virtual_portal_url() );
 	}
 
 	public static function is_configured() {
+		return true;
+	}
+
+	private static function virtual_portal_url() {
+		return add_query_arg( 'contactpanda_portal', '1', home_url( '/' ) );
+	}
+
+	/** Render the customer portal without requiring a dedicated WordPress page. */
+	public static function render_virtual_portal() {
+		$virtual = isset( $_GET['contactpanda_portal'] ) ? sanitize_key( wp_unslash( $_GET['contactpanda_portal'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- public read-only endpoint.
+		if ( is_admin() || '1' !== $virtual ) {
+			return;
+		}
 		$settings = (array) get_option( ContactPanda_Registration::GENERAL_OPTION, array() );
 		$page_id = absint( $settings['portal_page_id'] ?? 0 );
-		return ( $page_id && 'publish' === get_post_status( $page_id ) ) || self::is_portal_page();
+		if ( $page_id && 'publish' === get_post_status( $page_id ) ) {
+			wp_safe_redirect( get_permalink( $page_id ) );
+			exit;
+		}
+		status_header( 200 );
+		nocache_headers();
+		get_header();
+		echo '<main id="primary" class="site-main contactpanda-virtual-portal"><div class="contactpanda-virtual-portal-inner">' . self::render() . '</div></main>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- render() returns escaped portal markup.
+		get_footer();
+		exit;
 	}
 
 	public static function tab_url( $tab, $args = array() ) {
@@ -307,13 +359,67 @@ final class ContactPanda_Customer_Portal {
 		echo '<div class="contactpanda-portal contactpanda-preference-centre"><header class="contactpanda-portal-header"><div><p class="contactpanda-portal-eyebrow">' . esc_html( get_bloginfo( 'name' ) ) . '</p><h1>' . esc_html__( 'Communication preferences', 'contactpanda' ) . '</h1><p>' . esc_html( trim( ( $identity['first_name'] ?? '' ) . ' ' . ( $identity['last_name'] ?? '' ) ) ) . '<br>' . esc_html( $identity['email'] ) . '</p></div></header>';
 		self::notice();
 		echo '<section class="contactpanda-portal-panel"><div class="contactpanda-portal-status ' . ( $marketable ? 'is-active' : 'is-inactive' ) . '"><strong>' . esc_html( $marketable ? __( 'Newsletter subscribed', 'contactpanda' ) : __( 'Newsletter not subscribed', 'contactpanda' ) ) . '</strong></div>';
-		if ( $marketable ) self::unsubscribe_form( $identity['id'], $identity['email'], add_query_arg( $identity['token_args'], self::portal_url() ), $identity['token_args'] );
+		self::preferences_form( $identity, add_query_arg( $identity['token_args'], self::portal_url() ), $identity['token_args'], $marketable );
+		if ( ! $marketable ) echo '<p class="description">' . esc_html__( 'Selecting email here does not grant marketing consent. A new newsletter subscription always requires a separate double opt-in confirmation.', 'contactpanda' ) . '</p>';
 		do_action( 'contactpanda_customer_portal_subscriptions', $identity, array( 'authenticated' => false, 'scope' => $identity['scope'] ) );
 		echo '<div class="contactpanda-portal-actions">';
 		self::privacy_form( 'export_personal_data', __( 'Request data export', 'contactpanda' ), $identity['email'], add_query_arg( $identity['token_args'], self::portal_url() ), $identity['token_args'] );
 		self::privacy_form( 'remove_personal_data', __( 'Request data deletion', 'contactpanda' ), $identity['email'], add_query_arg( $identity['token_args'], self::portal_url() ), $identity['token_args'] );
 		echo '</div></section></div>';
 		return ob_get_clean();
+	}
+
+	private static function preferences_form( $identity, $return_url, $token_args, $marketable ) {
+		$stored = self::stored_preferences( $identity );
+		$channels = isset( $stored['channels'] ) && is_array( $stored['channels'] ) ? $stored['channels'] : ( $marketable ? array( 'email' ) : array() );
+		$topics = isset( $stored['topics'] ) && is_array( $stored['topics'] ) ? $stored['topics'] : ( $marketable ? array( 'newsletter' ) : array() );
+		$language = sanitize_key( $stored['language'] ?? determine_locale() );
+		echo '<form class="contactpanda-portal-form contactpanda-preferences-form" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_portal_save_preferences"><input type="hidden" name="return_url" value="' . esc_attr( $return_url ) . '">';
+		foreach ( $token_args as $key => $value ) echo '<input type="hidden" name="' . esc_attr( $key ) . '" value="' . esc_attr( $value ) . '">';
+		if ( is_user_logged_in() ) wp_nonce_field( 'contactpanda_portal_save_preferences' );
+		echo '<fieldset><legend>' . esc_html__( 'Channels', 'contactpanda' ) . '</legend>';
+		foreach ( self::preference_channels() as $key => $label ) echo '<label><input type="checkbox" name="channels[]" value="' . esc_attr( $key ) . '"' . checked( in_array( $key, $channels, true ), true, false ) . '> <span>' . esc_html( $label ) . '</span></label>';
+		echo '</fieldset><fieldset><legend>' . esc_html__( 'Topics', 'contactpanda' ) . '</legend>';
+		foreach ( self::preference_topics() as $key => $label ) echo '<label><input type="checkbox" name="topics[]" value="' . esc_attr( $key ) . '"' . checked( in_array( $key, $topics, true ), true, false ) . '> <span>' . esc_html( $label ) . '</span></label>';
+		echo '</fieldset><label class="contactpanda-portal-field"><span>' . esc_html__( 'Correspondence language', 'contactpanda' ) . '</span><select name="correspondence_language">';
+		foreach ( self::preference_languages() as $key => $label ) echo '<option value="' . esc_attr( $key ) . '"' . selected( $language, $key, false ) . '>' . esc_html( $label ) . '</option>';
+		echo '</select></label><button class="button button-primary" type="submit">' . esc_html__( 'Save communication preferences', 'contactpanda' ) . '</button></form>';
+	}
+
+	private static function preference_channels() {
+		return (array) apply_filters( 'contactpanda_preference_channels', array( 'email' => __( 'Email', 'contactpanda' ), 'sms' => __( 'SMS', 'contactpanda' ), 'whatsapp' => __( 'WhatsApp', 'contactpanda' ) ) );
+	}
+
+	private static function preference_topics() {
+		return (array) apply_filters( 'contactpanda_preference_topics', array( 'newsletter' => __( 'General newsletter', 'contactpanda' ), 'offers' => __( 'Offers and product news', 'contactpanda' ), 'events' => __( 'Events', 'contactpanda' ) ) );
+	}
+
+	private static function preference_languages() {
+		return (array) apply_filters( 'contactpanda_preference_languages', array( 'de_de' => __( 'German', 'contactpanda' ), 'en_us' => __( 'English', 'contactpanda' ) ) );
+	}
+
+	private static function stored_preferences( $identity ) {
+		$key = ContactPanda_Custom_Fields::meta_key( 'communication_preferences' );
+		$value = '';
+		if ( 'standalone' === ( $identity['source'] ?? '' ) ) {
+			$meta = ContactPanda_Store::contact_meta( absint( $identity['id'] ?? 0 ) );
+			$value = $meta[ $key ] ?? '';
+		} elseif ( ! empty( $identity['object'] ) && method_exists( $identity['object'], 'get_meta' ) ) {
+			try { $value = $identity['object']->get_meta( $key ); } catch ( Throwable $error ) { $value = ''; }
+		}
+		if ( is_array( $value ) ) return $value;
+		$decoded = json_decode( (string) $value, true );
+		return is_array( $decoded ) ? $decoded : array();
+	}
+
+	private static function store_preferences( $identity, $preferences ) {
+		$key = ContactPanda_Custom_Fields::meta_key( 'communication_preferences' );
+		$value = wp_json_encode( $preferences );
+		if ( 'standalone' === ( $identity['source'] ?? '' ) ) return ContactPanda_Store::set_contact_meta( absint( $identity['id'] ), $key, $value );
+		if ( ! empty( $identity['object'] ) && method_exists( $identity['object'], 'update_meta' ) ) {
+			try { return false !== $identity['object']->update_meta( $key, $value ); } catch ( Throwable $error ) { return false; }
+		}
+		return false;
 	}
 
 	private static function unsubscribe_form( $contact_id, $email, $return_url, $token_args = array() ) {
@@ -337,7 +443,8 @@ final class ContactPanda_Customer_Portal {
 		$token = wp_generate_password( 48, false, false );
 		update_user_meta( $user->ID, self::EMAIL_META, array( 'email' => $email, 'hash' => hash( 'sha256', $token ), 'expires' => time() + DAY_IN_SECONDS ) );
 		$url = add_query_arg( 'contactpanda_email_confirm', rawurlencode( $token ), self::portal_url() );
-		$sent = wp_mail( $email, sprintf( __( 'Confirm your email address for %s', 'contactpanda' ), get_bloginfo( 'name' ) ), sprintf( __( "Hello %1$s,\n\nconfirm your new email address using this link:\n%2$s\n\nThe link is valid for 24 hours.", 'contactpanda' ), $user->display_name, $url ) );
+		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
+		$sent = wp_mail( $email, sprintf( __( 'Confirm your email address for %s', 'contactpanda' ), get_bloginfo( 'name' ) ), sprintf( __( "Hello %1\$s,\n\nconfirm your new email address using this link:\n%2\$s\n\nThe link is valid for 24 hours.", 'contactpanda' ), $user->display_name, $url ) );
 		return $sent ? true : new WP_Error( 'contactpanda_portal_email_send', __( 'The confirmation email could not be sent.', 'contactpanda' ) );
 	}
 
@@ -346,6 +453,8 @@ final class ContactPanda_Customer_Portal {
 	}
 
 	public static function is_portal_page() {
+		$virtual = isset( $_GET['contactpanda_portal'] ) ? sanitize_key( wp_unslash( $_GET['contactpanda_portal'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- public read-only endpoint.
+		if ( '1' === $virtual ) return true;
 		$settings = (array) get_option( ContactPanda_Registration::GENERAL_OPTION, array() );
 		if ( ! empty( $settings['portal_page_id'] ) && is_page( absint( $settings['portal_page_id'] ) ) ) return true;
 		global $post;
@@ -357,7 +466,7 @@ final class ContactPanda_Customer_Portal {
 	}
 
 	private static function current_url() {
-		$request_uri = wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' );
+		$request_uri = sanitize_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) );
 		return esc_url_raw( home_url( '/' . ltrim( $request_uri, '/' ) ) );
 	}
 
@@ -365,7 +474,7 @@ final class ContactPanda_Customer_Portal {
 		$notice_id = strtolower( wp_generate_password( 16, false, false ) );
 		$key = self::NOTICE . $notice_id;
 		set_transient( $key, array( 'success' => (bool) $success, 'message' => sanitize_text_field( $message ) ), MINUTE_IN_SECONDS );
-		$return = wp_validate_redirect( esc_url_raw( wp_unslash( $_REQUEST['return_url'] ?? self::portal_url() ) ), self::portal_url() );
+		$return = wp_validate_redirect( esc_url_raw( wp_unslash( $_REQUEST['return_url'] ?? self::portal_url() ) ), self::portal_url() ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Local navigation after action validation only; return URL is sanitized and wp_validate_redirect enforces the safe destination.
 		wp_safe_redirect( add_query_arg( 'cp_portal_notice', $notice_id, $return ) );
 		exit;
 	}

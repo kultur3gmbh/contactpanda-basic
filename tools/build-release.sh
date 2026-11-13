@@ -22,15 +22,26 @@ fi
 basic_version="$(awk -F': ' '/^ \* Version:/{print $2; exit}' contactpanda/contactpanda.php)"
 basic_requires="$(awk -F': ' '/^ \* Requires at least:/{print $2; exit}' contactpanda/contactpanda.php)"
 basic_requires_php="$(awk -F': ' '/^ \* Requires PHP:/{print $2; exit}' contactpanda/contactpanda.php)"
-basic_tested="${CONTACTPANDA_TESTED_WP:-$basic_requires}"
-if [[ -z "$basic_version" || -z "$basic_requires" || -z "$basic_requires_php" ]]; then
+basic_readme_tested="$(awk -F': ' '/^Tested up to:/{print $2; exit}' contactpanda/readme.txt)"
+basic_tested="${CONTACTPANDA_TESTED_WP:-$basic_readme_tested}"
+if [[ -z "$basic_version" || -z "$basic_requires" || -z "$basic_requires_php" || -z "$basic_tested" ]]; then
   echo "Could not read plugin versions." >&2
   exit 1
 fi
 
 mkdir -p dist
 basic_zip="dist/contactpanda-basic-${basic_version}.zip"
-git archive --format=zip --prefix=contactpanda/ HEAD:contactpanda > "$basic_zip"
+wporg_zip="dist/contactpanda-basic-${basic_version}-wordpress-org.zip"
+git archive --format=zip --prefix=contactpanda/ HEAD:contactpanda > "$wporg_zip"
+
+build_dir="$(mktemp -d)"
+trap 'rm -rf "$build_dir"' EXIT
+unzip -q "$wporg_zip" -d "$build_dir"
+cp tools/github/class-contactpanda-github-updater.php "$build_dir/contactpanda/includes/"
+(
+  cd "$build_dir"
+  zip -qr "$project_root/$basic_zip" contactpanda
+)
 unzip -tq "$basic_zip" >/dev/null
 archive_version="$(unzip -p "$basic_zip" contactpanda/contactpanda.php | awk -F': ' '/^ \* Version:/{print $2; exit}')"
 if [[ "$archive_version" != "$basic_version" ]]; then
@@ -51,5 +62,5 @@ printf '{\n  "slug": "contactpanda",\n  "version": "%s",\n  "requires": "%s",\n 
   "$basic_version" "$basic_requires" "$basic_requires_php" "$basic_tested" "$basic_sha256" \
   > dist/contactpanda-update.json
 
-echo "Created $basic_zip and dist/contactpanda-update.json"
+echo "Created $basic_zip, $wporg_zip, and dist/contactpanda-update.json"
 

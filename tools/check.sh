@@ -11,18 +11,19 @@ if command -v php >/dev/null 2>&1; then
       status=1
     fi
   done < <(find contactpanda tests -type f -name '*.php' -print0)
+  php -l tools/github/class-contactpanda-github-updater.php >/dev/null || status=1
+  php tests/request-guards.php || status=1
+  php tests/db-query-safety.php || status=1
+  php tests/external-services.php || status=1
+  php tests/import-review.php || status=1
   php tests/trash.php || status=1
+  php tests/public-updater.php || status=1
   php tests/woocommerce-import.php || status=1
 	php tests/order-summary-query.php || status=1
   php tests/groundhogg-migration-source.php || status=1
   php tests/marketing-status-icons.php || status=1
-  php tests/github-updater.php || status=1
-  php tests/github-updater.php --plus || status=1
-	php tests/licensed-updater.php || status=1
-	php tests/family-updaters.php || status=1
-	php tests/license-update-entitlements.php || status=1
-	php tests/vcard-import.php || status=1
 	php tests/events.php || status=1
+	php tests/events-current-api.php || status=1
 	php tests/events-unavailable.php || status=1
 	php tests/flow-hooks.php || status=1
 	php tests/release-050.php || status=1
@@ -40,7 +41,7 @@ if command -v php >/dev/null 2>&1; then
 elif command -v python3 >/dev/null 2>&1; then
   echo "PHP CLI is unavailable; running the offline structural fallback."
   python3 tools/check_php_structure.py contactpanda tests || status=1
-	echo "SKIPPED: PHP trash, WooCommerce import and order summary, Groundhogg migration, marketing status icon, updater, vCard, event-adapter, release contract, and administrator UI behavior tests require PHP CLI."
+	echo "SKIPPED: PHP trash, WooCommerce import and order summary, Groundhogg migration, marketing status icon, event-adapter, release contract, and administrator UI behavior tests require PHP CLI."
 else
   echo "PHP or Python 3 is required for source validation." >&2
   status=1
@@ -88,16 +89,63 @@ if [[ -e contactpanda/includes/class-contactpanda-woocommerce.php || -e contactp
   status=1
 fi
 
+if grep -Rq "api.github.com/repos\|pre_set_site_transient_update_plugins\|ContactPanda_License\|ContactPanda_Licensed_Updater" contactpanda --include='*.php'; then
+	echo "The WordPress.org Basic package must not contain an external updater or paid licensing client." >&2
+	status=1
+fi
+
+if [[ -e contactpanda/assets/contactpanda-system-emails.js ]] || grep -Rq "contactpanda_save_system_email_template\|contactpanda_test_system_email_template" contactpanda --include='*.php'; then
+	echo "The paid visual system-email composer belongs to ContactPanda Plus, not Basic." >&2
+	status=1
+fi
+
 for portal_contract in \
 	"class-contactpanda-identity.php" \
 	"class-contactpanda-customer-portal.php" \
 	"contactpanda_customer_portal_tabs" \
-	"contactpanda_portal_profile_saved"; do
+	"contactpanda_portal_profile_saved" \
+	"contactpanda_portal', '1'" \
+	"render_virtual_portal"; do
 	if ! grep -Rqs "$portal_contract" contactpanda; then
 		echo "Missing customer portal contract: $portal_contract" >&2
 		status=1
 	fi
 done
+
+for registration_contract in \
+	"add_shortcode( 'contactpanda_registration'" \
+	"public static function public_registration_url" \
+	"contactpanda/customer_registration_created" \
+	"contactpanda/business_registration_created"; do
+	if ! grep -Fqs "$registration_contract" contactpanda/includes/class-contactpanda-registration.php; then
+		echo "Missing Basic registration contract: $registration_contract" >&2
+		status=1
+	fi
+done
+
+if ! grep -A2 -F "function customer_registration_enabled()" contactpanda/includes/class-contactpanda-registration.php | grep -Fq "return true;"; then
+	echo "Customer and business registration must remain available in ContactPanda Basic." >&2
+	status=1
+fi
+
+for vat_contract in \
+	"function contactpanda_get_person_vat_id" \
+	"function contactpanda_get_company_vat_id" \
+	"function contactpanda_get_user_vat_id" \
+	"contactpanda_person_vat_id" \
+	"contactpanda_company_vat_id" \
+	"contactpanda_vat_id_updated" \
+	"migrate_legacy_vat_ids"; do
+	if ! grep -Rqs "$vat_contract" contactpanda; then
+		echo "Missing canonical VAT ownership contract: $vat_contract" >&2
+		status=1
+	fi
+done
+
+if grep -A80 -F "public static function sync_registration" contactpanda/includes/class-contactpanda-store.php | grep -Fq "create_company( array( 'name' => ''"; then
+	echo "A VAT ID must never create an empty company record." >&2
+	status=1
+fi
 
 if [[ "$status" -ne 0 ]]; then
   exit "$status"

@@ -10,7 +10,7 @@ The focused WooCommerce import and customer-filtered order-summary tests, Ground
 
 `release-060.php` protects the durable Basic newsletter entitlement, shared newsletter schema, module bootstrap, and update-period separation introduced in 0.6.0.
 
-It also runs `tests/github-updater.php` for the public Basic and private Plus release channels, plus `tests/vcard-import.php` for multi-contact Apple/standard vCard parsing, encoded names, addresses, and stable source identifiers. `wordpress-update-integration.php` is deliberately blocked unless it receives a disposable local WordPress installation containing a `.contactpanda-isolated-test` marker; see `docs/isolated-update-test.md`.
+The vCard parser behavior is tested in the ContactPanda Plus repository, which owns the complete vCard import and export implementation. `wordpress-update-integration.php` is deliberately blocked unless it receives a disposable local WordPress installation containing a `.contactpanda-isolated-test` marker; see `docs/isolated-update-test.md`.
 
 Without PHP, the script runs its structural fallback and explicitly reports the skipped behavior tests. Structural validation is not PHP execution or a WordPress integration test. The next test milestone remains a disposable WordPress environment covering installation, standalone and Groundhogg data-source modes, and optional dependencies both absent and active.
 

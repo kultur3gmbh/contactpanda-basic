@@ -35,6 +35,20 @@ final class ContactPanda_Events {
 		);
 	}
 
+	/**
+	 * Backward-compatible labelled source list used by earlier Plus releases.
+	 *
+	 * Keep the compact boolean map in sources() for internal feature detection,
+	 * while extensions may continue to render the established labels.
+	 */
+	public static function available_sources() {
+		$labels = array(
+			'tec'    => 'The Events Calendar',
+			'amelia' => 'Amelia',
+		);
+		return array_intersect_key( $labels, self::sources() );
+	}
+
 	public static function source() {
 		$sources = array_keys( self::sources() );
 		if ( 1 === count( $sources ) ) {
@@ -49,8 +63,8 @@ final class ContactPanda_Events {
 	}
 
 	public static function tec_available() {
-		$calendar = class_exists( 'Tribe__Events__Main' ) || defined( 'TRIBE_EVENTS_FILE' );
-		$tickets  = function_exists( 'tribe_attendees' ) && ( class_exists( 'Tribe__Tickets__Main' ) || defined( 'EVENT_TICKETS_VERSION' ) || class_exists( 'TEC\\Tickets\\Main' ) );
+		$calendar = class_exists( 'Tribe__Events__Main' ) || defined( 'TRIBE_EVENTS_FILE' ) || ( function_exists( 'post_type_exists' ) && post_type_exists( 'tribe_events' ) );
+		$tickets  = class_exists( 'Tribe__Tickets__Main' ) || defined( 'EVENT_TICKETS_VERSION' ) || defined( 'TRIBE_TICKETS_VERSION' ) || defined( 'TRIBE_TICKETS_FILE' ) || class_exists( 'TEC\\Tickets\\Main' );
 		return $calendar && $tickets;
 	}
 
@@ -169,7 +183,7 @@ final class ContactPanda_Events {
 	}
 
 	public static function preview_event() {
-		self::guard_ajax();
+		check_ajax_referer( self::ajax_nonce_action(), 'nonce' );
 		$key = isset( $_POST['event_id'] ) ? sanitize_text_field( wp_unslash( $_POST['event_id'] ) ) : '';
 		if ( '' === $key || ! self::available() ) {
 			wp_send_json_error( array( 'message' => __( 'The event was not found.', 'contactpanda' ) ), 404 );
@@ -183,7 +197,7 @@ final class ContactPanda_Events {
 	private static function tec_contact_event_map( $map, $contacts ) {
 		$identity = self::contact_identity_maps( $contacts );
 		$attendees = self::tec_attendees( array_keys( $identity['users'] ), array_keys( $identity['emails'] ) );
-		$repository = tribe_attendees();
+		$repository = self::tec_repository();
 		foreach ( $attendees as $attendee ) {
 			$attendee_id = self::tec_attendee_id( $attendee );
 			$event_id = self::tec_event_id( $attendee_id, $repository );
@@ -207,7 +221,7 @@ final class ContactPanda_Events {
 	private static function tec_contact_events( $contact ) {
 		$identity = self::contact_identity_maps( array( $contact ) );
 		$attendees = self::tec_attendees( array_keys( $identity['users'] ), array_keys( $identity['emails'] ) );
-		$repository = tribe_attendees();
+		$repository = self::tec_repository();
 		$found = array();
 		foreach ( $attendees as $attendee ) {
 			$attendee_id = self::tec_attendee_id( $attendee );
@@ -294,15 +308,15 @@ final class ContactPanda_Events {
 		);
 		$rows = array();
 		if ( self::table_exists( 'amelia_appointments' ) && self::table_exists( 'amelia_services' ) ) {
-			$sql = "SELECT cb.id AS booking_id, cb.status AS booking_status, u.email, a.id AS source_id, a.bookingStart AS starts_at, a.bookingEnd AS ends_at, s.name AS title, l.name AS location FROM `{$tables['bookings']}` cb INNER JOIN `{$tables['users']}` u ON u.id = cb.customerId INNER JOIN `{$tables['appointments']}` a ON a.id = cb.appointmentId LEFT JOIN `{$tables['services']}` s ON s.id = a.serviceId LEFT JOIN `{$tables['locations']}` l ON l.id = a.locationId WHERE LOWER(u.email) IN ({$placeholders})";
-			$appointment_rows = $wpdb->get_results( $wpdb->prepare( $sql, $emails ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery -- dynamic placeholders and read-only optional integration.
+			$sql = "SELECT cb.id AS booking_id, cb.status AS booking_status, u.email, a.id AS source_id, a.bookingStart AS starts_at, a.bookingEnd AS ends_at, s.name AS title, l.name AS location FROM %i cb INNER JOIN %i u ON u.id = cb.customerId INNER JOIN %i a ON a.id = cb.appointmentId LEFT JOIN %i s ON s.id = a.serviceId LEFT JOIN %i l ON l.id = a.locationId WHERE LOWER(u.email) IN ({$placeholders})";
+			$appointment_rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( array( $tables['bookings'], $tables['users'], $tables['appointments'], $tables['services'], $tables['locations'] ), $emails ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared -- Fresh source-plugin data is required for discovery/import; external writers cannot invalidate a ContactPanda persistent cache.
 			foreach ( (array) $appointment_rows as $row ) {
 				$rows[] = self::amelia_normalize_row( $row, 'appointment' );
 			}
 		}
 		if ( self::table_exists( 'amelia_events' ) && self::table_exists( 'amelia_events_periods' ) && self::table_exists( 'amelia_customer_bookings_to_events_periods' ) ) {
-			$sql = "SELECT cb.id AS booking_id, cb.status AS booking_status, u.email, e.id AS source_id, MIN(ep.periodStart) AS starts_at, MAX(ep.periodEnd) AS ends_at, e.name AS title, COALESCE(NULLIF(e.customLocation, ''), l.name) AS location FROM `{$tables['bookings']}` cb INNER JOIN `{$tables['users']}` u ON u.id = cb.customerId INNER JOIN `{$tables['links']}` rel ON rel.customerBookingId = cb.id INNER JOIN `{$tables['periods']}` ep ON ep.id = rel.eventPeriodId INNER JOIN `{$tables['events']}` e ON e.id = ep.eventId LEFT JOIN `{$tables['locations']}` l ON l.id = e.locationId WHERE LOWER(u.email) IN ({$placeholders}) GROUP BY cb.id, cb.status, u.email, e.id, e.name, e.customLocation, l.name";
-			$event_rows = $wpdb->get_results( $wpdb->prepare( $sql, $emails ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery -- dynamic placeholders and read-only optional integration.
+			$sql = "SELECT cb.id AS booking_id, cb.status AS booking_status, u.email, e.id AS source_id, MIN(ep.periodStart) AS starts_at, MAX(ep.periodEnd) AS ends_at, e.name AS title, COALESCE(NULLIF(e.customLocation, ''), l.name) AS location FROM %i cb INNER JOIN %i u ON u.id = cb.customerId INNER JOIN %i rel ON rel.customerBookingId = cb.id INNER JOIN %i ep ON ep.id = rel.eventPeriodId INNER JOIN %i e ON e.id = ep.eventId LEFT JOIN %i l ON l.id = e.locationId WHERE LOWER(u.email) IN ({$placeholders}) GROUP BY cb.id, cb.status, u.email, e.id, e.name, e.customLocation, l.name";
+			$event_rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( array( $tables['bookings'], $tables['users'], $tables['links'], $tables['periods'], $tables['events'], $tables['locations'] ), $emails ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared -- Fresh source-plugin data is required for discovery/import; external writers cannot invalidate a ContactPanda persistent cache.
 			foreach ( (array) $event_rows as $row ) {
 				$rows[] = self::amelia_normalize_row( $row, 'event' );
 			}
@@ -364,12 +378,12 @@ final class ContactPanda_Events {
 			$appointments = $wpdb->prefix . 'amelia_appointments';
 			$services = $wpdb->prefix . 'amelia_services';
 			$locations = $wpdb->prefix . 'amelia_locations';
-			$row = $wpdb->get_row( $wpdb->prepare( "SELECT a.id AS source_id, a.status AS booking_status, '' AS email, a.bookingStart AS starts_at, a.bookingEnd AS ends_at, s.name AS title, l.name AS location FROM `{$appointments}` a LEFT JOIN `{$services}` s ON s.id = a.serviceId LEFT JOIN `{$locations}` l ON l.id = a.locationId WHERE a.id = %d", $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT a.id AS source_id, a.status AS booking_status, '' AS email, a.bookingStart AS starts_at, a.bookingEnd AS ends_at, s.name AS title, l.name AS location FROM %i a LEFT JOIN %i s ON s.id = a.serviceId LEFT JOIN %i l ON l.id = a.locationId WHERE a.id = %d", $appointments, $services, $locations, $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.DirectQuery -- Fresh source-plugin data is required for discovery/import; external writers cannot invalidate a ContactPanda persistent cache.
 		} else {
 			$events = $wpdb->prefix . 'amelia_events';
 			$periods = $wpdb->prefix . 'amelia_events_periods';
 			$locations = $wpdb->prefix . 'amelia_locations';
-			$row = $wpdb->get_row( $wpdb->prepare( "SELECT e.id AS source_id, e.status AS booking_status, '' AS email, MIN(ep.periodStart) AS starts_at, MAX(ep.periodEnd) AS ends_at, e.name AS title, COALESCE(NULLIF(e.customLocation, ''), l.name) AS location FROM `{$events}` e INNER JOIN `{$periods}` ep ON ep.eventId = e.id LEFT JOIN `{$locations}` l ON l.id = e.locationId WHERE e.id = %d GROUP BY e.id, e.status, e.name, e.customLocation, l.name", $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT e.id AS source_id, e.status AS booking_status, '' AS email, MIN(ep.periodStart) AS starts_at, MAX(ep.periodEnd) AS ends_at, e.name AS title, COALESCE(NULLIF(e.customLocation, ''), l.name) AS location FROM %i e INNER JOIN %i ep ON ep.eventId = e.id LEFT JOIN %i l ON l.id = e.locationId WHERE e.id = %d GROUP BY e.id, e.status, e.name, e.customLocation, l.name", $events, $periods, $locations, $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.DirectQuery -- Fresh source-plugin data is required for discovery/import; external writers cannot invalidate a ContactPanda persistent cache.
 		}
 		$normalized = $row ? self::amelia_normalize_row( $row, $type ) : false;
 		return $normalized ? array( $normalized ) : array();
@@ -405,6 +419,9 @@ final class ContactPanda_Events {
 			$queries[] = array( 'holder_email', $chunk );
 		}
 		foreach ( $queries as $query ) {
+			if ( ! function_exists( 'tribe_attendees' ) ) {
+				break;
+			}
 			try {
 				$repository = tribe_attendees();
 				$repository->per_page( 1000 );
@@ -417,16 +434,70 @@ final class ContactPanda_Events {
 				// Optional integrations must never take down ContactPanda.
 			}
 		}
-		$clauses = array( 'relation' => 'OR' );
-		if ( $user_ids ) $clauses[] = array( 'key' => '_tribe_tickets_attendee_user_id', 'value' => array_map( 'absint', $user_ids ), 'compare' => 'IN' );
-		foreach ( array( '_tribe_rsvp_email', '_tribe_tpp_email', '_tribe_tickets_email', '_tribe_wooticket_email', '_tec_tickets_commerce_attendee_email' ) as $key ) {
-			if ( $emails ) $clauses[] = array( 'key' => $key, 'value' => array_map( 'sanitize_email', $emails ), 'compare' => 'IN' );
-		}
-		if ( count( $clauses ) > 1 ) {
-			$ids = get_posts( array( 'post_type' => 'any', 'post_status' => 'any', 'fields' => 'ids', 'posts_per_page' => 2000, 'no_found_rows' => true, 'suppress_filters' => true, 'update_post_meta_cache' => false, 'update_post_term_cache' => false, 'meta_query' => $clauses ) ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- bounded compatibility fallback.
-			foreach ( (array) $ids as $id ) $attendees[ absint( $id ) ] = absint( $id );
+		// Event Tickets stores attendee records in private post types. A WP_Query
+		// with post_type=any excludes those post types on several current plugin
+		// versions, so use their stable attendee metadata as the compatibility
+		// index instead. This remains read-only and works with every table prefix.
+		foreach ( self::tec_attendee_meta_ids( $user_ids, $emails ) as $id ) {
+			$attendees[ $id ] = $id;
 		}
 		return array_values( $attendees );
+	}
+
+	/**
+	 * Find attendee post IDs without relying on public post-type visibility.
+	 */
+	private static function tec_attendee_meta_ids( $user_ids, $emails ) {
+		global $wpdb;
+		if ( ! isset( $wpdb->postmeta ) || ! method_exists( $wpdb, 'prepare' ) || ! method_exists( $wpdb, 'get_col' ) ) {
+			return array();
+		}
+
+		$conditions = array();
+		$values     = array();
+		$user_ids   = array_values( array_unique( array_filter( array_map( 'absint', (array) $user_ids ) ) ) );
+		$emails     = array_values( array_unique( array_filter( array_map( 'sanitize_email', (array) $emails ) ) ) );
+		if ( $user_ids ) {
+			$conditions[] = '(meta_key = %s AND meta_value IN (' . implode( ', ', array_fill( 0, count( $user_ids ), '%s' ) ) . '))';
+			$values[]     = '_tribe_tickets_attendee_user_id';
+			$values       = array_merge( $values, array_map( 'strval', $user_ids ) );
+		}
+		foreach ( array( '_tribe_rsvp_email', '_tribe_tpp_email', '_tribe_tickets_email', '_tribe_wooticket_email', '_tec_tickets_commerce_attendee_email' ) as $key ) {
+			if ( ! $emails ) {
+				break;
+			}
+			$conditions[] = '(meta_key = %s AND meta_value IN (' . implode( ', ', array_fill( 0, count( $emails ), '%s' ) ) . '))';
+			$values[]     = $key;
+			$values       = array_merge( $values, $emails );
+		}
+		if ( ! $conditions ) {
+			return array();
+		}
+
+		$sql = "SELECT DISTINCT post_id FROM %i WHERE " . implode( ' OR ', $conditions ) . ' LIMIT 2000'; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- core table property and generated placeholders only.
+		$ids = $wpdb->get_col( $wpdb->prepare( $sql, array_merge( array( $wpdb->postmeta ), $values ) ) ); // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Only fixed SQL clauses/generated placeholder lists are concatenated; the complete query is passed to wpdb::prepare with identifier and scalar arguments in SQL order. No request value is concatenated.
+		return array_values( array_unique( array_filter( array_map( 'absint', (array) $ids ) ) ) );
+	}
+
+	/**
+	 * Return the optional Event Tickets attendee repository when available.
+	 *
+	 * Recent Event Tickets releases do not expose tribe_attendees() during
+	 * every admin request. The metadata fallback below remains fully usable in
+	 * that case, so callers receive a harmless empty object instead of failing.
+	 */
+	private static function tec_repository() {
+		if ( function_exists( 'tribe_attendees' ) ) {
+			try {
+				$repository = tribe_attendees();
+				if ( is_object( $repository ) ) {
+					return $repository;
+				}
+			} catch ( Throwable $error ) {
+				// Continue with the read-only post-meta compatibility adapter.
+			}
+		}
+		return new stdClass();
 	}
 
 	private static function contact_identity_maps( $contacts ) {
@@ -438,6 +509,17 @@ final class ContactPanda_Events {
 			$user_id = absint( self::value( $contact, array( 'user_id', 'get_user_id' ) ) );
 			if ( $user_id ) $users[ $user_id ][] = $id;
 			$contact_emails = array( self::value( $contact, array( 'email', 'get_email' ) ) );
+			$meta = is_array( $contact ) && isset( $contact['meta'] ) && is_array( $contact['meta'] ) ? $contact['meta'] : array();
+			if ( ! empty( $meta['merged_email_aliases'] ) && is_array( $meta['merged_email_aliases'] ) ) {
+				$contact_emails = array_merge( $contact_emails, $meta['merged_email_aliases'] );
+			}
+			if ( ! empty( $meta['contactpanda_contact_channels'] ) && is_array( $meta['contactpanda_contact_channels'] ) ) {
+				foreach ( $meta['contactpanda_contact_channels'] as $channel ) {
+					if ( is_array( $channel ) && 'email' === ( $channel['type'] ?? '' ) ) {
+						$contact_emails[] = $channel['value'] ?? '';
+					}
+				}
+			}
 			if ( $user_id ) {
 				$user = get_user_by( 'id', $user_id );
 				if ( $user ) $contact_emails = array_merge( $contact_emails, array( $user->user_email, get_user_meta( $user->ID, 'billing_email', true ) ) );
@@ -540,9 +622,9 @@ final class ContactPanda_Events {
 		return $default;
 	}
 
-	private static function guard_ajax() {
+	private static function ajax_nonce_action() {
 		$capability = class_exists( 'WooCommerce' ) ? 'manage_woocommerce' : 'manage_options';
 		if ( ! current_user_can( $capability ) ) wp_send_json_error( array( 'message' => __( 'You do not have permission.', 'contactpanda' ) ), 403 );
-		check_ajax_referer( 'contactpanda_update_company', 'nonce' );
+		return 'contactpanda_update_company';
 	}
 }

@@ -39,17 +39,17 @@ namespace {
 	require __DIR__ . '/../contactpanda/includes/class-contactpanda-store.php';
 
 	$source = new \ReflectionMethod( 'ContactPanda_Store', 'groundhogg_contacts_for_migration' );
-	$source->setAccessible( true );
+	if ( PHP_VERSION_ID < 80100 ) $source->setAccessible( true );
 	$contacts = $source->invoke( null );
 	verify( 3 === count( $contacts ), 'Every Groundhogg table contact is returned' );
 	verify( array( 3, 7, 11 ) === array_map( static function ( $contact ) { return $contact->get_id(); }, $contacts ), 'Stable Groundhogg IDs are preserved' );
 	verify( 0 === $GLOBALS['ability_calls'], 'Direct contact objects avoid the version-dependent ability when the source table exists' );
 
 	$meta = new \ReflectionMethod( 'ContactPanda_Store', 'meta_value' );
-	$meta->setAccessible( true );
+	if ( PHP_VERSION_ID < 80100 ) $meta->setAccessible( true );
 	verify( '+43 1 234567' === $meta->invoke( null, $contacts[0], 'primary_phone' ), 'Groundhogg object metadata is readable' );
 	$optin = new \ReflectionMethod( 'ContactPanda_Store', 'optin_value' );
-	$optin->setAccessible( true );
+	if ( PHP_VERSION_ID < 80100 ) $optin->setAccessible( true );
 	verify( 2 === $optin->invoke( null, $contacts[0] ), 'Groundhogg object opt-in status is preserved' );
 
 	$registration_source = file_get_contents( __DIR__ . '/../contactpanda/includes/class-contactpanda-registration.php' );
@@ -63,7 +63,7 @@ namespace {
 		verify( false !== strpos( $store_source, $contract ), 'Groundhogg custom-field migration contract is present: ' . $contract );
 	}
 	$custom_fields_source = file_get_contents( dirname( __DIR__ ) . '/contactpanda/includes/class-contactpanda-custom-fields.php' );
-	foreach ( array( 'ensure_definition', 'integration_definitions', "'imported-'", 'Existing definitions are never overwritten', 'does not discard source fields' ) as $contract ) {
+	foreach ( array( 'ensure_definition', 'integration_definitions', "'imported-'", 'Existing definitions are never overwritten', 'not discard source fields' ) as $contract ) {
 		verify( false !== strpos( $custom_fields_source, $contract ), 'Imported source fields retain stable ContactPanda custom-field definitions: ' . $contract );
 	}
 
