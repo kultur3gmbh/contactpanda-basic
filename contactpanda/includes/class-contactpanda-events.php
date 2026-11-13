@@ -183,7 +183,7 @@ final class ContactPanda_Events {
 	}
 
 	public static function preview_event() {
-		self::guard_ajax();
+		check_ajax_referer( self::ajax_nonce_action(), 'nonce' );
 		$key = isset( $_POST['event_id'] ) ? sanitize_text_field( wp_unslash( $_POST['event_id'] ) ) : '';
 		if ( '' === $key || ! self::available() ) {
 			wp_send_json_error( array( 'message' => __( 'The event was not found.', 'contactpanda' ) ), 404 );
@@ -308,15 +308,15 @@ final class ContactPanda_Events {
 		);
 		$rows = array();
 		if ( self::table_exists( 'amelia_appointments' ) && self::table_exists( 'amelia_services' ) ) {
-			$sql = "SELECT cb.id AS booking_id, cb.status AS booking_status, u.email, a.id AS source_id, a.bookingStart AS starts_at, a.bookingEnd AS ends_at, s.name AS title, l.name AS location FROM `{$tables['bookings']}` cb INNER JOIN `{$tables['users']}` u ON u.id = cb.customerId INNER JOIN `{$tables['appointments']}` a ON a.id = cb.appointmentId LEFT JOIN `{$tables['services']}` s ON s.id = a.serviceId LEFT JOIN `{$tables['locations']}` l ON l.id = a.locationId WHERE LOWER(u.email) IN ({$placeholders})";
-			$appointment_rows = $wpdb->get_results( $wpdb->prepare( $sql, $emails ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery -- dynamic placeholders and read-only optional integration.
+			$sql = "SELECT cb.id AS booking_id, cb.status AS booking_status, u.email, a.id AS source_id, a.bookingStart AS starts_at, a.bookingEnd AS ends_at, s.name AS title, l.name AS location FROM %i cb INNER JOIN %i u ON u.id = cb.customerId INNER JOIN %i a ON a.id = cb.appointmentId LEFT JOIN %i s ON s.id = a.serviceId LEFT JOIN %i l ON l.id = a.locationId WHERE LOWER(u.email) IN ({$placeholders})";
+			$appointment_rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( array( $tables['bookings'], $tables['users'], $tables['appointments'], $tables['services'], $tables['locations'] ), $emails ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared -- Fresh source-plugin data is required for discovery/import; external writers cannot invalidate a ContactPanda persistent cache.
 			foreach ( (array) $appointment_rows as $row ) {
 				$rows[] = self::amelia_normalize_row( $row, 'appointment' );
 			}
 		}
 		if ( self::table_exists( 'amelia_events' ) && self::table_exists( 'amelia_events_periods' ) && self::table_exists( 'amelia_customer_bookings_to_events_periods' ) ) {
-			$sql = "SELECT cb.id AS booking_id, cb.status AS booking_status, u.email, e.id AS source_id, MIN(ep.periodStart) AS starts_at, MAX(ep.periodEnd) AS ends_at, e.name AS title, COALESCE(NULLIF(e.customLocation, ''), l.name) AS location FROM `{$tables['bookings']}` cb INNER JOIN `{$tables['users']}` u ON u.id = cb.customerId INNER JOIN `{$tables['links']}` rel ON rel.customerBookingId = cb.id INNER JOIN `{$tables['periods']}` ep ON ep.id = rel.eventPeriodId INNER JOIN `{$tables['events']}` e ON e.id = ep.eventId LEFT JOIN `{$tables['locations']}` l ON l.id = e.locationId WHERE LOWER(u.email) IN ({$placeholders}) GROUP BY cb.id, cb.status, u.email, e.id, e.name, e.customLocation, l.name";
-			$event_rows = $wpdb->get_results( $wpdb->prepare( $sql, $emails ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery -- dynamic placeholders and read-only optional integration.
+			$sql = "SELECT cb.id AS booking_id, cb.status AS booking_status, u.email, e.id AS source_id, MIN(ep.periodStart) AS starts_at, MAX(ep.periodEnd) AS ends_at, e.name AS title, COALESCE(NULLIF(e.customLocation, ''), l.name) AS location FROM %i cb INNER JOIN %i u ON u.id = cb.customerId INNER JOIN %i rel ON rel.customerBookingId = cb.id INNER JOIN %i ep ON ep.id = rel.eventPeriodId INNER JOIN %i e ON e.id = ep.eventId LEFT JOIN %i l ON l.id = e.locationId WHERE LOWER(u.email) IN ({$placeholders}) GROUP BY cb.id, cb.status, u.email, e.id, e.name, e.customLocation, l.name";
+			$event_rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( array( $tables['bookings'], $tables['users'], $tables['links'], $tables['periods'], $tables['events'], $tables['locations'] ), $emails ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.PreparedSQL.NotPrepared -- Fresh source-plugin data is required for discovery/import; external writers cannot invalidate a ContactPanda persistent cache.
 			foreach ( (array) $event_rows as $row ) {
 				$rows[] = self::amelia_normalize_row( $row, 'event' );
 			}
@@ -378,12 +378,12 @@ final class ContactPanda_Events {
 			$appointments = $wpdb->prefix . 'amelia_appointments';
 			$services = $wpdb->prefix . 'amelia_services';
 			$locations = $wpdb->prefix . 'amelia_locations';
-			$row = $wpdb->get_row( $wpdb->prepare( "SELECT a.id AS source_id, a.status AS booking_status, '' AS email, a.bookingStart AS starts_at, a.bookingEnd AS ends_at, s.name AS title, l.name AS location FROM `{$appointments}` a LEFT JOIN `{$services}` s ON s.id = a.serviceId LEFT JOIN `{$locations}` l ON l.id = a.locationId WHERE a.id = %d", $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT a.id AS source_id, a.status AS booking_status, '' AS email, a.bookingStart AS starts_at, a.bookingEnd AS ends_at, s.name AS title, l.name AS location FROM %i a LEFT JOIN %i s ON s.id = a.serviceId LEFT JOIN %i l ON l.id = a.locationId WHERE a.id = %d", $appointments, $services, $locations, $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.DirectQuery -- Fresh source-plugin data is required for discovery/import; external writers cannot invalidate a ContactPanda persistent cache.
 		} else {
 			$events = $wpdb->prefix . 'amelia_events';
 			$periods = $wpdb->prefix . 'amelia_events_periods';
 			$locations = $wpdb->prefix . 'amelia_locations';
-			$row = $wpdb->get_row( $wpdb->prepare( "SELECT e.id AS source_id, e.status AS booking_status, '' AS email, MIN(ep.periodStart) AS starts_at, MAX(ep.periodEnd) AS ends_at, e.name AS title, COALESCE(NULLIF(e.customLocation, ''), l.name) AS location FROM `{$events}` e INNER JOIN `{$periods}` ep ON ep.eventId = e.id LEFT JOIN `{$locations}` l ON l.id = e.locationId WHERE e.id = %d GROUP BY e.id, e.status, e.name, e.customLocation, l.name", $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery
+			$row = $wpdb->get_row( $wpdb->prepare( "SELECT e.id AS source_id, e.status AS booking_status, '' AS email, MIN(ep.periodStart) AS starts_at, MAX(ep.periodEnd) AS ends_at, e.name AS title, COALESCE(NULLIF(e.customLocation, ''), l.name) AS location FROM %i e INNER JOIN %i ep ON ep.eventId = e.id LEFT JOIN %i l ON l.id = e.locationId WHERE e.id = %d GROUP BY e.id, e.status, e.name, e.customLocation, l.name", $events, $periods, $locations, $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.DirectQuery -- Fresh source-plugin data is required for discovery/import; external writers cannot invalidate a ContactPanda persistent cache.
 		}
 		$normalized = $row ? self::amelia_normalize_row( $row, $type ) : false;
 		return $normalized ? array( $normalized ) : array();
@@ -474,8 +474,8 @@ final class ContactPanda_Events {
 			return array();
 		}
 
-		$sql = "SELECT DISTINCT post_id FROM {$wpdb->postmeta} WHERE " . implode( ' OR ', $conditions ) . ' LIMIT 2000'; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- core table property and generated placeholders only.
-		$ids = $wpdb->get_col( $wpdb->prepare( $sql, $values ) ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$sql = "SELECT DISTINCT post_id FROM %i WHERE " . implode( ' OR ', $conditions ) . ' LIMIT 2000'; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- core table property and generated placeholders only.
+		$ids = $wpdb->get_col( $wpdb->prepare( $sql, array_merge( array( $wpdb->postmeta ), $values ) ) ); // phpcs:ignore PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Only fixed SQL clauses/generated placeholder lists are concatenated; the complete query is passed to wpdb::prepare with identifier and scalar arguments in SQL order. No request value is concatenated.
 		return array_values( array_unique( array_filter( array_map( 'absint', (array) $ids ) ) ) );
 	}
 
@@ -622,9 +622,9 @@ final class ContactPanda_Events {
 		return $default;
 	}
 
-	private static function guard_ajax() {
+	private static function ajax_nonce_action() {
 		$capability = class_exists( 'WooCommerce' ) ? 'manage_woocommerce' : 'manage_options';
 		if ( ! current_user_can( $capability ) ) wp_send_json_error( array( 'message' => __( 'You do not have permission.', 'contactpanda' ) ), 403 );
-		check_ajax_referer( 'contactpanda_update_company', 'nonce' );
+		return 'contactpanda_update_company';
 	}
 }

@@ -1,5 +1,10 @@
 (function () {
 	document.addEventListener('change', function (event) {
+		if (event.target.matches('.contactpanda-custom-field-form select[name="field_type"]')) {
+			var options = event.target.closest('form').querySelector('.contactpanda-custom-field-options');
+			if (options) options.hidden = event.target.value !== 'select';
+			return;
+		}
 		if (!event.target.matches('#screen-options-wrap input.hide-column-tog') || !window.CONTACTPANDA_CONFIG || !CONTACTPANDA_CONFIG.screenId) return;
 		var hidden = [];
 		document.querySelectorAll('#screen-options-wrap input.hide-column-tog').forEach(function (box) { if (!box.checked) hidden.push(box.value); });
@@ -7,6 +12,15 @@
 		data.set('action', 'contactpanda_save_hidden_columns'); data.set('nonce', CONTACTPANDA_CONFIG.columnsNonce); data.set('screen', CONTACTPANDA_CONFIG.screenId);
 		hidden.forEach(function (column) { data.append('hidden[]', column); });
 		fetch(CONTACTPANDA_CONFIG.ajaxUrl, {method: 'POST', credentials: 'same-origin', headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}, body: data.toString()});
+	});
+
+	document.addEventListener('click', function (event) {
+		var copy = event.target.closest('.contactpanda-copy-shortcode');
+		if (!copy) return;
+		var value = copy.getAttribute('data-copy') || '';
+		if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(value);
+		copy.classList.add('is-copied');
+		window.setTimeout(function () { copy.classList.remove('is-copied'); }, 1500);
 	});
 	'use strict';
 	var i18n = (window.CONTACTPANDA_CONFIG && CONTACTPANDA_CONFIG.i18n) || {};
@@ -89,9 +103,14 @@
 			var bulkAction = document.getElementById('contactpanda-bulk-action').value;
 			if (bulkAction === 'newsletter') return openNewsletterSelection();
 			if (bulkAction === 'trash') return bulkTrashPeople();
+			if (bulkAction === 'tags_add' || bulkAction === 'tags_remove') return openBulkTags(bulkAction);
 			return openBulkMarketing();
 		}
 		if (button.classList.contains('contactpanda-close-bulk')) return closeBulkMarketing();
+		if (button.classList.contains('contactpanda-close-bulk-tags')) return closeBulkTags();
+		if (button.classList.contains('contactpanda-save-bulk-tags')) return saveBulkTags();
+		if (button.classList.contains('contactpanda-bulk-tag-suggestion')) return selectBulkTag(button);
+		if (button.classList.contains('contactpanda-remove-bulk-tag')) return removeBulkTag(button);
 		if (button.classList.contains('contactpanda-close-newsletter-selection')) return closeNewsletterSelection();
 		if (button.classList.contains('contactpanda-select-all-matching')) return selectAllMatchingPeople();
 		if (button.classList.contains('contactpanda-save-bulk')) return saveBulkMarketing();
@@ -355,7 +374,8 @@
 	document.addEventListener('submit', function (event) {
 		if (!event.target.classList.contains('contactpanda-output-form')) return;
 		var form = event.target;
-		form.querySelector('input[name="action"]').value = event.submitter && event.submitter.classList.contains('contactpanda-export-vcard') ? 'contactpanda_export_contacts_vcard' : 'contactpanda_export_contacts';
+		if (event.submitter && event.submitter.classList.contains('contactpanda-export-vcard')) form.querySelector('input[name="action"]').value = 'contactpanda_export_contacts_vcard';
+		else if (event.submitter && event.submitter.value === 'xlsx') form.querySelector('input[name="action"]').value = 'contactpanda_export_contacts';
 		var selectedScope = form.querySelector('input[name="scope"]:checked');
 		var selected = selectedContactIds();
 		if (selectedScope && selectedScope.value === 'selected' && !selected.length) {
@@ -583,7 +603,7 @@
 		allMatchingPeopleSelected = true;
 		var label = toolbar.querySelector('.contactpanda-bulk-selection');
 		var link = toolbar.querySelector('.contactpanda-select-all-matching');
-		if (label) label.textContent = format(tr('peopleSelected', '%d people selected'), Number(toolbar.dataset.total || 0));
+		if (label) label.textContent = format(tr('peopleSelected', '%d selected people'), Number(toolbar.dataset.total || 0));
 		if (link) link.hidden = true;
 		updateBulkSelection();
 	}
@@ -603,20 +623,20 @@
 		}
 		if (label && !allMatchingPeopleSelected) label.textContent = selected.length === 1 ? tr('onePersonSelected', '1 person selected') : format(tr('peopleSelected', '%d people selected'), selected.length);
 		if (allMatching) allMatching.hidden = allMatchingPeopleSelected || !selectAll || !selectAll.checked || !toolbar || Number(toolbar.dataset.total || 0) <= checkboxes.length;
-		if (button) button.disabled = !(selected.length || allMatchingPeopleSelected) || !action || ['marketable', 'newsletter', 'trash'].indexOf(action.value) === -1 || (['marketable', 'trash'].indexOf(action.value) !== -1 && allMatchingPeopleSelected);
+		if (button) button.disabled = !(selected.length || allMatchingPeopleSelected) || !action || ['marketable', 'newsletter', 'trash', 'tags_add', 'tags_remove'].indexOf(action.value) === -1 || (['marketable', 'trash', 'tags_add', 'tags_remove'].indexOf(action.value) !== -1 && allMatchingPeopleSelected);
 		var outputModal = document.querySelector('.contactpanda-output-modal');
 		if (outputModal) {
 			var selectedOption = outputModal.querySelector('input[name="scope"][value="selected"]');
 			var selectedLabel = outputModal.querySelector('.contactpanda-output-selected-label');
 			if (selectedOption) selectedOption.disabled = !selected.length;
-			if (selectedLabel) selectedLabel.textContent = selected.length === 1 ? tr('onePersonSelected', '1 person selected') : format(tr('peopleSelected', '%d people selected'), selected.length);
+			if (selectedLabel) selectedLabel.textContent = selected.length === 0 ? tr('noPersonSelected', 'No person selected') : (selected.length === 1 ? tr('onePersonSelected', '1 selected person') : format(tr('peopleSelected', '%d selected people'), selected.length));
 		}
 	}
 
 	function bulkTrashPeople() {
 		var ids = selectedContactIds();
 		if (!ids.length || allMatchingPeopleSelected || !CONTACTPANDA_CONFIG.trashUrl || !CONTACTPANDA_CONFIG.trashNonce) return;
-		if (!window.confirm(format(tr('confirmBulkTrash', 'Move %d selected records to Trash? They can be restored from Trash.'), ids.length))) return;
+		if (!window.confirm(format(tr('confirmBulkTrash', 'Move %d selected people to Trash? They can be restored from Trash.'), ids.length))) return;
 		var form = document.createElement('form');
 		form.method = 'post';
 		form.action = CONTACTPANDA_CONFIG.trashUrl;
@@ -641,6 +661,7 @@
 		if (!modal || !toolbar || !CONTACTPANDA_CONFIG.campaignUrl) return;
 		var ids = selectedContactIds();
 		var url = new URL(CONTACTPANDA_CONFIG.campaignUrl, window.location.href);
+		url.searchParams.set('contactpanda_modal', '1');
 		if (allMatchingPeopleSelected) url.searchParams.set('people_selection', toolbar.dataset.listToken || '');
 		else url.searchParams.set('contact_ids', ids.join(','));
 		modal.querySelector('.contactpanda-newsletter-selection-frame').src = url.toString();
@@ -691,7 +712,7 @@
 		document.body.classList.add('contactpanda-modal-open');
 		modal.querySelector('.contactpanda-bulk-confirmed').checked = false;
 		modal.querySelector('.contactpanda-modal-message').textContent = '';
-		modal.querySelector('.contactpanda-bulk-modal-count strong').textContent = ids.length === 1 ? tr('onePersonSelected', '1 person selected') : format(tr('peopleSelected', '%d people selected'), ids.length);
+		modal.querySelector('.contactpanda-bulk-modal-count strong').textContent = ids.length === 0 ? tr('noPersonSelected', 'No person selected') : (ids.length === 1 ? tr('onePersonSelected', '1 selected person') : format(tr('peopleSelected', '%d selected people'), ids.length));
 		modal.querySelector('.contactpanda-bulk-source').focus();
 	}
 
@@ -725,6 +746,102 @@
 				message.textContent = result.data.message;
 				message.classList.add('is-success');
 				window.setTimeout(function () { window.location.reload(); }, 1600);
+			})
+			.catch(function (error) {
+				button.disabled = false;
+				message.textContent = error.message;
+			});
+	}
+
+	function openBulkTags(action) {
+		var ids = selectedContactIds();
+		var modal = document.querySelector('.contactpanda-bulk-tags-modal');
+		if (!ids.length || !modal) return;
+		modal.dataset.operation = action === 'tags_remove' ? 'remove' : 'add';
+		modal.hidden = false;
+		document.body.classList.add('contactpanda-modal-open');
+		modal.querySelectorAll('.contactpanda-bulk-tag-token').forEach(function (token) { token.remove(); });
+		modal.querySelectorAll('.contactpanda-bulk-tag-suggestion').forEach(function (suggestion) { suggestion.hidden = false; });
+		var input = modal.querySelector('.contactpanda-bulk-tags-input');
+		var message = modal.querySelector('.contactpanda-modal-message');
+		var title = modal.querySelector('#contactpanda-bulk-tags-title');
+		var save = modal.querySelector('.contactpanda-save-bulk-tags');
+		if (input) input.value = '';
+		if (message) { message.textContent = ''; message.classList.remove('is-success'); }
+		if (title) title.textContent = modal.dataset.operation === 'remove' ? tr('removeTagsFromSelected', 'Remove tags from selected people') : tr('addTagsToSelected', 'Add tags to selected people');
+		if (save) {
+			save.disabled = true;
+			var actionLabel = save.querySelector('.contactpanda-bulk-tags-action-label');
+			if (actionLabel) actionLabel.textContent = modal.dataset.operation === 'remove' ? tr('removeTags', 'Remove tags') : tr('addTags', 'Add tags');
+		}
+		var count = modal.querySelector('.contactpanda-bulk-tags-count strong');
+		if (count) count.textContent = ids.length === 1 ? tr('onePersonSelected', '1 selected person') : format(tr('peopleSelected', '%d selected people'), ids.length);
+		if (input) input.focus();
+	}
+
+	function closeBulkTags() {
+		var modal = document.querySelector('.contactpanda-bulk-tags-modal');
+		if (modal) modal.hidden = true;
+		document.body.classList.remove('contactpanda-modal-open');
+	}
+
+	function selectBulkTag(button) {
+		var modal = button.closest('.contactpanda-bulk-tags-modal');
+		var field = modal && modal.querySelector('.contactpanda-token-field');
+		if (!modal || !field || field.querySelector('.contactpanda-bulk-tag-token[data-tag="' + button.dataset.tag + '"]')) return;
+		var token = document.createElement('span');
+		token.className = 'contactpanda-tag contactpanda-bulk-tag-token';
+		token.dataset.tag = button.dataset.tag;
+		token.appendChild(document.createTextNode(button.dataset.name || button.textContent));
+		var remove = document.createElement('button');
+		remove.type = 'button';
+		remove.className = 'button-link contactpanda-remove-bulk-tag';
+		remove.setAttribute('aria-label', tr('removeSelectedTag', 'Remove selected tag'));
+		remove.textContent = '×';
+		token.appendChild(remove);
+		field.insertBefore(token, field.querySelector('.contactpanda-bulk-tags-input'));
+		button.hidden = true;
+		var input = modal.querySelector('.contactpanda-bulk-tags-input');
+		if (input) { input.value = ''; updateTokenSuggestions(input); input.focus(); }
+		var save = modal.querySelector('.contactpanda-save-bulk-tags');
+		if (save) save.disabled = false;
+	}
+
+	function removeBulkTag(button) {
+		var modal = button.closest('.contactpanda-bulk-tags-modal');
+		var token = button.closest('.contactpanda-bulk-tag-token');
+		if (!modal || !token) return;
+		var suggestion = modal.querySelector('.contactpanda-bulk-tag-suggestion[data-tag="' + token.dataset.tag + '"]');
+		if (suggestion) suggestion.hidden = false;
+		token.remove();
+		var save = modal.querySelector('.contactpanda-save-bulk-tags');
+		if (save) save.disabled = !modal.querySelector('.contactpanda-bulk-tag-token');
+	}
+
+	function saveBulkTags() {
+		var modal = document.querySelector('.contactpanda-bulk-tags-modal');
+		var ids = selectedContactIds();
+		if (!modal || !ids.length) return;
+		var tags = Array.prototype.map.call(modal.querySelectorAll('.contactpanda-bulk-tag-token'), function (token) { return token.dataset.tag; });
+		if (!tags.length) return;
+		var button = modal.querySelector('.contactpanda-save-bulk-tags');
+		var message = modal.querySelector('.contactpanda-modal-message');
+		var data = new URLSearchParams();
+		data.set('action', 'contactpanda_bulk_manage_contact_tags');
+		data.set('nonce', CONTACTPANDA_CONFIG.nonce);
+		data.set('operation', modal.dataset.operation || 'add');
+		ids.forEach(function (id) { data.append('contact_ids[]', id); });
+		tags.forEach(function (id) { data.append('tag_ids[]', id); });
+		button.disabled = true;
+		message.classList.remove('is-success');
+		message.textContent = tr('updatingTags', 'Updating tags…');
+		fetch(CONTACTPANDA_CONFIG.ajaxUrl, requestOptions(data))
+			.then(parseResponse)
+			.then(function (result) {
+				if (!result.success) throw new Error(result.data && result.data.message ? result.data.message : tr('tagActionFailed', 'Tag action failed.'));
+				message.textContent = result.data.message;
+				message.classList.add('is-success');
+				window.setTimeout(function () { window.location.reload(); }, 1200);
 			})
 			.catch(function (error) {
 				button.disabled = false;
@@ -1431,4 +1548,63 @@
 		input.files = event.dataTransfer.files;
 		input.dispatchEvent(new Event('change', { bubbles: true }));
 	});
+}());
+
+// Keep the people-list bulk button usable even when another admin component
+// stops propagation of the delegated change event.
+(function () {
+	'use strict';
+	function syncPeopleBulkButton() {
+		var action = document.getElementById('contactpanda-bulk-action');
+		var button = document.querySelector('.contactpanda-open-bulk');
+		if (!action || !button) return;
+		var selected = document.querySelectorAll('.contactpanda-person-select:checked').length;
+		var supported = ['marketable', 'newsletter', 'trash', 'tags_add', 'tags_remove'].indexOf(action.value) !== -1;
+		button.disabled = !selected || !supported;
+		button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
+		button.classList.toggle('is-disabled', button.disabled);
+	}
+	document.addEventListener('change', function (event) {
+		if (event.target.id === 'contactpanda-bulk-action' || event.target.classList.contains('contactpanda-person-select') || event.target.classList.contains('contactpanda-select-all')) {
+			window.setTimeout(syncPeopleBulkButton, 0);
+		}
+	});
+	document.addEventListener('click', function (event) {
+		if (event.target.closest('.contactpanda-person-select, .contactpanda-select-all')) window.setTimeout(syncPeopleBulkButton, 0);
+	});
+	if ('loading' === document.readyState) document.addEventListener('DOMContentLoaded', syncPeopleBulkButton);
+	else syncPeopleBulkButton();
+}());
+
+(function () {
+ 'use strict';
+ const de = document.documentElement.lang.toLowerCase().startsWith('de');
+ function status(dialog, message, error) {
+  let box = dialog.querySelector('[role="status"]');
+  if (!box) { box = document.createElement('p'); box.setAttribute('role', 'status'); dialog.append(box); }
+  box.textContent = message; box.style.color = error ? '#b32d2e' : 'inherit';
+ }
+ document.addEventListener('click', async function(e) {
+  const form=document.getElementById('contactpanda-field-groups'), dialog=document.querySelector('.contactpanda-group-dialog');
+  if (!form || !dialog) return;
+  if(e.target.closest('[data-custom-group-open]')) {
+   if (!form.querySelector('[name="field_ids[]"]:checked')) return;
+   dialog.showModal(); status(dialog,'',false); dialog.querySelector('input').focus();
+  }
+  if(e.target.closest('[data-custom-group-cancel]')) dialog.close();
+  const save=e.target.closest('[data-custom-group-save]');
+  if (!save || save.disabled) return;
+  const input=dialog.querySelector('input');
+  if(!input.value.trim()) { input.focus(); return; }
+  form.elements.group_name.value=input.value.trim(); save.disabled=true; dialog.setAttribute('aria-busy','true');
+  try {
+   const response=await fetch(window.ajaxurl,{method:'POST',credentials:'same-origin',body:new FormData(form)});
+   let result; try { result=await response.json(); } catch (_) { throw Error(de?'Ungültige Serverantwort. Erneut versuchen.':'Invalid server response. Try again.'); }
+   if (!response.ok || !result.success) throw Error(result.data?.message || (de?'Speichern fehlgeschlagen.':'Saving failed.'));
+   for(const row of form.querySelectorAll('tr[data-field-id]')) if(result.data.ids.includes(row.dataset.fieldId)) row.cells[2].textContent=result.data.group;
+   let notice=form.querySelector('[role="status"]'); if(!notice){notice=document.createElement('p');notice.setAttribute('role','status');form.prepend(notice);} notice.textContent=result.data.message;
+   dialog.close();
+  } catch(error) {status(dialog,error.message,true);} finally {save.disabled=false;dialog.removeAttribute('aria-busy');}
+ });
+ document.addEventListener('change',function(e){if(e.target.matches('[data-custom-group-all]'))document.querySelectorAll('#contactpanda-field-groups [name="field_ids[]"]').forEach(function(c){c.checked=e.target.checked;});});
 }());

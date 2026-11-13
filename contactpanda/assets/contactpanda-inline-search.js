@@ -88,6 +88,7 @@
 		return complete ? {relation: state.relation === 'or' ? 'or' : 'and', rules: state.rules} : null;
 	}
 	function scheduleCount() {
+		var segmentForm = panel.closest('.contactpanda-segment-builder'); if(segmentForm && segmentForm.elements.inline_state){segmentForm.elements.inline_state.value=JSON.stringify(state);}
 		window.clearTimeout(countTimer);
 		var complete = completeState();
 		resultButton.setAttribute('aria-disabled', 'true');
@@ -116,8 +117,8 @@
 				if (config.campaignMode) {
 					resultButton.removeAttribute('href'); resultButton.setAttribute('aria-disabled', 'true'); statusElement.textContent = '';
 				} else {
-					var url = new URL(window.location.href);
-					url.searchParams.set('page', 'contactpanda'); url.searchParams.set('contactpanda_filter', result.data.filter);
+					var url = new URL(config.peopleUrl || window.location.href, window.location.origin);
+					url.searchParams.set('page', 'contactpanda-people'); url.searchParams.set('contactpanda_filter', result.data.filter);
 					url.searchParams.delete('segment'); url.searchParams.delete('contactpanda_page');
 					resultButton.href = url.toString(); resultButton.setAttribute('aria-disabled', 'false'); statusElement.textContent = '';
 				}
@@ -126,6 +127,12 @@
 	}
 
 	document.addEventListener('click', function (event) {
+		var showResults = event.target.closest('.contactpanda-show-filter-results');
+		if (showResults && showResults.getAttribute('aria-disabled') === 'false' && showResults.href && showResults.href !== '#') {
+			event.preventDefault();
+			window.location.assign(showResults.href);
+			return;
+		}
 		var open = event.target.closest('.contactpanda-open-inline-search');
 		if (open) { var openModal = panel.closest('.contactpanda-search-modal'); if (openModal) openModal.hidden = false; panel.hidden = false; panel.classList.add('is-open'); if (!state.rules.length) { state.rules.push({field: '', operator: '', value: ''}); renderRules(); } return; }
 		if (event.target.closest('.contactpanda-close-inline-search')) { var modal = panel.closest('.contactpanda-search-modal'); if (modal) modal.hidden = true; else { panel.hidden = true; panel.classList.remove('is-open'); } return; }
@@ -200,5 +207,6 @@
 	}
 
 	if (state.rules.length) { panel.hidden = false; panel.classList.add('is-open'); }
+	var segmentForm=panel.closest('.contactpanda-segment-builder'); if(segmentForm){panel.querySelectorAll('.contactpanda-save-inline-search,.contactpanda-inline-relation,.contactpanda-close-inline-search').forEach(function(n){n.hidden=true;});segmentForm.querySelectorAll('[name=relation_mode]').forEach(function(n){n.addEventListener('change',function(){state.relation=n.value;scheduleCount();});});segmentForm.addEventListener('submit',function(event){var complete=completeState();if(!complete){event.preventDefault();statusElement.textContent=tr('complete','Complete all filters');}else segmentForm.elements.inline_state.value=JSON.stringify(complete);});}
 	renderRules();
 }());

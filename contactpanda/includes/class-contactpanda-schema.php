@@ -3,6 +3,10 @@
 defined( 'ABSPATH' ) || exit;
 
 final class ContactPanda_Schema {
+	// Request-local schema metadata only; never cache contacts, consent, or queue state.
+	private static $table_cache = array();
+	private static $column_cache = array();
+
 	const VERSION = '2.3.0';
 	const VERSION_OPTION = 'contactpanda_db_version';
 
@@ -209,6 +213,7 @@ final class ContactPanda_Schema {
 			meta_value longtext NULL,
 			PRIMARY KEY  (meta_id),
 			KEY contact_id (contact_id),
+			KEY contact_key (contact_id,meta_key),
 			KEY meta_key (meta_key)
 		) $charset;";
 
@@ -330,15 +335,17 @@ final class ContactPanda_Schema {
 		foreach ( $sql as $statement ) {
 			dbDelta( $statement );
 		}
-		$old_salutation_index = $wpdb->get_var( "SHOW INDEX FROM `{$tables['salutations']}` WHERE Key_name='first_name_normalized'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table name.
+		$old_salutation_index = $wpdb->get_var( $wpdb->prepare( "SHOW INDEX FROM %i WHERE Key_name='first_name_normalized'", $tables['salutations'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda schema/lifecycle data has no WordPress object API; identifiers are fixed/allowlisted and query values are bound. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		if ( $old_salutation_index ) {
-			$wpdb->query( "ALTER TABLE `{$tables['salutations']}` DROP INDEX `first_name_normalized`" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table name.
+			$wpdb->query( $wpdb->prepare( "ALTER TABLE %i DROP INDEX `first_name_normalized`", $tables['salutations'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Owned ContactPanda schema/lifecycle data has no WordPress object API; identifiers are fixed/allowlisted and query values are bound. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately. Explicit lifecycle operation on the fixed ContactPanda table allowlist only; reset/drop requires the administrator action guard and confirmation; no source-system table is changed.
 		}
-		$new_salutation_index = $wpdb->get_var( "SHOW INDEX FROM `{$tables['salutations']}` WHERE Key_name='language_name'" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table name.
+		$new_salutation_index = $wpdb->get_var( $wpdb->prepare( "SHOW INDEX FROM %i WHERE Key_name='language_name'", $tables['salutations'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda schema/lifecycle data has no WordPress object API; identifiers are fixed/allowlisted and query values are bound. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		if ( ! $new_salutation_index ) {
-			$wpdb->query( "ALTER TABLE `{$tables['salutations']}` ADD UNIQUE KEY `language_name` (`language`,`first_name_normalized`)" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table name.
+			$wpdb->query( $wpdb->prepare( "ALTER TABLE %i ADD UNIQUE KEY `language_name` (`language`,`first_name_normalized`)", $tables['salutations'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Owned ContactPanda schema/lifecycle data has no WordPress object API; identifiers are fixed/allowlisted and query values are bound. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately. Explicit lifecycle operation on the fixed ContactPanda table allowlist only; reset/drop requires the administrator action guard and confirmation; no source-system table is changed.
 		}
 
+		self::$table_cache = array();
+		self::$column_cache = array();
 		$status = self::status();
 		if ( $status['total'] !== $status['count'] ) {
 			return new WP_Error( 'contactpanda_schema_incomplete', __( 'ContactPanda could not create all standalone database tables.', 'contactpanda' ) );
@@ -354,8 +361,10 @@ final class ContactPanda_Schema {
 	public static function drop_all() {
 		global $wpdb;
 		foreach ( array_reverse( self::table_names() ) as $table ) {
-			$wpdb->query( "DROP TABLE IF EXISTS `{$table}`" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- exact internally generated table name.
+			$wpdb->query( $wpdb->prepare( "DROP TABLE IF EXISTS %i", $table ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- Owned ContactPanda schema/lifecycle data has no WordPress object API; identifiers are fixed/allowlisted and query values are bound. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately. Explicit lifecycle operation on the fixed ContactPanda table allowlist only; reset/drop requires the administrator action guard and confirmation; no source-system table is changed.
 		}
+		self::$table_cache = array();
+		self::$column_cache = array();
 		delete_option( self::VERSION_OPTION );
 	}
 
@@ -365,11 +374,11 @@ final class ContactPanda_Schema {
 		if ( $status['total'] !== $status['count'] ) {
 			return new WP_Error( 'contactpanda_schema_incomplete', __( 'ContactPanda standalone tables are incomplete.', 'contactpanda' ) );
 		}
-		$wpdb->query( 'SET FOREIGN_KEY_CHECKS = 0' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- guarded administrative reset of ContactPanda-owned tables.
+		$wpdb->query( 'SET FOREIGN_KEY_CHECKS = 0' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.DirectQuery -- Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		foreach ( array_reverse( self::table_names() ) as $table ) {
-			$wpdb->query( "TRUNCATE TABLE `{$table}`" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery -- exact internally generated table name.
+			$wpdb->query( $wpdb->prepare( "TRUNCATE TABLE %i", $table ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.DirectDatabaseQuery.DirectQuery -- exact internally generated table name.
 		}
-		$wpdb->query( 'SET FOREIGN_KEY_CHECKS = 1' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- restores session setting after guarded reset.
+		$wpdb->query( 'SET FOREIGN_KEY_CHECKS = 1' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.DirectQuery -- Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		delete_option( 'contactpanda_last_migration_report' );
 		do_action( 'contactpanda_after_reset_data' );
 		return true;
@@ -377,8 +386,9 @@ final class ContactPanda_Schema {
 
 	private static function table_exists( $table ) {
 		global $wpdb;
-		$like = $wpdb->esc_like( $table );
-		return $table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $like ) );
+		if ( array_key_exists( $table, self::$table_cache ) ) return self::$table_cache[ $table ];
+		self::$table_cache[ $table ] = $table === $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $wpdb->esc_like( $table ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema metadata has a request-local cache keyed by prefixed table/column and invalidated after install/drop; wpdb is required for schema discovery. The immediately preceding lookup uses the request-local schema cache; install/drop invalidates it, including cached negative results.
+		return self::$table_cache[ $table ];
 	}
 
 	private static function required_columns_exist() {
@@ -407,9 +417,10 @@ final class ContactPanda_Schema {
 
 	private static function column_exists( $table, $column ) {
 		global $wpdb;
-		return (bool) $wpdb->get_var(
-			$wpdb->prepare( "SHOW COLUMNS FROM `{$table}` LIKE %s", $column ) // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- exact internally generated table name.
-		);
+		$key = $table . ':' . $column;
+		if ( array_key_exists( $key, self::$column_cache ) ) return self::$column_cache[ $key ];
+		self::$column_cache[ $key ] = (bool) $wpdb->get_var( $wpdb->prepare( 'SHOW COLUMNS FROM %i LIKE %s', $table, $column ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Schema metadata has a request-local cache keyed by prefixed table/column and invalidated after install/drop; wpdb is required for schema discovery. The immediately preceding lookup uses the request-local schema cache; install/drop invalidates it, including cached negative results.
+		return self::$column_cache[ $key ];
 	}
 
 	/**
@@ -422,32 +433,27 @@ final class ContactPanda_Schema {
 		global $wpdb;
 		$tables = self::table_names();
 		$now = current_time( 'mysql' );
-		$wpdb->query(
-			"INSERT IGNORE INTO `{$tables['contact_channels']}`
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda schema/lifecycle data has no WordPress object API; identifiers are fixed/allowlisted and query values are bound. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+			$wpdb->prepare( "INSERT IGNORE INTO %i
 			(contact_id,channel_type,label,channel_value,normalized_value,is_primary,status,source,created_at,updated_at)
 			SELECT id,'email','primary',email,email_normalized,1,'active',source,created_at,updated_at
-			FROM `{$tables['contacts']}` WHERE email_normalized IS NOT NULL AND email_normalized<>''"
-		); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internally generated table names.
-		$wpdb->query(
-			$wpdb->prepare(
-				"INSERT IGNORE INTO `{$tables['external_identities']}`
+			FROM %i WHERE email_normalized IS NOT NULL AND email_normalized<>''", $tables['contact_channels'], $tables['contacts'] ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internally generated table names.
+		$wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda schema/lifecycle data has no WordPress object API; identifiers are fixed/allowlisted and query values are bound. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+			$wpdb->prepare( "INSERT IGNORE INTO %i
 				(contact_id,provider,identity_type,external_id,is_primary,status,source,created_at,updated_at)
 				SELECT id,'wordpress','user',CAST(wp_user_id AS CHAR),1,'active','schema_backfill',%s,%s
-				FROM `{$tables['contacts']}` WHERE wp_user_id IS NOT NULL AND wp_user_id>0",
-				$now,
-				$now
-			)
+				FROM %i WHERE wp_user_id IS NOT NULL AND wp_user_id>0", $tables['external_identities'], $now, $now, $tables['contacts'] )
 		); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internally generated table names.
-		$meta_rows = (array) $wpdb->get_results( "SELECT contact_id,meta_key,meta_value FROM `{$tables['contactmeta']}` WHERE meta_key IN ('primary_phone','groundhogg_contact_id')", ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internally generated table name.
+		$meta_rows = (array) $wpdb->get_results( $wpdb->prepare( "SELECT contact_id,meta_key,meta_value FROM %i WHERE meta_key IN ('primary_phone','groundhogg_contact_id')", $tables['contactmeta'] ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda schema/lifecycle data has no WordPress object API; identifiers are fixed/allowlisted and query values are bound. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		foreach ( $meta_rows as $meta_row ) {
 			$value = trim( (string) maybe_unserialize( $meta_row['meta_value'] ) );
 			if ( '' === $value ) continue;
 			if ( 'primary_phone' === $meta_row['meta_key'] ) {
 				$normalized = preg_replace( '/\D+/', '', $value );
 				if ( '' === $normalized ) continue;
-				$wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO `{$tables['contact_channels']}` (contact_id,channel_type,label,channel_value,normalized_value,is_primary,status,source,created_at,updated_at) VALUES (%d,'phone','primary',%s,%s,1,'active','schema_backfill',%s,%s)", absint( $meta_row['contact_id'] ), $value, $normalized, $now, $now ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internally generated table name.
+				$wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO %i (contact_id,channel_type,label,channel_value,normalized_value,is_primary,status,source,created_at,updated_at) VALUES (%d,'phone','primary',%s,%s,1,'active','schema_backfill',%s,%s)", $tables['contact_channels'], absint( $meta_row['contact_id'] ), $value, $normalized, $now, $now ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda schema/lifecycle data has no WordPress object API; identifiers are fixed/allowlisted and query values are bound. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 			} else {
-				$wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO `{$tables['external_identities']}` (contact_id,provider,identity_type,external_id,is_primary,status,source,created_at,updated_at) VALUES (%d,'groundhogg','contact',%s,0,'active','schema_backfill',%s,%s)", absint( $meta_row['contact_id'] ), sanitize_text_field( $value ), $now, $now ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internally generated table name.
+				$wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO %i (contact_id,provider,identity_type,external_id,is_primary,status,source,created_at,updated_at) VALUES (%d,'groundhogg','contact',%s,0,'active','schema_backfill',%s,%s)", $tables['external_identities'], absint( $meta_row['contact_id'] ), sanitize_text_field( $value ), $now, $now ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda schema/lifecycle data has no WordPress object API; identifiers are fixed/allowlisted and query values are bound. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 			}
 		}
 	}

@@ -117,6 +117,20 @@ foreach ( array( 'contactpanda-open-company-relation', 'contactpanda-close-compa
 	}
 }
 
+foreach ( array( 'contactpanda_bulk_manage_contact_tags', 'bulk_manage_contact_tags', "value=\"tags_add\"", "value=\"tags_remove\"", 'contactpanda-bulk-tags-modal', 'contactpanda-bulk-tag-suggestion' ) as $contract ) {
+	if ( false === strpos( $plugin, $contract ) && false === strpos( $script, $contract ) ) {
+		fwrite( STDERR, "Missing selected-person tag bulk action contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
+foreach ( array( "['marketable', 'newsletter', 'trash', 'tags_add', 'tags_remove']", 'contactpanda-save-bulk-tags', 'contactpanda-remove-bulk-tag', 'tag_ids[]' ) as $contract ) {
+	if ( false === strpos( $script, $contract ) ) {
+		fwrite( STDERR, "Missing selected-person tag interaction contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
 foreach ( array( 'contactpanda-file-drop-actions', 'contactpanda-people-search-row', 'contactpanda-search-primary', 'contactpanda-company-relation-modal', 'contactpanda-table-scroll', 'contactpanda-email-column' ) as $contract ) {
 	if ( false === strpos( $styles, $contract ) ) {
 		fwrite( STDERR, "Missing administrator style contract {$contract}.\n" );
@@ -179,7 +193,7 @@ foreach ( array( 'contactpanda-admin-ui', 'wp_enqueue_media', 'CONTACTPANDA_ADMI
 	}
 }
 
-if ( false === strpos( $bootstrap, "define( 'CONTACTPANDA_ASSET_VERSION', CONTACTPANDA_VERSION );" ) ) {
+if ( false === strpos( $bootstrap, "define( 'CONTACTPANDA_ASSET_VERSION', CONTACTPANDA_VERSION" ) ) {
 	fwrite( STDERR, "Administrator assets must use the installed Basic version for cache invalidation.\n" );
 	exit( 1 );
 }
@@ -187,6 +201,21 @@ if ( false === strpos( $bootstrap, "define( 'CONTACTPANDA_ASSET_VERSION', CONTAC
 foreach ( array( 'contactpanda-admin-menu', 'contactpanda-newsletters', 'contactpanda-campaigns', 'contactpanda-flows', 'contactpanda-data-transfer', 'contactpanda-migration', 'contactpanda-settings', 'contactpanda-trash' ) as $contract ) {
 	if ( false === strpos( $plugin, $contract ) ) {
 		fwrite( STDERR, "Missing ContactPanda menu order contract {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
+$inline_search = file_get_contents( __DIR__ . '/../contactpanda/assets/contactpanda-inline-search.js' );
+foreach ( array( "new URL(config.peopleUrl || window.location.href", "url.searchParams.set('page', 'contactpanda-people')" ) as $contract ) {
+	if ( false === strpos( $inline_search, $contract ) ) {
+		fwrite( STDERR, "Direct contact-filter results must stay in the people list: {$contract}.\n" );
+		exit( 1 );
+	}
+}
+
+foreach ( array( 'render_dashboard_current_mailing', "status IN ('queued','sending','paused')", "status IN ('completed','imported')", 'Current mailing' ) as $contract ) {
+	if ( false === strpos( $plugin, $contract ) ) {
+		fwrite( STDERR, "Missing separate current and completed dashboard mailing contract {$contract}.\n" );
 		exit( 1 );
 	}
 }

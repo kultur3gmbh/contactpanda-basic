@@ -12,7 +12,12 @@ if command -v php >/dev/null 2>&1; then
     fi
   done < <(find contactpanda tests -type f -name '*.php' -print0)
   php -l tools/github/class-contactpanda-github-updater.php >/dev/null || status=1
+  php tests/request-guards.php || status=1
+  php tests/db-query-safety.php || status=1
+  php tests/external-services.php || status=1
+  php tests/import-review.php || status=1
   php tests/trash.php || status=1
+  php tests/public-updater.php || status=1
   php tests/woocommerce-import.php || status=1
 	php tests/order-summary-query.php || status=1
   php tests/groundhogg-migration-source.php || status=1

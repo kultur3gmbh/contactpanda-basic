@@ -231,7 +231,7 @@ final class ContactPanda_Customer_Portal {
 	}
 
 	public static function confirm_email_change() {
-		if ( empty( $_GET['contactpanda_email_confirm'] ) || ! is_user_logged_in() ) return;
+		if ( empty( $_GET['contactpanda_email_confirm'] ) || ! is_user_logged_in() ) return; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Logged-in user must match the stored pending email; the one-time SHA-256 confirmation token and expiry are checked before any update.
 		$user = wp_get_current_user();
 		$pending = get_user_meta( $user->ID, self::EMAIL_META, true );
 		$token = sanitize_text_field( wp_unslash( $_GET['contactpanda_email_confirm'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- one-time confirmation token.
@@ -466,7 +466,7 @@ final class ContactPanda_Customer_Portal {
 	}
 
 	private static function current_url() {
-		$request_uri = wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' );
+		$request_uri = sanitize_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) );
 		return esc_url_raw( home_url( '/' . ltrim( $request_uri, '/' ) ) );
 	}
 
@@ -474,7 +474,7 @@ final class ContactPanda_Customer_Portal {
 		$notice_id = strtolower( wp_generate_password( 16, false, false ) );
 		$key = self::NOTICE . $notice_id;
 		set_transient( $key, array( 'success' => (bool) $success, 'message' => sanitize_text_field( $message ) ), MINUTE_IN_SECONDS );
-		$return = wp_validate_redirect( esc_url_raw( wp_unslash( $_REQUEST['return_url'] ?? self::portal_url() ) ), self::portal_url() );
+		$return = wp_validate_redirect( esc_url_raw( wp_unslash( $_REQUEST['return_url'] ?? self::portal_url() ) ), self::portal_url() ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Local navigation after action validation only; return URL is sanitized and wp_validate_redirect enforces the safe destination.
 		wp_safe_redirect( add_query_arg( 'cp_portal_notice', $notice_id, $return ) );
 		exit;
 	}
