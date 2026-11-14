@@ -103,6 +103,11 @@ final class ContactPanda_GitHub_Updater {
 		return $result;
 	}
 
+	private function icons() {
+		$url = esc_url_raw( CONTACTPANDA_URL . 'assets/images/contactpanda-basic-dashboard-simple.png' );
+		return array( '1x' => $url, '2x' => $url );
+	}
+
 	private function compatible( $release ) {
 		global $wp_version;
 		return is_array( $release ) && version_compare( $wp_version, $release['requires'], '>=' ) && version_compare( PHP_VERSION, $release['requires_php'], '>=' );
@@ -115,7 +120,7 @@ final class ContactPanda_GitHub_Updater {
 		if ( is_wp_error( $release ) ) return $transient;
 		$item = (object) array(
 			'id' => 'https://github.com/kultur3gmbh/contactpanda-basic', 'slug' => 'contactpanda', 'plugin' => $this->plugin,
-			'new_version' => $release['version'], 'url' => 'https://github.com/kultur3gmbh/contactpanda-basic/releases',
+			'icons' => $this->icons(), 'new_version' => $release['version'], 'url' => 'https://github.com/kultur3gmbh/contactpanda-basic/releases',
 			'package' => $this->compatible( $release ) ? $this->asset_url( $release['asset_id'] ) : '',
 			'requires' => $release['requires'], 'requires_php' => $release['requires_php'], 'tested' => $release['tested'],
 		);
@@ -129,7 +134,7 @@ final class ContactPanda_GitHub_Updater {
 		if ( 'plugin_information' !== $action || 'contactpanda' !== ( $args->slug ?? '' ) ) return $result;
 		$release = $this->release();
 		if ( is_wp_error( $release ) ) return $release;
-		return (object) array( 'name' => 'ContactPanda Basic', 'slug' => 'contactpanda', 'version' => $release['version'], 'author' => 'Kultur3 GmbH', 'requires' => $release['requires'], 'requires_php' => $release['requires_php'], 'tested' => $release['tested'], 'download_link' => $this->asset_url( $release['asset_id'] ) );
+		return (object) array( 'icons' => $this->icons(), 'name' => 'ContactPanda Basic', 'slug' => 'contactpanda', 'version' => $release['version'], 'author' => 'Kultur3 GmbH', 'requires' => $release['requires'], 'requires_php' => $release['requires_php'], 'tested' => $release['tested'], 'download_link' => $this->asset_url( $release['asset_id'] ) );
 	}
 
 	public function download( $reply, $package, $upgrader, $extra ) {
@@ -149,7 +154,8 @@ final class ContactPanda_GitHub_Updater {
 	}
 
 	public function source( $source, $remote, $upgrader, $extra ) {
-		if ( ! $this->install_release || is_wp_error( $source ) ) return $source;
+		$plugins = array_merge( (array) ( $extra['plugins'] ?? array() ), empty( $extra['plugin'] ) ? array() : array( $extra['plugin'] ) );
+		if ( ! $this->install_release || is_wp_error( $source ) || ! in_array( $this->plugin, $plugins, true ) ) return $source;
 		global $wp_filesystem;
 		if ( 'contactpanda' !== basename( untrailingslashit( $source ) ) ) return $this->error( __( 'The update archive has an invalid folder.', 'contactpanda' ) );
 		$entries = $wp_filesystem->dirlist( $remote );

@@ -184,7 +184,7 @@ final class ContactPanda_MCP {
 		$blocks = array();
 		if ( '' !== trim( wp_strip_all_tags( $content ) ) ) $blocks[] = array( 'type' => 'text', 'content' => $content );
 		$now = current_time( 'mysql' );
-		$inserted = $wpdb->insert(
+		$inserted = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points.
 			ContactPanda_Newsletter_Schema::newsletter_table_names()['templates'],
 			array(
 				'name' => $name, 'subject' => $subject, 'preview_text' => sanitize_text_field( $args['preview_text'] ?? '' ),

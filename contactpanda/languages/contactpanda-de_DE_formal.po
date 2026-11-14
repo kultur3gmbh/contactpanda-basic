@@ -1152,13 +1152,11 @@ msgstr "Neues Passwort bestätigen"
 msgid "Confirm newsletter subscription"
 msgstr "Newsletter-Anmeldung bestätigen"
 
-#: contactpanda/includes/class-contactpanda-registration.php:173
 msgid "Confirm your newsletter subscription at {site_name}"
-msgstr "Bestätigen Sie Ihre Newsletter-Anmeldung bei {site_name}"
+msgstr "Bestätige deine Newsletter-Anmeldung bei {site_name}"
 
-#: contactpanda/includes/class-contactpanda-registration.php:162
 msgid "Confirm your registration at {site_name}"
-msgstr "Bestätigen Sie Ihre Registrierung bei {site_name}"
+msgstr "Bestätige deine Registrierung bei {site_name}"
 
 #: contactpanda/includes/class-contactpanda-plugin.php:425
 msgid "Confirmation is required."
@@ -1705,13 +1703,11 @@ msgstr "Groundhogg bleibt schreibgeschützt. Kontakte, Firmen, Tags sowie – mi
 msgid "Groundhogg remains responsible for contacts, companies, tags, consent, broadcasts, funnels, and automations. ContactPanda provides the user-friendly interface."
 msgstr "Groundhogg bleibt für Kontakte, Firmen, Tags, Zustimmungen, Broadcasts, Funnels und Automatisierungen zuständig. ContactPanda stellt die benutzerfreundliche Oberfläche bereit."
 
-#: contactpanda/includes/class-contactpanda-registration.php:163
 msgid "Hello {first_name},\n\nplease confirm your email address by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
-msgstr "Hallo {first_name},\n\nbitte bestätigen Sie Ihre E-Mail-Adresse über diesen Link:\n{confirmation_link}\n\nDer Link ist 24 Stunden gültig."
+msgstr "Hallo {first_name},\n\nbitte bestätige deine E-Mail-Adresse über diesen Link:\n{confirmation_link}\n\nDer Link ist 24 Stunden gültig."
 
-#: contactpanda/includes/class-contactpanda-registration.php:174
 msgid "Hello {first_name},\n\nplease confirm your newsletter subscription by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
-msgstr "Hallo {first_name},\n\nbitte bestätigen Sie Ihre Newsletter-Anmeldung über diesen Link:\n{confirmation_link}\n\nDer Link ist 24 Stunden gültig."
+msgstr "Hallo {first_name},\n\nbitte bestätige deine Newsletter-Anmeldung über diesen Link:\n{confirmation_link}\n\nDer Link ist 24 Stunden gültig."
 
 #: contactpanda/includes/class-contactpanda-plugin.php:3672
 msgid "Hungary"
@@ -5493,7 +5489,6 @@ msgstr "Von"
 msgid "Full name"
 msgstr "Vollständiger Name"
 
-#: contactpanda/includes/class-contactpanda-newsletters.php:336
 msgid "Full width"
 msgstr "Volle Breite"
 
@@ -7758,20 +7753,8 @@ msgstr ""
 "\n"
 "Prüfen: %5$s"
 
-msgid ""
-"Hello {first_name},\n"
-"\n"
-"please confirm your email address by opening this link:\n"
-"{confirmation_link}\n"
-"\n"
-"The link is valid for 24 hours."
-msgstr ""
-"Hallo {first_name},\n"
-"\n"
-"bitte bestätigen Sie Ihre E-Mail-Adresse über diesen Link:\n"
-"{confirmation_link}\n"
-"\n"
-"Der Link ist 24 Stunden gültig."
+msgid "Hello {first_name},\n\nplease confirm your email address by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
+msgstr "Hallo {first_name},\n\nbitte bestätige deine E-Mail-Adresse über diesen Link:\n{confirmation_link}\n\nDer Link ist 24 Stunden gültig."
 
 msgid "Select color"
 msgstr "Farbe auswählen"
@@ -7814,6 +7797,9 @@ msgstr "Zu prüfende Duplikate"
 
 msgid "Newsletter and automations"
 msgstr "Newsletter und Automatisierungen"
+
+msgid "Current mailing"
+msgstr "Laufende Aussendung"
 
 msgid "Last mailing"
 msgstr "Letzte Aussendung"
@@ -7884,20 +7870,8 @@ msgstr "Alle ContactPanda-Neuigkeiten ansehen"
 msgid "ContactPanda Basic product overview"
 msgstr "ContactPanda Basic Produktübersicht"
 
-msgid ""
-"Hello {first_name},\n"
-"\n"
-"please confirm your newsletter subscription by opening this link:\n"
-"{confirmation_link}\n"
-"\n"
-"The link is valid for 24 hours."
-msgstr ""
-"Hallo {first_name},\n"
-"\n"
-"bitte bestätigen Sie Ihre Newsletter-Anmeldung über diesen Link:\n"
-"{confirmation_link}\n"
-"\n"
-"Der Link ist 24 Stunden gültig."
+msgid "Hello {first_name},\n\nplease confirm your newsletter subscription by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
+msgstr "Hallo {first_name},\n\nbitte bestätige deine Newsletter-Anmeldung über diesen Link:\n{confirmation_link}\n\nDer Link ist 24 Stunden gültig."
 
 msgid "The extension subscription could not be synchronized."
 msgstr "Das Erweiterungsabonnement konnte nicht synchronisiert werden."
@@ -8467,10 +8441,10 @@ msgid "Logo"
 msgstr "Logo"
 
 msgid "Hello {first_name},\n\nplease confirm your email address by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
-msgstr "Hello {first_name},\n\nplease confirm your email address by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
+msgstr "Hallo {first_name},\n\nbitte bestätige deine E-Mail-Adresse über diesen Link:\n{confirmation_link}\n\nDer Link ist 24 Stunden gültig."
 
 msgid "Hello {first_name},\n\nplease confirm your newsletter subscription by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
-msgstr "Hello {first_name},\n\nplease confirm your newsletter subscription by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
+msgstr "Hallo {first_name},\n\nbitte bestätige deine Newsletter-Anmeldung über diesen Link:\n{confirmation_link}\n\nDer Link ist 24 Stunden gültig."
 
 msgid "The Newsletter Plugin"
 msgstr "The Newsletter Plugin"
@@ -9015,3 +8989,639 @@ msgstr "Linienfarbe"
 
 msgid "You are not allowed to manage these settings."
 msgstr "Sie dürfen diese Einstellungen nicht verwalten."
+
+msgid "Company and contact details"
+msgstr "Unternehmens- und Kontaktdaten"
+
+msgid "Company and contact details saved."
+msgstr "Unternehmens- und Kontaktdaten gespeichert."
+
+msgid "Bank details"
+msgstr "Bankdaten"
+
+msgid "Account holder"
+msgstr "Kontoinhaber"
+
+msgid "Save company and contact details"
+msgstr "Unternehmens- und Kontaktdaten speichern"
+
+msgid "Change these details under Company and contact details"
+msgstr "Diese Angaben unter Unternehmens- und Kontaktdaten ändern"
+
+msgid "Email appearance is configured centrally in the General settings tab of the system email editor below."
+msgstr "Die E-Mail-Gestaltung wird zentral im Reiter Allgemeine Einstellungen des nachfolgenden System-E-Mail-Editors festgelegt."
+msgid "Show date"
+msgstr "Datum anzeigen"
+
+msgid "Show location"
+msgstr "Veranstaltungsort anzeigen"
+
+msgid "Text alignment"
+msgstr "Textausrichtung"
+
+msgid "Add tags"
+msgstr "Tags hinzufügen"
+
+msgid "Remove tags"
+msgstr "Tags entfernen"
+
+msgid "Edit tags for selected people"
+msgstr "Tags für ausgewählte Personen bearbeiten"
+
+msgid "Select one or more existing tags. The selected bulk action determines whether they are added or removed."
+msgstr "Wählen Sie einen oder mehrere bestehende Tags aus. Die gewählte Mehrfachaktion bestimmt, ob sie hinzugefügt oder entfernt werden."
+
+msgid "Apply tag action"
+msgstr "Tag-Aktion anwenden"
+
+msgid "Add tags to selected people"
+msgstr "Tags zu ausgewählten Personen hinzufügen"
+
+msgid "Remove tags from selected people"
+msgstr "Tags von ausgewählten Personen entfernen"
+
+msgid "Remove selected tag"
+msgstr "Ausgewählten Tag entfernen"
+
+msgid "Updating tags…"
+msgstr "Tags werden aktualisiert …"
+
+msgid "The selected tags were not found."
+msgstr "Die ausgewählten Tags wurden nicht gefunden."
+
+#, php-format
+msgid "Tags updated for %1$d people. Failed: %2$d."
+msgstr "Tags bei %1$d Personen aktualisiert. Fehlgeschlagen: %2$d."
+
+msgid "Available fields"
+msgstr "Verfügbare Felder"
+
+msgid "Selected fields"
+msgstr "Ausgewählte Felder"
+
+msgid "File columns"
+msgstr "Dateispalten"
+
+msgid "Search fields"
+msgstr "Felder durchsuchen"
+
+msgid "Up"
+msgstr "Nach oben"
+
+msgid "Down"
+msgstr "Nach unten"
+
+msgid "Saved templates"
+msgstr "Gespeicherte Vorlagen"
+
+msgid "Load"
+msgstr "Laden"
+
+msgid "Save template"
+msgstr "Vorlage speichern"
+
+msgid "Share with administrators"
+msgstr "Mit Administratoren teilen"
+
+msgid "Delete this template?"
+msgstr "Diese Vorlage löschen?"
+
+msgid "Template could not be saved."
+msgstr "Die Vorlage konnte nicht gespeichert werden."
+
+msgid "Drag fields from the pool or click to add them. Use the arrow buttons to reorder."
+msgstr "Felder aus dem Feldpool hineinziehen oder durch Anklicken hinzufügen. Die Reihenfolge lässt sich auch mit den Pfeilen ändern."
+
+msgid "Import target"
+msgstr "Zielfeld"
+
+msgid "No fields selected."
+msgstr "Keine Felder ausgewählt."
+
+msgid "Import CSV or Excel"
+msgstr "CSV oder Excel importieren"
+
+msgid "Upload the file, select a worksheet and drag matching fields to its columns. Data is saved only after confirmation. Empty values do not erase existing data."
+msgstr "Datei hochladen, Tabellenblatt auswählen und passende Zielfelder zu den Spalten ziehen. Die Übernahme erfolgt erst nach Bestätigung. Leere Werte löschen keine vorhandenen Daten."
+
+msgid "Existing records"
+msgstr "Vorhandene Datensätze"
+
+msgid "Only add new records"
+msgstr "Nur neue Datensätze hinzufügen"
+
+msgid "Update with non-empty values"
+msgstr "Mit nicht leeren Werten aktualisieren"
+
+msgid "Maximum 5 MB, 5000 data rows per worksheet. Formula results are read without executing formulas. Text cells preserve leading zeroes."
+msgstr "Maximal 5 MB und 5.000 Datenzeilen je Tabellenblatt. Formelergebnisse werden gelesen, ohne Formeln auszuführen. Textzellen behalten führende Nullen."
+
+msgid "Worksheet"
+msgstr "Tabellenblatt"
+
+msgid "Select worksheet"
+msgstr "Tabellenblatt auswählen"
+
+msgid "The import preview expired."
+msgstr "Die Importvorschau ist abgelaufen."
+
+msgid "Export Excel"
+msgstr "Excel exportieren"
+
+msgid "Export CSV or Excel"
+msgstr "CSV oder Excel exportieren"
+
+msgid "Export companies from the leading source system in Groundhogg mode."
+msgstr "Im Groundhogg-Modus werden Firmen aus dem führenden Quellsystem exportiert."
+
+msgid "For selected or filtered people, use Export in the people list."
+msgstr "Für ausgewählte oder gefilterte Personen bitte den Export in der Personenliste verwenden."
+
+msgid "Select at least one field."
+msgstr "Bitte mindestens ein Feld auswählen."
+
+msgid "Choose a CSV or XLSX file."
+msgstr "Bitte eine CSV- oder XLSX-Datei auswählen."
+
+msgid "Transfer product data with field mapping and a preview before import."
+msgstr "Produktdaten mit Feldzuordnung und einer Vorschau vor der Übernahme übertragen."
+
+msgid "Export products"
+msgstr "Produkte exportieren"
+
+msgid "Upload a file. Its columns are read before you assign fields. Nothing is saved until the preview is confirmed."
+msgstr "Datei hochladen und die eingelesenen Spalten den Zielfeldern zuordnen. Daten werden erst nach Bestätigung der Vorschau übernommen."
+
+msgid "Maximum 5 MB, 5000 data rows per worksheet. Formula results are read without executing formulas."
+msgstr "Maximal 5 MB und 5.000 Datenzeilen je Tabellenblatt. Formelergebnisse werden gelesen, ohne Formeln auszuführen."
+
+msgid "Read file"
+msgstr "Datei einlesen"
+
+msgid "Field mapping"
+msgstr "Feldzuordnung"
+
+msgid "Existing products"
+msgstr "Vorhandene Produkte"
+
+msgid "Only add new products"
+msgstr "Nur neue Produkte hinzufügen"
+
+msgid "Update mapped, non-empty values"
+msgstr "Zugeordnete, nicht leere Werte aktualisieren"
+
+msgid "New attribute terms"
+msgstr "Neue Eigenschaftswerte"
+
+msgid "Only use existing terms"
+msgstr "Nur vorhandene Begriffe übernehmen"
+
+msgid "Create missing terms"
+msgstr "Fehlende Begriffe anlegen"
+
+msgid "Several attribute values are separated by |. Unknown terms are reported before confirmation. Empty cells preserve existing values."
+msgstr "Mehrere Eigenschaftswerte mit | trennen. Unbekannte Begriffe werden vor der Bestätigung angezeigt. Leere Zellen behalten vorhandene Werte bei."
+
+msgid "Check mapping and preview"
+msgstr "Zuordnung prüfen und Vorschau anzeigen"
+
+msgid "Row %d: a product name is required for new products."
+msgstr "Zeile %d: Neue Produkte benötigen einen Produktnamen."
+
+msgid "The preview expired."
+msgstr "Die Vorschau ist abgelaufen."
+
+msgid "Products to include"
+msgstr "Einzubeziehende Produkte"
+
+msgid "All products"
+msgstr "Alle Produkte"
+
+msgid "Filtered products"
+msgstr "Gefilterte Produkte"
+
+msgid "Selected products"
+msgstr "Ausgewählte Produkte"
+
+msgid "Variations"
+msgstr "Varianten"
+
+msgid "With the parent product"
+msgstr "Beim Hauptprodukt zusammenfassen"
+
+msgid "As separate rows"
+msgstr "Als eigene Zeilen"
+
+msgid "Print / save as PDF"
+msgstr "Drucken / als PDF speichern"
+
+msgid "No valid upload received."
+msgstr "Keine gültige Datei empfangen."
+
+msgid "Import errors"
+msgstr "Importfehler"
+
+msgid "Unknown attribute terms"
+msgstr "Unbekannte Eigenschaftswerte"
+
+msgid "These terms will be created after confirmation."
+msgstr "Diese Begriffe werden nach der Bestätigung angelegt."
+
+msgid "These terms are skipped. Existing assignments are retained if no valid terms remain."
+msgstr "Diese Begriffe werden übersprungen. Vorhandene Zuordnungen bleiben erhalten, wenn keine gültigen Begriffe übrig bleiben."
+
+msgid "Action"
+msgstr "Aktion"
+
+msgid "I have checked the preview and explicitly confirm this import."
+msgstr "Ich habe die Vorschau geprüft und bestätige diesen Import ausdrücklich."
+
+msgid "Run import"
+msgstr "Import ausführen"
+
+msgid "create"
+msgstr "Neu anlegen"
+
+msgid "update"
+msgstr "Aktualisieren"
+
+msgid "skip"
+msgstr "Überspringen"
+
+msgid "Import mode"
+msgstr "Importmodus"
+
+msgid "Only newly created records since the last successful import"
+msgstr "Nur seit dem letzten erfolgreichen Import neu angelegte Datensätze"
+
+msgid "Update existing records from Groundhogg too"
+msgstr "Auch vorhandene Datensätze mit Groundhogg aktualisieren"
+
+msgid "New-only mode preserves existing edits, deleted contacts and existing tag assignments. Records without a reliable creation date are skipped on repeat imports."
+msgstr "Der Modus für neue Datensätze schützt vorhandene Änderungen, gelöschte Kontakte und bestehende Tag-Zuordnungen. Bei erneuten Importen werden Datensätze ohne verlässliches Erstellungsdatum übersprungen."
+
+msgid "Invalid field mapping."
+msgstr "Ungültige Feldzuordnung."
+
+msgid "Invalid or oversized worksheet."
+msgstr "Ungültiges oder zu großes Tabellenblatt."
+
+msgid "External XML entities are not supported."
+msgstr "Externe XML-Entitäten werden nicht unterstützt."
+
+msgid "Invalid workbook XML."
+msgstr "Ungültige Excel-Dateistruktur."
+
+msgid "Maximum file size: 5 MB."
+msgstr "Maximale Dateigröße: 5 MB."
+
+msgid "PHP ZIP and SimpleXML are required for Excel."
+msgstr "Für Excel werden die PHP-Erweiterungen ZIP und SimpleXML benötigt."
+
+msgid "Invalid Excel file."
+msgstr "Ungültige Excel-Datei."
+
+msgid "Workbook exceeds import limits."
+msgstr "Die Excel-Datei überschreitet die Importgrenzen."
+
+msgid "Maximum 20 worksheets."
+msgstr "Maximal 20 Tabellenblätter."
+
+msgid "Maximum 5000 data rows per worksheet."
+msgstr "Maximal 5.000 Datenzeilen pro Tabellenblatt."
+
+msgid "Maximum 250000 cells per workbook."
+msgstr "Maximal 250.000 Zellen pro Excel-Datei."
+
+msgid "Maximum 512 columns."
+msgstr "Maximal 512 Spalten."
+
+msgid "A worksheet cell contains an Excel error."
+msgstr "Eine Zelle enthält einen Excel-Fehler."
+
+msgid "No worksheet with a header row found."
+msgstr "Kein Tabellenblatt mit einer Kopfzeile gefunden."
+
+msgid "File could not be read."
+msgstr "Die Datei konnte nicht gelesen werden."
+
+msgid "Missing header row."
+msgstr "Die Kopfzeile fehlt."
+
+msgid "File exceeds import limits."
+msgstr "Die Datei überschreitet die Importgrenzen."
+
+msgid "PHP ZIP is required for Excel."
+msgstr "Für Excel wird die PHP-Erweiterung ZIP benötigt."
+
+msgid "Excel file could not be created."
+msgstr "Die Excel-Datei konnte nicht erstellt werden."
+
+msgid "Excel file could not be completed."
+msgstr "Die Excel-Datei konnte nicht fertiggestellt werden."
+
+msgid "New-only preview: %1$d people and %2$d companies will be added. Existing records remain unchanged."
+msgstr "Vorschau für neue Datensätze: %1$d Personen und %2$d Firmen werden hinzugefügt. Vorhandene Datensätze bleiben unverändert."
+
+
+msgid "A record changed after the preview. Return to the import and review it again."
+msgstr "Ein Datensatz wurde nach der Vorschau geändert. Bitte die Importvorschau erneut prüfen."
+
+
+msgid "Append to note text"
+msgstr "An Notiztext anhängen"
+
+
+msgid "Combine into a group"
+msgstr "In einer Gruppe zusammenfassen"
+
+
+msgid "Confirm import"
+msgstr "Import bestätigen"
+
+
+msgid "ContactPanda fields"
+msgstr "ContactPanda-Felder"
+
+
+msgid "Existing value"
+msgstr "Bisheriger Wert"
+
+
+msgid "Group name"
+msgstr "Gruppenname"
+
+
+msgid "I checked the proposed changes."
+msgstr "Ich habe die vorgeschlagenen Änderungen geprüft."
+
+
+msgid "Imported note"
+msgstr "Importierte Notiz"
+
+
+msgid "Imported value"
+msgstr "Importierter Wert"
+
+
+msgid "No changes have been saved. Select each existing value you want to replace. Notes are appended and tags are combined. Check the proposed name split before confirming."
+msgstr "Es wurden noch keine Änderungen gespeichert. Wählen Sie die bisherigen Werte aus, die ersetzt werden sollen. Notizen werden angehängt und Tags zusammengeführt. Prüfen Sie vor der Bestätigung die vorgeschlagene Namensaufteilung."
+
+
+msgid "Note title"
+msgstr "Notiztitel"
+
+
+msgid "Reason for unsubscribing (optional)"
+msgstr "Abmeldegrund (optional)"
+
+
+msgid "Replace"
+msgstr "Ersetzen"
+
+
+msgid "Replace existing value"
+msgstr "Bisherigen Wert ersetzen"
+
+
+msgid "Review import changes"
+msgstr "Importänderungen prüfen"
+
+
+msgid "Row"
+msgstr "Zeile"
+
+
+msgid "Select all fields"
+msgstr "Alle Felder auswählen"
+
+
+msgid "Select fields and enter a group name."
+msgstr "Wählen Sie Felder aus und geben Sie einen Gruppennamen ein."
+
+
+msgid "The imported note could not be saved."
+msgstr "Die importierte Notiz konnte nicht gespeichert werden."
+
+
+msgid "Details could not be loaded."
+msgstr "Details konnten nicht geladen werden."
+
+
+msgid "Available filters"
+msgstr "Verfügbare Filter"
+
+
+msgid "Minimum"
+msgstr "Minimum"
+
+
+msgid "Maximum"
+msgstr "Maximum"
+
+
+msgid "Additional tags for this import"
+msgstr "Zusätzliche Tags für alle importierten Kontakte"
+
+
+msgid "Add these tags to every successfully imported person. Existing tags and tags from file columns are retained. Tags are saved only after confirmation."
+msgstr "Diese Tags werden unabhängig von den importierten Spalten ergänzt. Bestehende Tags bleiben erhalten; Dopplungen werden entfernt."
+
+
+msgid "Search or create a tag"
+msgstr "Tags suchen oder einen neuen Tag anlegen"
+
+
+msgid "Create new tag"
+msgstr "Tag hinzufügen"
+
+
+msgid "External news service"
+msgstr "Externer Nachrichtendienst"
+
+
+msgid "Allow ContactPanda news to be loaded from mycontactpanda.com."
+msgstr "Nachrichten von ContactPanda über mycontactpanda.com laden erlauben."
+
+
+msgid "Optional. When enabled, the dashboard requests the public news feed from Kultur3 GmbH. This sends the server IP address and normal connection data, but no contacts, orders or mailing lists. You can withdraw permission here at any time."
+msgstr "Optional. Wenn aktiviert, ruft das Dashboard den öffentlichen Nachrichtenfeed der Kultur3 GmbH ab. Dabei werden die Server-IP-Adresse und übliche Verbindungsdaten übermittelt, jedoch keine Kontakte, Bestellungen oder Verteiler. Die Freigabe kann hier jederzeit widerrufen werden."
+
+
+msgid "Privacy information"
+msgstr "Datenschutzhinweise"
+
+
+msgid "External news is disabled. ContactPanda works without this service."
+msgstr "Externe Nachrichten sind deaktiviert. ContactPanda funktioniert auch ohne diesen Dienst."
+
+
+msgid "Manage news permission in general settings"
+msgstr "Nachrichtenfreigabe in den allgemeinen Einstellungen verwalten"
+
+
+msgid "Spam protection could not be completed. Please try submitting the form again."
+msgstr "Der Spamschutz konnte nicht abgeschlossen werden. Bitte versuchen Sie erneut, das Formular abzusenden."
+
+
+msgid "The basic method works locally. Selecting and saving Akismet, Turnstile or reCAPTCHA enables the selected external service for supported public forms. Akismet receives the submitted name, email address, message and technical request data; Turnstile and reCAPTCHA process browser and challenge data, and verification sends the response token and IP address to the provider."
+msgstr "Der Basisschutz arbeitet lokal. Durch Auswahl und Speichern von Akismet, Turnstile oder reCAPTCHA wird der gewählte externe Dienst für unterstützte öffentliche Formulare aktiviert. Akismet erhält den eingegebenen Namen, die E-Mail-Adresse, die Nachricht und technische Anfragedaten. Turnstile und reCAPTCHA verarbeiten Browser- und Prüfdaten; zur Prüfung werden Antwort-Token und IP-Adresse an den Anbieter gesendet."
+
+msgid "No contacts were returned by the public Companies interface."
+msgstr "Keine Ansprechpartner über die öffentliche Firmen-Schnittstelle geliefert."
+
+msgid "No order was found using the contacts' email addresses."
+msgstr "Keine Bestellung anhand der E-Mail-Adressen der Ansprechpartner gefunden."
+
+msgid "No event booking was found for this person."
+msgstr "Keine Veranstaltungsbuchung für diese Person gefunden."
+
+msgid "Booking"
+msgstr "Buchung"
+
+msgid "Enable marketable status for multiple people"
+msgstr "Marketing erlaubt für mehrere Personen aktivieren"
+
+msgid "Only selected people without an unsubscribe or blocked status will be changed. Already marketable contacts remain unchanged."
+msgstr "Nur ausgewählte Personen ohne Abmeldung oder Sperrstatus werden geändert. Bereits marketable Kontakte bleiben unverändert."
+
+msgid "0 people selected"
+msgstr "0 Personen ausgewählt"
+
+msgid "Note / evidence"
+msgstr "Notiz / Nachweis"
+
+msgid "I confirm that explicit marketing consent exists for every selected person."
+msgstr "Ich bestätige, dass für jede ausgewählte Person eine ausdrückliche Marketingzustimmung vorliegt."
+
+msgid "Enable with confirmation"
+msgstr "Verbindlich aktivieren"
+
+msgid "Create person"
+msgstr "Person anlegen"
+
+msgid "Edit consent"
+msgstr "Zustimmung bearbeiten"
+
+msgid "Only change this when consent, withdrawal or an administrator block is actually documented. Every change is recorded in the audit log."
+msgstr "Nur ändern, wenn die Zustimmung, der Widerruf oder eine Administratorsperre tatsächlich dokumentiert ist. Jede Änderung wird im Prüfprotokoll festgehalten."
+
+msgid "Save with confirmation"
+msgstr "Verbindlich speichern"
+
+msgid "Selecting a tag saves it immediately for this contact. Press Enter to create a new tag."
+msgstr "Die Auswahl eines Tags speichert ihn sofort bei diesem Kontakt. Mit der Eingabetaste kann ein neuer Tag erstellt werden."
+
+msgid "No linked WordPress/WooCommerce customer account. The contact address is saved independently; billing and shipping addresses become available after an account is linked."
+msgstr "Kein WordPress-/WooCommerce-Kundenkonto verknüpft. Die Kontaktadresse wird unabhängig gespeichert; Rechnungs- und Lieferadressen stehen nach der Kontoverknüpfung zur Verfügung."
+
+msgid "Only the WooCommerce customer profile is saved. Existing orders and historical invoices are not changed."
+msgstr "Gespeichert wird ausschließlich das WooCommerce-Kundenprofil. Bestehende Bestellungen und historische Rechnungen werden nicht verändert."
+
+msgid "No order was found using the email address."
+msgstr "Keine Bestellung anhand der E-Mail-Adresse gefunden."
+
+msgid "Payment method"
+msgstr "Zahlungsart"
+
+msgid "Grand total"
+msgstr "Gesamtsumme"
+
+msgid "Link existing account"
+msgstr "Bestehendes Konto verknüpfen"
+
+msgid "No user account"
+msgstr "Kein Benutzerkonto"
+
+msgid "Send an invitation to set the password."
+msgstr "Einladung zum Festlegen des Passworts senden."
+
+msgid "System status"
+msgstr "Systemstatus"
+
+msgid "Additional newsletter display"
+msgstr "Zusätzliche Newsletter-Anzeige"
+
+msgid "Allow ContactPanda news to be loaded from pandacosmo.com."
+msgstr "Abruf von ContactPanda-Neuigkeiten von pandacosmo.com erlauben."
+
+msgid "Compact and responsive"
+msgstr "Kompakt und responsiv"
+
+msgid "Floating footer"
+msgstr "Schwebende Fußleiste"
+
+msgid "Form layout"
+msgstr "Formularlayout"
+
+msgid "Hide after closing for hours (0: current tab session)"
+msgstr "Nach dem Schließen für Stunden ausblenden (0: aktuelle Tabsitzung)"
+
+msgid "Only embedded forms"
+msgstr "Nur eingebettete Formulare"
+
+msgid "Popup and floating footer"
+msgstr "Popup und schwebende Fußleiste"
+
+msgid "Show popup after seconds"
+msgstr "Popup nach Sekunden anzeigen"
+
+msgid "Timed popup"
+msgstr "Zeitgesteuertes Popup"
+
+msgid "Only technical license and installation data is sent to pandacosmo.com. Contacts, orders, messages, and newsletter content are never transmitted."
+msgstr "An pandacosmo.com werden nur technische Lizenz- und Installationsdaten gesendet. Kontakte, Bestellungen, Nachrichten und Newsletter-Inhalte werden niemals übertragen."
+
+msgid "First page"
+msgstr "Erste Seite"
+
+msgid "Last page"
+msgstr "Letzte Seite"
+
+msgid "Pages"
+msgstr "Seiten"
+
+msgid "Add first name"
+msgstr "Vorname hinzufügen"
+
+msgid "All languages"
+msgstr "Alle Sprachen"
+
+msgid "Search now"
+msgstr "Jetzt suchen"
+
+msgid "The result list is limited. Additional matches may exist; review these groups and run the check again."
+msgstr "Die Ergebnisliste ist begrenzt. Weitere Treffer sind möglich. Bitte diese Gruppen prüfen und die Prüfung anschließend erneut ausführen."
+
+msgid "There are no contacts to review yet."
+msgstr "Es sind noch keine Kontakte für die Prüfung vorhanden."
+
+msgid "Groundhogg records are read-only. Editing and ongoing synchronization are not available. Use the migration assistant to create independent ContactPanda records."
+msgstr "Groundhogg-Daten sind schreibgeschützt. Eine Bearbeitung oder laufende Synchronisierung wird nicht angeboten. Der Migrationsassistent erstellt unabhängige ContactPanda-Datensätze."
+
+msgid "The duplicate review could not be completed. Please try again; an incomplete review does not mean there are no duplicates."
+msgstr "Die Dublettenprüfung konnte nicht abgeschlossen werden. Bitte erneut versuchen; eine unvollständige Prüfung bedeutet nicht, dass keine Dubletten vorhanden sind."
+
+msgid "Groundhogg read-only preview"
+msgstr "Groundhogg-Datenvorschau (schreibgeschützt)"
+
+msgid "Groundhogg data is read-only. Migrate to ContactPanda before editing."
+msgstr "Groundhogg-Daten sind schreibgeschützt. Vor der Bearbeitung nach ContactPanda migrieren."
+
+msgid "Preview existing Groundhogg records without changing them. Migrate to the ContactPanda database to edit contacts, forms and templates."
+msgstr "Vorhandene Groundhogg-Daten unverändert ansehen. Zum Bearbeiten von Kontakten, Formularen und Vorlagen die Daten zuerst nach ContactPanda migrieren."
+
+msgid "%d contacts checked."
+msgstr "%d Kontakte geprüft."
+
+msgid "No likely duplicates match the current review and search."
+msgstr "Keine wahrscheinlichen Dubletten für diese Prüfung und Suche gefunden."
+
+msgid "The field group was saved."
+msgstr "Die Feldgruppe wurde gespeichert."
+
+msgid "The group could not be saved."
+msgstr "Die Gruppe konnte nicht gespeichert werden."
+
+msgid "The selected fields have changed. Reload the list before trying again."
+msgstr "Die ausgewählten Felder wurden inzwischen geändert. Liste vor einem erneuten Versuch neu laden."
