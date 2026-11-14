@@ -46,8 +46,8 @@ final class ContactPanda_Runtime {
 
 	/** Return the current action without exposing request payloads. */
 	public static function request_action() {
-		$value = $_REQUEST['action'] ?? ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- routing only.
-		return is_scalar( $value ) ? sanitize_key( wp_unslash( (string) $value ) ) : '';
+		$value = sanitize_key( wp_unslash( $_REQUEST['action'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- routing only.
+		return $value;
 	}
 
 	/** Match an admin page or action while keeping cron/REST/AJAX workers functional. */

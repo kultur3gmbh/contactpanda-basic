@@ -44,7 +44,7 @@ $contactpanda_test_option = 'unknown';
 verify_event( '' === ContactPanda_Events::source(), 'Reject unavailable saved sources.' );
 
 $identity_method = new ReflectionMethod( 'ContactPanda_Events', 'contact_identity_maps' );
-$identity_method->setAccessible( true );
+if ( PHP_VERSION_ID < 80100 ) $identity_method->setAccessible( true );
 $identity = $identity_method->invoke(
 	null,
 	array(

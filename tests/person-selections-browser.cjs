@@ -1,0 +1,30 @@
+const cp=require('child_process'),fs=require('fs'),os=require('os'),path=require('path'),assert=require('assert'),http=require('http');
+const root=path.resolve(__dirname,'../contactpanda'),profile=fs.mkdtempSync(path.join(os.tmpdir(),'cp-selection-browser-'));
+const chrome=process.env.CHROME_BIN||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const browser=cp.spawn(chrome,['--headless','--disable-gpu','--disable-extensions','--no-first-run','--remote-debugging-pipe','--user-data-dir='+profile,'about:blank'],{stdio:['ignore','ignore','ignore','pipe','pipe']});
+let buf='',i=0,pending=new Map();browser.stdio[4].on('data',b=>{buf+=b;let k;while((k=buf.indexOf('\0'))>=0){let x=JSON.parse(buf.slice(0,k));buf=buf.slice(k+1);if(pending.has(x.id)){pending.get(x.id)(x);pending.delete(x.id)}}});
+function req(method,params={},sessionId){return new Promise(r=>{pending.set(++i,r);browser.stdio[3].write(JSON.stringify({id:i,method,params,sessionId})+'\0')})}
+const server=http.createServer((request,response)=>{response.end('<html lang="de"><body>Fixture</body></html>')});
+(async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const {result:{targetId}}=await req('Target.createTarget',{url:'about:blank'}),{result:{sessionId:s}}=await req('Target.attachToTarget',{targetId,flatten:true});
+async function run(expression){const r=await req('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true},s);if(r.result.exceptionDetails)throw Error(JSON.stringify(r.result.exceptionDetails));return r.result.result.value;}
+await req('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/?s=Fixture'},s);await run('new Promise(r=>setTimeout(r,200))');
+await run(`document.body.innerHTML='<form class="contactpanda-search"><div class="contactpanda-people-search-row"><input name="s" value="Fixture"><button type="button" class="cp-selection-add">?+</button></div></form><div class="contactpanda-bulk-toolbar"><select id="contactpanda-bulk-action"><option value="selection_save">Save</option><option value="merge">Merge</option><option value="selection_remove">Remove</option></select><button type="button" class="contactpanda-open-bulk">Run</button><span class="contactpanda-bulk-selection"></span></div><input type="checkbox" class="contactpanda-select-all"><input type="checkbox" class="contactpanda-person-select" value="2"><input type="checkbox" class="contactpanda-person-select" value="3"><form id="contactpanda-campaign-form"><input name="subject" value="Keep draft"><fieldset class="contactpanda-audience-source"><label hidden><input type="radio" name="audience_source" value="manual"><span class="cp-manual-selection-label"></span></label><input name="manual_contact_ids" type="hidden"><div class="contactpanda-customer-search-results"></div></fieldset></form>';
+window.__errors=[];addEventListener('error',e=>__errors.push(e.message));window.CONTACTPANDA_CONFIG={};window.CP_SELECTIONS={ajax:'/ajax',nonce:'fixture',user:1,source:'contactpanda',current:0,rows:[{id:7,name:'Fixture saved',count:2}],i18n:{name:'Name',save:'Speichern',cancel:'Abbrechen',load:'Auswahl laden',error:'Fehler'}};sessionStorage.setItem('cp-selection:1:contactpanda',JSON.stringify({ids:['1'],add:true,query:'?s=Previous'}));window.fetch=()=>Promise.resolve({json:()=>Promise.resolve({success:true,data:{id:7,name:'Fixture saved',ids:[2,3]}})});`);
+await run(fs.readFileSync(root+'/assets/contactpanda-admin.js','utf8'));
+await run(fs.readFileSync(root+'/assets/contactpanda-selections.js','utf8'));
+assert.deepEqual(await run('ContactPandaSelections.ids()'),['1','2','3']);
+assert.equal(await run('document.querySelector(".contactpanda-select-all").checked'),true);
+await run(`document.querySelector('#contactpanda-bulk-action').value='selection_remove';document.querySelector('.contactpanda-open-bulk').click();new Promise(r=>setTimeout(r,30))`);
+assert.deepEqual(await run('ContactPandaSelections.ids()'),['1']);
+assert.equal(await run('document.querySelectorAll(".contactpanda-person-select:checked").length'),0);
+await run(`document.querySelector('.contactpanda-select-all').checked=true;document.querySelector('.contactpanda-select-all').dispatchEvent(new Event('change',{bubbles:true}));new Promise(r=>setTimeout(r,30))`);
+assert.deepEqual(await run('ContactPandaSelections.ids()'),['1','2','3']);
+await run(`var chooser=document.querySelector('.cp-saved-person-selection select');chooser.value='7';chooser.dispatchEvent(new Event('change'));new Promise(r=>setTimeout(r,30))`);
+assert.equal(await run('document.querySelector("[name=manual_contact_ids]").value'),'2,3');
+assert.equal(await run('document.querySelector("[name=subject]").value'),'Keep draft');
+assert.equal(await run('document.querySelector("[name=audience_source]").checked'),true);
+assert.equal(await run('document.querySelectorAll(".contactpanda-people-search-row select").length'),1);
+assert.deepEqual(await run('__errors'),[]);
+console.log('PASS additive selection across searches, visible header selection, removal without deletion, saved-list chooser and newsletter draft retention');
+})().catch(e=>{console.error(e);process.exitCode=1}).finally(()=>{browser.kill();server.close()});
+setTimeout(()=>{browser.kill();server.close();process.exitCode=1},45000).unref();

@@ -5,6 +5,7 @@
 	var i18n = config.i18n || {};
 	/* Public Panda action contract. Prefer data-contactpanda-action in markup. */
 	var actionDefinitions = {
+		doorClosed: {customIcon: 'door-closed'}, doorOpen: {customIcon: 'door-open'},
 		view: {icon: 'visibility'}, edit: {icon: 'edit'}, duplicate: {icon: 'admin-page'}, delete: {icon: 'trash', state: 'danger'},
 		confirm: {icon: 'yes-alt', state: 'success'}, cancel: {icon: 'dismiss', state: 'danger'}, email: {icon: 'email-alt'}, report: {icon: 'chart-bar'},
 		external: {icon: 'external'}, publish: {icon: 'megaphone', state: 'primary'}, archive: {icon: 'archive'}, deactivate: {customIcon: 'power', state: 'danger'},
@@ -18,6 +19,7 @@
 		test: {icon: 'admin-tools'}, start: {icon: 'controls-play'}
 	};
 	var actionIcons = [
+		[/^(open door|tür öffnen|tuer oeffnen)$/i, 'doorOpen'], [/^(close door|tür schließen|tuer schliessen)$/i, 'doorClosed'],
 		[/^(view|preview|details|show|anzeigen|ansehen|vorschau|details anzeigen|view \/ edit|ansehen \/ bearbeiten)$/i, 'view'],
 		[/^(edit|bearbeiten|ändern)( .+)?$/i, 'edit'], [/^(delete|trash|löschen|in den papierkorb|in papierkorb verschieben)( .+)?$/i, 'delete'],
 		[/^(remove assignment|zuordnung entfernen|remove|entfernen)$/i, 'remove'], [/^(duplicate|copy|duplizieren|kopieren)( .+)?$/i, 'duplicate'],
@@ -506,7 +508,7 @@
 		control.classList.add('contactpanda-large-action');
 		if (control.classList.contains('button-primary') || action === 'publish') control.classList.add('is-primary');
 		if (control.disabled || control.getAttribute('aria-disabled') === 'true') control.classList.add('is-disabled');
-		if (!definition) return;
+		if (!definition || control.querySelector('svg')) return;
 		control.dataset.contactpandaActionReady = '1';
 		control.dataset.contactpandaAction = action;
 		control.classList.add('contactpanda-large-action-' + action.replace(/([A-Z])/g, '-$1').toLowerCase());
@@ -525,7 +527,19 @@
 		});
 	}
 
+	/** A reusable staged tag chooser, without automatic writes to a contact. */
+	function enhanceTagSelect(root) {
+		if(root.dataset.tagSelectReady)return;root.dataset.tagSelectReady='1';
+		var choices=[];try{choices=JSON.parse(root.dataset.choices||'[]');}catch(ignore){}
+		var tokens=document.createElement('div'),input=document.createElement('input'),panel=document.createElement('div'),names=[];
+		tokens.className='contactpanda-token-control';input.className='contactpanda-token-input';input.type='text';input.autocomplete='off';input.placeholder=root.dataset.placeholder;input.setAttribute('aria-label',root.dataset.placeholder);input.setAttribute('role','combobox');input.setAttribute('aria-expanded','false');panel.className='contactpanda-token-suggestions';panel.hidden=true;panel.setAttribute('role','listbox');tokens.append(input);root.append(tokens,panel);
+		function add(name){name=String(name).trim();if(!name)return;if(names.some(n=>n.toLocaleLowerCase()===name.toLocaleLowerCase())){input.value='';show();return;}names.push(name);var token=document.createElement('span'),hidden=document.createElement('input'),remove=document.createElement('button');token.className='contactpanda-tag';token.append(document.createTextNode(name));hidden.type='hidden';hidden.name=root.dataset.name;hidden.value=name;remove.type='button';remove.className='button-link';remove.textContent='×';remove.setAttribute('aria-label',name+' ×');remove.onclick=function(){names=names.filter(n=>n!==name);token.remove();show();};token.append(hidden,remove);tokens.insertBefore(token,input);input.value='';show();input.focus();}
+		function show(){panel.replaceChildren();var query=input.value.trim().toLocaleLowerCase();choices.filter(n=>!names.includes(n)&&n.toLocaleLowerCase().includes(query)).slice(0,40).forEach(function(name){var option=document.createElement('button');option.type='button';option.className='button-link contactpanda-token-suggestion';option.setAttribute('role','option');option.textContent=name;option.onclick=function(){add(name);};panel.append(option);});if(query&&!choices.some(n=>n.toLocaleLowerCase()===query)){var create=document.createElement('button');create.type='button';create.className='button-link contactpanda-token-suggestion';create.textContent='+ '+root.dataset.create+': '+input.value.trim();create.onclick=function(){add(input.value);};panel.append(create);}panel.hidden=false;input.setAttribute('aria-expanded','true');}
+		input.onfocus=show;input.oninput=show;input.onkeydown=function(e){if(e.key==='Enter'&&input.value.trim()){e.preventDefault();add(input.value);}if(e.key==='Escape'){panel.hidden=true;input.setAttribute('aria-expanded','false');}};root.addEventListener('focusout',function(){setTimeout(function(){if(!root.contains(document.activeElement)){panel.hidden=true;input.setAttribute('aria-expanded','false');}},0);});root.closest('form')?.addEventListener('submit',function(){if(input.value.trim())add(input.value);});
+	}
+
 	function enhance(root) {
+		findAll(root,'[data-panda-tag-select]').forEach(enhanceTagSelect);
 		findAll(root, '.contactpanda-wrap input[type="color"],.contactpanda-business-wrap input[type="color"],.pandawoo-pro-admin input[type="color"],.pandawoo-page input[type="color"],.pandawoo-page-shell input[type="color"],.panda-seasons-dashboard input[type="color"],.panda-seasons-free-dashboard input[type="color"],.panda-seasons-templates-page input[type="color"],.panda-seasons-preview-page input[type="color"],.cpls-wrap input[type="color"]').forEach(enhanceColorPicker);
 		findAll(root, '.contactpanda-image-picker-source,.contactpanda-newsletter-logo-setting').forEach(enhanceStaticImagePicker);
 		enhanceLargeActions(root || document);

@@ -5,6 +5,7 @@
 	if (!builder) return;
 	var rules = builder.querySelector('.contactpanda-segment-rules');
 	var template = builder.querySelector('template.contactpanda-segment-rule-template');
+	if (!rules || !template) return;
 
 	function escapeHtml(value) {
 		return String(value).replace(/[&<>"]/g, function (character) {

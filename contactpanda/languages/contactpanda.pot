@@ -1,5 +1,284 @@
 msgid ""
 msgstr ""
+"Project-Id-Version: ContactPanda 0.9.19\n"
+"Report-Msgid-Bugs-To: https://kultur3.com/\n"
+"POT-Creation-Date: 2026-10-23 14:30+0200\n"
+"PO-Revision-Date: 2026-10-23 14:30+0200\n"
+"Last-Translator: Kultur3 GmbH\n"
+"Language-Team: German\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Domain: contactpanda\n"
+
+msgid "Available fields"
+msgstr ""
+
+msgid "Selected fields"
+msgstr ""
+
+msgid "File columns"
+msgstr ""
+
+msgid "Search fields"
+msgstr ""
+
+msgid "Up"
+msgstr ""
+
+msgid "Down"
+msgstr ""
+
+msgid "Saved templates"
+msgstr ""
+
+msgid "Load"
+msgstr ""
+
+msgid "Save template"
+msgstr ""
+
+msgid "Share with administrators"
+msgstr ""
+
+msgid "Delete this template?"
+msgstr ""
+
+msgid "Template could not be saved."
+msgstr ""
+
+msgid "Drag fields from the pool or click to add them. Use the arrow buttons to reorder."
+msgstr ""
+
+msgid "Import target"
+msgstr ""
+
+msgid "No fields selected."
+msgstr ""
+
+msgid "Import CSV or Excel"
+msgstr ""
+
+msgid "Upload the file, select a worksheet and drag matching fields to its columns. Data is saved only after confirmation. Empty values do not erase existing data."
+msgstr ""
+
+msgid "Existing records"
+msgstr ""
+
+msgid "Only add new records"
+msgstr ""
+
+msgid "Update with non-empty values"
+msgstr ""
+
+msgid "Maximum 5 MB, 5000 data rows per worksheet. Formula results are read without executing formulas. Text cells preserve leading zeroes."
+msgstr ""
+
+msgid "Worksheet"
+msgstr ""
+
+msgid "Select worksheet"
+msgstr ""
+
+msgid "The import preview expired."
+msgstr ""
+
+msgid "Export Excel"
+msgstr ""
+
+msgid "Export CSV or Excel"
+msgstr ""
+
+msgid "Export companies from the leading source system in Groundhogg mode."
+msgstr ""
+
+msgid "For selected or filtered people, use Export in the people list."
+msgstr ""
+
+msgid "Select at least one field."
+msgstr ""
+
+msgid "Choose a CSV or XLSX file."
+msgstr ""
+
+msgid "Transfer product data with field mapping and a preview before import."
+msgstr ""
+
+msgid "Export products"
+msgstr ""
+
+msgid "Upload a file. Its columns are read before you assign fields. Nothing is saved until the preview is confirmed."
+msgstr ""
+
+msgid "Maximum 5 MB, 5000 data rows per worksheet. Formula results are read without executing formulas."
+msgstr ""
+
+msgid "Read file"
+msgstr ""
+
+msgid "Field mapping"
+msgstr ""
+
+msgid "Existing products"
+msgstr ""
+
+msgid "Only add new products"
+msgstr ""
+
+msgid "Update mapped, non-empty values"
+msgstr ""
+
+msgid "New attribute terms"
+msgstr ""
+
+msgid "Only use existing terms"
+msgstr ""
+
+msgid "Create missing terms"
+msgstr ""
+
+msgid "Several attribute values are separated by |. Unknown terms are reported before confirmation. Empty cells preserve existing values."
+msgstr ""
+
+msgid "Check mapping and preview"
+msgstr ""
+
+msgid "Row %d: a product name is required for new products."
+msgstr ""
+
+msgid "The preview expired."
+msgstr ""
+
+msgid "Products to include"
+msgstr ""
+
+msgid "All products"
+msgstr ""
+
+msgid "Filtered products"
+msgstr ""
+
+msgid "Selected products"
+msgstr ""
+
+msgid "Variations"
+msgstr ""
+
+msgid "With the parent product"
+msgstr ""
+
+msgid "As separate rows"
+msgstr ""
+
+msgid "Print / save as PDF"
+msgstr ""
+
+msgid "No valid upload received."
+msgstr ""
+
+msgid "Import errors"
+msgstr ""
+
+msgid "Unknown attribute terms"
+msgstr ""
+
+msgid "These terms will be created after confirmation."
+msgstr ""
+
+msgid "These terms are skipped. Existing assignments are retained if no valid terms remain."
+msgstr ""
+
+msgid "Action"
+msgstr ""
+
+msgid "I have checked the preview and explicitly confirm this import."
+msgstr ""
+
+msgid "Run import"
+msgstr ""
+
+msgid "create"
+msgstr ""
+
+msgid "update"
+msgstr ""
+
+msgid "skip"
+msgstr ""
+
+msgid "Import mode"
+msgstr ""
+
+msgid "Only newly created records since the last successful import"
+msgstr ""
+
+msgid "Update existing records from Groundhogg too"
+msgstr ""
+
+msgid "New-only mode preserves existing edits, deleted contacts and existing tag assignments. Records without a reliable creation date are skipped on repeat imports."
+msgstr ""
+
+msgid "Invalid field mapping."
+msgstr ""
+
+msgid "Invalid or oversized worksheet."
+msgstr ""
+
+msgid "External XML entities are not supported."
+msgstr ""
+
+msgid "Invalid workbook XML."
+msgstr ""
+
+msgid "Maximum file size: 5 MB."
+msgstr ""
+
+msgid "PHP ZIP and SimpleXML are required for Excel."
+msgstr ""
+
+msgid "Invalid Excel file."
+msgstr ""
+
+msgid "Workbook exceeds import limits."
+msgstr ""
+
+msgid "Maximum 20 worksheets."
+msgstr ""
+
+msgid "Maximum 5000 data rows per worksheet."
+msgstr ""
+
+msgid "Maximum 250000 cells per workbook."
+msgstr ""
+
+msgid "Maximum 512 columns."
+msgstr ""
+
+msgid "A worksheet cell contains an Excel error."
+msgstr ""
+
+msgid "No worksheet with a header row found."
+msgstr ""
+
+msgid "File could not be read."
+msgstr ""
+
+msgid "Missing header row."
+msgstr ""
+
+msgid "File exceeds import limits."
+msgstr ""
+
+msgid "PHP ZIP is required for Excel."
+msgstr ""
+
+msgid "Excel file could not be created."
+msgstr ""
+
+msgid "Excel file could not be completed."
+msgstr ""
 
 msgid "Website owner"
 msgstr ""
@@ -176,18 +455,6 @@ msgstr ""
 msgid "Placeholders such as {campaign_name}, {campaign_id} and {subject_variant} are resolved separately for every delivery."
 msgstr ""
 
-"Project-Id-Version: ContactPanda 0.9.19\n"
-"Report-Msgid-Bugs-To: https://kultur3.com/\n"
-"POT-Creation-Date: 2026-10-23 14:30+0200\n"
-"PO-Revision-Date: 2026-10-23 14:30+0200\n"
-"Last-Translator: Kultur3 GmbH\n"
-"Language-Team: German\n"
-"Language: \n"
-"MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Domain: contactpanda\n"
 
 msgid "Hero"
 msgstr ""
@@ -7741,6 +8008,9 @@ msgstr ""
 msgid "Newsletter and automations"
 msgstr ""
 
+msgid "Current mailing"
+msgstr ""
+
 msgid "Last mailing"
 msgstr ""
 
@@ -8989,4 +9259,940 @@ msgid "Only featured events"
 msgstr ""
 
 msgid "All"
+msgstr ""
+
+msgid "Company and contact details"
+msgstr ""
+
+msgid "Company and contact details saved."
+msgstr ""
+
+msgid "Bank details"
+msgstr ""
+
+msgid "Account holder"
+msgstr ""
+
+msgid "Save company and contact details"
+msgstr ""
+
+msgid "Change these details under Company and contact details"
+msgstr ""
+
+msgid "Email appearance is configured centrally in the General settings tab of the system email editor below."
+msgstr ""
+msgid "Show date"
+msgstr ""
+
+msgid "Show location"
+msgstr ""
+
+msgid "Text alignment"
+msgstr ""
+
+msgid "Add tags"
+msgstr ""
+
+msgid "Remove tags"
+msgstr ""
+
+msgid "Edit tags for selected people"
+msgstr ""
+
+msgid "Select one or more existing tags. The selected bulk action determines whether they are added or removed."
+msgstr ""
+
+msgid "Apply tag action"
+msgstr ""
+
+msgid "Add tags to selected people"
+msgstr ""
+
+msgid "Remove tags from selected people"
+msgstr ""
+
+msgid "Remove selected tag"
+msgstr ""
+
+msgid "Updating tags…"
+msgstr ""
+
+msgid "The selected tags were not found."
+msgstr ""
+
+#, php-format
+msgid "Tags updated for %1$d people. Failed: %2$d."
+msgstr ""
+
+msgid "New-only preview: %1$d people and %2$d companies will be added. Existing records remain unchanged."
+msgstr ""
+
+
+msgid "A record changed after the preview. Return to the import and review it again."
+msgstr ""
+
+
+msgid "Append to note text"
+msgstr ""
+
+
+msgid "Combine into a group"
+msgstr ""
+
+
+msgid "Confirm import"
+msgstr ""
+
+
+msgid "ContactPanda fields"
+msgstr ""
+
+
+msgid "Existing value"
+msgstr ""
+
+
+msgid "Group name"
+msgstr ""
+
+
+msgid "I checked the proposed changes."
+msgstr ""
+
+
+msgid "Imported note"
+msgstr ""
+
+
+msgid "Imported value"
+msgstr ""
+
+
+msgid "No changes have been saved. Select each existing value you want to replace. Notes are appended and tags are combined. Check the proposed name split before confirming."
+msgstr ""
+
+
+msgid "Note title"
+msgstr ""
+
+
+msgid "Reason for unsubscribing (optional)"
+msgstr ""
+
+
+msgid "Replace"
+msgstr ""
+
+
+msgid "Replace existing value"
+msgstr ""
+
+
+msgid "Review import changes"
+msgstr ""
+
+
+msgid "Row"
+msgstr ""
+
+
+msgid "Select all fields"
+msgstr ""
+
+
+msgid "Select fields and enter a group name."
+msgstr ""
+
+
+msgid "The imported note could not be saved."
+msgstr ""
+
+
+msgid "Details could not be loaded."
+msgstr ""
+
+
+msgid "Available filters"
+msgstr ""
+
+
+msgid "Minimum"
+msgstr ""
+
+
+msgid "Maximum"
+msgstr ""
+
+
+msgid "Additional tags for this import"
+msgstr ""
+
+
+msgid "Add these tags to every successfully imported person. Existing tags and tags from file columns are retained. Tags are saved only after confirmation."
+msgstr ""
+
+
+msgid "Search or create a tag"
+msgstr ""
+
+
+msgid "Create new tag"
+msgstr ""
+
+
+msgid "External news service"
+msgstr ""
+
+
+msgid "Allow ContactPanda news to be loaded from mycontactpanda.com."
+msgstr ""
+
+
+msgid "Optional. When enabled, the dashboard requests the public news feed from Kultur3 GmbH. This sends the server IP address and normal connection data, but no contacts, orders or mailing lists. You can withdraw permission here at any time."
+msgstr ""
+
+
+msgid "Privacy information"
+msgstr ""
+
+
+msgid "External news is disabled. ContactPanda works without this service."
+msgstr ""
+
+
+msgid "Manage news permission in general settings"
+msgstr ""
+
+
+msgid "Spam protection could not be completed. Please try submitting the form again."
+msgstr ""
+
+
+msgid "The basic method works locally. Selecting and saving Akismet, Turnstile or reCAPTCHA enables the selected external service for supported public forms. Akismet receives the submitted name, email address, message and technical request data; Turnstile and reCAPTCHA process browser and challenge data, and verification sends the response token and IP address to the provider."
+msgstr ""
+
+msgid "No contacts were returned by the public Companies interface."
+msgstr ""
+
+msgid "No order was found using the contacts' email addresses."
+msgstr ""
+
+msgid "No event booking was found for this person."
+msgstr ""
+
+msgid "Booking"
+msgstr ""
+
+msgid "Enable marketable status for multiple people"
+msgstr ""
+
+msgid "Only selected people without an unsubscribe or blocked status will be changed. Already marketable contacts remain unchanged."
+msgstr ""
+
+msgid "0 people selected"
+msgstr ""
+
+msgid "Note / evidence"
+msgstr ""
+
+msgid "I confirm that explicit marketing consent exists for every selected person."
+msgstr ""
+
+msgid "Enable with confirmation"
+msgstr ""
+
+msgid "Create person"
+msgstr ""
+
+msgid "Edit consent"
+msgstr ""
+
+msgid "Only change this when consent, withdrawal or an administrator block is actually documented. Every change is recorded in the audit log."
+msgstr ""
+
+msgid "Save with confirmation"
+msgstr ""
+
+msgid "Selecting a tag saves it immediately for this contact. Press Enter to create a new tag."
+msgstr ""
+
+msgid "No linked WordPress/WooCommerce customer account. The contact address is saved independently; billing and shipping addresses become available after an account is linked."
+msgstr ""
+
+msgid "Only the WooCommerce customer profile is saved. Existing orders and historical invoices are not changed."
+msgstr ""
+
+msgid "No order was found using the email address."
+msgstr ""
+
+msgid "Payment method"
+msgstr ""
+
+msgid "Grand total"
+msgstr ""
+
+msgid "Link existing account"
+msgstr ""
+
+msgid "No user account"
+msgstr ""
+
+msgid "Send an invitation to set the password."
+msgstr ""
+
+msgid "System status"
+msgstr ""
+
+msgid "%d bounces"
+msgstr ""
+
+msgid "%d selected people"
+msgstr ""
+
+msgid "1 selected person"
+msgstr ""
+
+msgid "Add first name"
+msgstr ""
+
+msgid "Add person"
+msgstr ""
+
+msgid "Additional newsletter display"
+msgstr ""
+
+msgid "Akismet-API-Schlüssel"
+msgstr ""
+
+msgid "Aktivieren Sie SMS- und WhatsApp-Gateways mit ContactPanda Plus."
+msgstr ""
+
+msgid "All languages"
+msgstr ""
+
+msgid "Allow ContactPanda news to be loaded from pandacosmo.com."
+msgstr ""
+
+msgid "Allow hiding non-critical admin notices"
+msgstr ""
+
+msgid "Also permanently delete all stored values for this field."
+msgstr ""
+
+msgid "Ausgewählte Personen (%d) in den Papierkorb verschieben? Sie können aus dem Papierkorb wiederhergestellt werden."
+msgstr ""
+
+msgid "BIC"
+msgstr ""
+
+msgid "Benutzerkonten und Profildaten"
+msgstr ""
+
+msgid "Compact and responsive"
+msgstr ""
+
+msgid "Copy shortcode"
+msgstr ""
+
+msgid "Corner radius"
+msgstr ""
+
+msgid "Create additional fields for people or companies in the ContactPanda database. Product and content fields remain managed by their specialist plugins such as WooCommerce or ACF."
+msgstr ""
+
+msgid "Der Spamschutz ist immer aktiv und gilt automatisch für Newsletter- und Registrierungsformulare, den ContactPanda-Formulareditor, Panda-Seasons-Anmeldungen sowie Contact Form 7. Abgewiesene Anfragen erzeugen weder einen Kontakt noch eine Double-Opt-in-E-Mail."
+msgstr ""
+
+msgid "Die Methode wird zentral festgelegt und automatisch in alle unterstützten Formulare integriert."
+msgstr ""
+
+msgid "Display of admin notices"
+msgstr ""
+
+msgid "Edit campaign"
+msgstr ""
+
+msgid "Edit custom field"
+msgstr ""
+
+msgid "English"
+msgstr ""
+
+msgid "Erreichen Sie Ihre Kontakte direkt auf den Kanälen, die sie täglich nutzen. ContactPanda Plus verbindet SMS- und WhatsApp-Gateways mit Einwilligungen, Automatisierungen und zentral gepflegten Kontaktdaten."
+msgstr ""
+
+msgid "Externe Spamprüfung"
+msgstr ""
+
+msgid "Floating footer"
+msgstr ""
+
+msgid "Form layout"
+msgstr ""
+
+msgid "Formulare und zentraler Spamschutz"
+msgstr ""
+
+msgid "German"
+msgstr ""
+
+msgid "German Market does not provide an invoice action for this order"
+msgstr ""
+
+msgid "Geschäftskunden und B2B-Profile"
+msgstr ""
+
+msgid "Hide after closing for hours (0: current tab session)"
+msgstr ""
+
+msgid "How the customer portal works"
+msgstr ""
+
+msgid "IBAN"
+msgstr ""
+
+msgid "If WooCommerce is active, ContactPanda does not create a competing account area. The available ContactPanda sections are integrated into WooCommerce “My account” instead."
+msgstr ""
+
+msgid "If WooCommerce is not active, ContactPanda provides its own customer portal for personal data, communication preferences and other available customer functions. You can use the built-in portal address, select a dedicated WordPress page, or place the shortcode on any suitable page."
+msgstr ""
+
+msgid "Installed version, available WordPress update, and optional privacy-safe runtime measurements."
+msgstr ""
+
+msgid "Installiert"
+msgstr ""
+
+msgid "Integration verfügbar"
+msgstr ""
+
+msgid "Integrationsstatus"
+msgstr ""
+
+msgid "Interactions"
+msgstr ""
+
+msgid "Kontakte und Marketingdaten"
+msgstr ""
+
+msgid "Kontakte, Tags und Einwilligungen"
+msgstr ""
+
+msgid "Kunden-, Bestell- und Profildaten"
+msgstr ""
+
+msgid "Last import"
+msgstr ""
+
+msgid "Log out"
+msgstr ""
+
+msgid "Lowercase letters, numbers and underscores. The key cannot be changed after the first save."
+msgstr ""
+
+msgid "Maintain the organisation, address, contact, tax, bank, and logo details once. ContactPanda extensions use this shared source for messages, documents, and customer-facing pages."
+msgstr ""
+
+msgid "Maximale Versuche innerhalb von 15 Minuten"
+msgstr ""
+
+msgid "Mindest-Ausfüllzeit in Sekunden"
+msgstr ""
+
+msgid "Mindestbewertung"
+msgstr ""
+
+msgid "Mindestens der unsichtbare Basisschutz wird immer angewendet. Die gewählte Methode gilt für alle unterstützten Formulare."
+msgstr ""
+
+msgid "Newsletter und Abonnenten"
+msgstr ""
+
+msgid "Niedrigere Werte sind großzügiger, höhere Werte strenger."
+msgstr ""
+
+msgid "Only embedded forms"
+msgstr ""
+
+msgid "Only the definition of “%s” will be removed. Existing values remain stored and can be restored by creating the same internal key again."
+msgstr ""
+
+msgid "Open customer portal"
+msgstr ""
+
+msgid "Optional, wenn das aktive Akismet-Plugin bereits einen Schlüssel bereitstellt."
+msgstr ""
+
+msgid "Popup and floating footer"
+msgstr ""
+
+msgid "Portal settings"
+msgstr ""
+
+msgid "Prepared"
+msgstr ""
+
+msgid "Rechtssichere WooCommerce-Daten"
+msgstr ""
+
+msgid "Remove this field definition."
+msgstr ""
+
+msgid "SMS"
+msgstr ""
+
+msgid "SMS und WhatsApp als Aktionen in Automatisierungen verwenden"
+msgstr ""
+
+msgid "SMS und WhatsApp professionell mit ContactPanda Plus versenden"
+msgstr ""
+
+msgid "SMS- und WhatsApp-Gateways"
+msgstr ""
+
+msgid "Schutzmethode"
+msgstr ""
+
+msgid "Schützt ohne externen Dienst durch ein unsichtbares Köderfeld, eine Mindest-Ausfüllzeit und ein Versuchslimit."
+msgstr ""
+
+msgid "Search now"
+msgstr ""
+
+msgid "Show all admin notices"
+msgstr ""
+
+msgid "Show customer portal"
+msgstr ""
+
+msgid "Show popup after seconds"
+msgstr ""
+
+msgid "Spamschutz"
+msgstr ""
+
+msgid "Spamschutz für öffentliche Formulare"
+msgstr ""
+
+msgid "Spamschutz speichern"
+msgstr ""
+
+msgid "Switching to “Show all admin notices” automatically restores notices previously hidden for your user account. Security, error, legal, and WordPress core notices can never be hidden."
+msgstr ""
+
+msgid "The central library returned no valid entries. Your local library was not changed."
+msgstr ""
+
+msgid "The field definition and all stored values were permanently deleted."
+msgstr ""
+
+msgid "The newsletter signup could not be processed. Please try again later."
+msgstr ""
+
+msgid "The registration could not be processed. Please try again later."
+msgstr ""
+
+msgid "The selected page only controls where the standalone portal is displayed. It does not duplicate customer data and does not change WooCommerce account settings."
+msgstr ""
+
+msgid "Timed popup"
+msgstr ""
+
+msgid "Turnstile-Geheimschlüssel"
+msgstr ""
+
+msgid "Turnstile-Website-Schlüssel"
+msgstr ""
+
+msgid "Twilio, Brevo oder einen eigenen sicheren HTTPS-Endpunkt anbinden"
+msgstr ""
+
+msgid "Unsichtbarer Basisschutz"
+msgstr ""
+
+msgid "Unsubscribe URL"
+msgstr ""
+
+msgid "Verbinden Sie Einwilligungen, Kontakte und Automatisierungen mit Ihren bevorzugten Messaging-Anbietern – zentral, nachvollziehbar und ohne doppelte Datenpflege."
+msgstr ""
+
+msgid "Verfügbare Integrationen"
+msgstr ""
+
+msgid "Versand nur mit passender Einwilligung und aktiver Gateway-Konfiguration"
+msgstr ""
+
+msgid "View evaluation"
+msgstr ""
+
+msgid "Vorhanden"
+msgstr ""
+
+msgid "Vorhandene Integrationen"
+msgstr ""
+
+msgid "Vorhandene Plugins erscheinen links mit ihrem aktuellen Integrationsstatus. Rechts sehen Sie alle Produkte, für die eine ContactPanda-Integration verfügbar ist."
+msgstr ""
+
+msgid "Waiting list"
+msgstr ""
+
+msgid "WhatsApp"
+msgstr ""
+
+msgid "Zentraler Schutz ist aktiv"
+msgstr ""
+
+msgid "reCAPTCHA-Geheimschlüssel"
+msgstr ""
+
+msgid "reCAPTCHA-Website-Schlüssel"
+msgstr ""
+
+
+msgid "Additional newsletter display"
+msgstr ""
+
+msgid "Compact and responsive"
+msgstr ""
+
+msgid "Confirm your newsletter subscription at {site_name}"
+msgstr ""
+
+msgid "Confirm your registration at {site_name}"
+msgstr ""
+
+msgid "First page"
+msgstr ""
+
+msgid "Floating footer"
+msgstr ""
+
+msgid "Form layout"
+msgstr ""
+
+msgid "Full width"
+msgstr ""
+
+msgid "Hello {first_name},\n\nplease confirm your email address by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
+msgstr ""
+
+msgid "Hello {first_name},\n\nplease confirm your newsletter subscription by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
+msgstr ""
+
+msgid "Hide after closing for hours (0: current tab session)"
+msgstr ""
+
+msgid "Last page"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
+msgid "Only embedded forms"
+msgstr ""
+
+msgid "Page %1$d of %2$d"
+msgstr ""
+
+msgid "Pages"
+msgstr ""
+
+msgid "Popup and floating footer"
+msgstr ""
+
+msgid "Previous"
+msgstr ""
+
+msgid "Show popup after seconds"
+msgstr ""
+
+msgid "Timed popup"
+msgstr ""
+
+
+msgid "Add first name"
+msgstr ""
+
+msgid "Additional newsletter display"
+msgstr ""
+
+msgid "All languages"
+msgstr ""
+
+msgid "Compact and responsive"
+msgstr ""
+
+msgid "Confirm your newsletter subscription at {site_name}"
+msgstr ""
+
+msgid "Confirm your registration at {site_name}"
+msgstr ""
+
+msgid "First page"
+msgstr ""
+
+msgid "Floating footer"
+msgstr ""
+
+msgid "Form layout"
+msgstr ""
+
+msgid "Full width"
+msgstr ""
+
+msgid "Hello {first_name},\n\nplease confirm your email address by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
+msgstr ""
+
+msgid "Hello {first_name},\n\nplease confirm your newsletter subscription by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
+msgstr ""
+
+msgid "Hide after closing for hours (0: current tab session)"
+msgstr ""
+
+msgid "Last page"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
+msgid "Only embedded forms"
+msgstr ""
+
+msgid "Page %1$d of %2$d"
+msgstr ""
+
+msgid "Pages"
+msgstr ""
+
+msgid "Popup and floating footer"
+msgstr ""
+
+msgid "Previous"
+msgstr ""
+
+msgid "Search first names"
+msgstr ""
+
+msgid "Search now"
+msgstr ""
+
+msgid "Show popup after seconds"
+msgstr ""
+
+msgid "Timed popup"
+msgstr ""
+
+
+msgid "Add first name"
+msgstr ""
+
+msgid "Additional newsletter display"
+msgstr ""
+
+msgid "All languages"
+msgstr ""
+
+msgid "Compact and responsive"
+msgstr ""
+
+msgid "Confirm your newsletter subscription at {site_name}"
+msgstr ""
+
+msgid "Confirm your registration at {site_name}"
+msgstr ""
+
+msgid "First page"
+msgstr ""
+
+msgid "Floating footer"
+msgstr ""
+
+msgid "Form layout"
+msgstr ""
+
+msgid "Full width"
+msgstr ""
+
+msgid "Hello {first_name},\n\nplease confirm your email address by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
+msgstr ""
+
+msgid "Hello {first_name},\n\nplease confirm your newsletter subscription by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
+msgstr ""
+
+msgid "Hide after closing for hours (0: current tab session)"
+msgstr ""
+
+msgid "Last page"
+msgstr ""
+
+msgid "Only embedded forms"
+msgstr ""
+
+msgid "Pages"
+msgstr ""
+
+msgid "Popup and floating footer"
+msgstr ""
+
+msgid "Search first names"
+msgstr ""
+
+msgid "Search now"
+msgstr ""
+
+msgid "Show popup after seconds"
+msgstr ""
+
+msgid "Timed popup"
+msgstr ""
+
+
+msgid "The result list is limited. Additional matches may exist; review these groups and run the check again."
+msgstr ""
+
+msgid "There are no contacts to review yet."
+msgstr ""
+
+msgid "Groundhogg records are read-only. Editing and ongoing synchronization are not available. Use the migration assistant to create independent ContactPanda records."
+msgstr ""
+
+msgid "The duplicate review could not be completed. Please try again; an incomplete review does not mean there are no duplicates."
+msgstr ""
+
+msgid "Groundhogg read-only preview"
+msgstr ""
+
+msgid "Groundhogg data is read-only. Migrate to ContactPanda before editing."
+msgstr ""
+
+msgid "Preview existing Groundhogg records without changing them. Migrate to the ContactPanda database to edit contacts, forms and templates."
+msgstr ""
+
+msgid "%d contacts checked."
+msgstr ""
+
+
+msgid "Preview existing Groundhogg records without changing them. Migrate to the ContactPanda database to edit contacts, forms and templates."
+msgstr ""
+
+msgid "The duplicate review could not be completed. Please try again; an incomplete review does not mean there are no duplicates."
+msgstr ""
+
+msgid "Groundhogg data is read-only. Migrate to ContactPanda before editing."
+msgstr ""
+
+msgid "No likely duplicates match the current review and search."
+msgstr ""
+
+msgid "Groundhogg records are read-only. Editing and ongoing synchronization are not available. Use the migration assistant to create independent ContactPanda records."
+msgstr ""
+
+msgid "Groundhogg read-only preview"
+msgstr ""
+
+msgid "%d contacts checked."
+msgstr ""
+
+msgid "There are no contacts to review yet."
+msgstr ""
+
+msgid "The result list is limited. Additional matches may exist; review these groups and run the check again."
+msgstr ""
+
+
+msgid "Groundhogg read-only preview"
+msgstr ""
+
+msgid "There are no contacts to review yet."
+msgstr ""
+
+msgid "The result list is limited. Additional matches may exist; review these groups and run the check again."
+msgstr ""
+
+msgid "%d contacts checked."
+msgstr ""
+
+msgid "Groundhogg records are read-only. Editing and ongoing synchronization are not available. Use the migration assistant to create independent ContactPanda records."
+msgstr ""
+
+msgid "Groundhogg data is read-only. Migrate to ContactPanda before editing."
+msgstr ""
+
+msgid "The duplicate review could not be completed. Please try again; an incomplete review does not mean there are no duplicates."
+msgstr ""
+
+msgid "Preview existing Groundhogg records without changing them. Migrate to the ContactPanda database to edit contacts, forms and templates."
+msgstr ""
+
+msgid "No likely duplicates match the current review and search."
+msgstr ""
+
+msgid "The field group was saved."
+msgstr ""
+
+msgid "The group could not be saved."
+msgstr ""
+
+msgid "The selected fields have changed. Reload the list before trying again."
+msgstr ""
+
+msgid "Name of selection"
+msgstr ""
+
+msgid "Save selection"
+msgstr ""
+
+msgid "Load saved selection"
+msgstr ""
+
+msgid "Delete this saved selection? Contacts are retained."
+msgstr ""
+
+msgid "The selection could not be saved."
+msgstr ""
+
+msgid "Add to existing selection"
+msgstr ""
+
+msgid "The selection no longer exists in this data source."
+msgstr ""
+
+msgid "Confirm deletion first."
+msgstr ""
+
+msgid "Enter a selection name of up to 200 characters."
+msgstr ""
+
+msgid "Select at least one person."
+msgstr ""
+
+msgid "No active people remain in this selection."
+msgstr ""
+
+msgid "Unknown selection action."
+msgstr ""
+
+msgid "Saved person selections"
+msgstr ""
+
+msgid "Fixed lists of selected people. Dynamic saved searches are managed separately above."
+msgstr ""
+
+msgid "Rename"
+msgstr ""
+
+msgid "No saved person selections yet."
+msgstr ""
+
+msgid "Remove from selection"
+msgstr ""
+
+msgid "Plus duplicate review"
+msgstr ""
+
+msgid "Record merging requires an active ContactPanda Plus license."
+msgstr ""
+
+msgid "Record merging requires ContactPanda Plus."
 msgstr ""

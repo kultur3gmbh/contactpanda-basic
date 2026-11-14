@@ -19,31 +19,40 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		add_action( 'wp_ajax_contactpanda_campaign_statuses', array( __CLASS__, 'statuses_ajax' ) );
 		add_action( 'wp_ajax_contactpanda_campaign_customer_search', array( __CLASS__, 'customer_search_ajax' ) );
 		add_action( 'wp_ajax_contactpanda_campaign_group_create', array( __CLASS__, 'campaign_group_create_ajax' ) );
+		add_action( 'admin_head', array( __CLASS__, 'modal_admin_chrome' ) );
 		add_filter( 'contactpanda_misc_settings_sections', array( __CLASS__, 'misc_sections' ) );
 		add_action( 'contactpanda_render_misc_settings_section_campaigns', array( __CLASS__, 'render_campaign_groups' ) );
 		add_action( 'admin_post_contactpanda_campaign_group', array( __CLASS__, 'campaign_group_action' ) );
+	}
+
+	public static function modal_admin_chrome() {
+		if ( empty( $_GET['contactpanda_modal'] ) || 'contactpanda-campaigns' !== sanitize_key( wp_unslash( $_GET['page'] ?? '' ) ) ) return; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presentation-only modal mode.
+		echo '<style>#adminmenumain,#wpadminbar,#wpfooter{display:none!important}html.wp-toolbar{padding-top:0!important}#wpcontent{margin-left:0!important}.contactpanda-wrap{margin:18px!important}</style>';
 	}
 
 	public static function misc_sections( $sections ) { $sections['campaigns'] = __( 'Campaigns', 'contactpanda' ); return $sections; }
 
 	private static function campaign_groups() {
 		global $wpdb; ContactPanda_Newsletter_Schema::install(); $table = ContactPanda_Newsletter_Schema::table_names()['campaign_groups'];
-		return (array) $wpdb->get_results( "SELECT * FROM `{$table}` ORDER BY name ASC", ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table.
+		return (array) $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i ORDER BY name ASC", $table ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 	}
 
 	public static function render_campaign_groups() {
 		$groups = self::campaign_groups();
+		$adding = isset( $_GET['add_campaign_group'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display routing only.
 		$edit_id = absint( $_GET['edit_campaign_group'] ?? 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only editor selection.
 		$editing = false; foreach ( $groups as $candidate ) if ( absint( $candidate['id'] ) === $edit_id ) $editing = $candidate;
-		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Campaigns', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Group related newsletter mailings in campaigns.', 'contactpanda' ) . '</p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-settings-grid"><input type="hidden" name="action" value="contactpanda_campaign_group"><input type="hidden" name="operation" value="save"><input type="hidden" name="id" value="' . esc_attr( $edit_id ) . '">'; wp_nonce_field( 'contactpanda_campaign_group' );
-		echo '<label><span>' . esc_html__( 'Campaign name', 'contactpanda' ) . '</span><input name="name" value="' . esc_attr( $editing['name'] ?? '' ) . '" required></label><label><span>' . esc_html__( 'Description', 'contactpanda' ) . '</span><input name="description" value="' . esc_attr( $editing['description'] ?? '' ) . '"></label><p><button class="button button-primary">' . esc_html( $editing ? __( 'Save changes', 'contactpanda' ) : __( 'Add campaign', 'contactpanda' ) ) . '</button>' . ( $editing ? ' <a class="button" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-settings&tab=misc&misc_section=campaigns' ) ) . '">' . esc_html__( 'Cancel', 'contactpanda' ) . '</a>' : '' ) . '</p></form><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Campaign', 'contactpanda' ) . '</th><th>' . esc_html__( 'Description', 'contactpanda' ) . '</th><th>' . esc_html__( 'Mailings', 'contactpanda' ) . '</th><th>' . esc_html__( 'Actions', 'contactpanda' ) . '</th></tr></thead><tbody>';
+		echo '<section class="contactpanda-card contactpanda-settings-card"><div class="contactpanda-toolbar"><div><h2>' . esc_html__( 'Campaigns', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Group related newsletter mailings in campaigns.', 'contactpanda' ) . '</p></div><a class="button button-primary" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-settings&tab=misc&misc_section=campaigns&add_campaign_group=1' ) ) . '"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>' . esc_html__( 'Add campaign', 'contactpanda' ) . '</a></div>';
+		if ( $adding || $editing ) { echo '<div class="contactpanda-admin-modal is-open"><section class="contactpanda-admin-modal-panel"><h2>' . esc_html( $editing ? __( 'Edit campaign', 'contactpanda' ) : __( 'Add campaign', 'contactpanda' ) ) . '</h2><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-settings-grid"><input type="hidden" name="action" value="contactpanda_campaign_group"><input type="hidden" name="operation" value="save"><input type="hidden" name="id" value="' . esc_attr( $edit_id ) . '">'; wp_nonce_field( 'contactpanda_campaign_group' );
+		echo '<label><span>' . esc_html__( 'Campaign name', 'contactpanda' ) . '</span><input name="name" value="' . esc_attr( $editing['name'] ?? '' ) . '" required></label><label><span>' . esc_html__( 'Description', 'contactpanda' ) . '</span><input name="description" value="' . esc_attr( $editing['description'] ?? '' ) . '"></label><div class="contactpanda-modal-actions"><button class="button button-primary"><span class="dashicons dashicons-saved" aria-hidden="true"></span>' . esc_html__( 'Save', 'contactpanda' ) . '</button><a class="button" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-settings&tab=misc&misc_section=campaigns' ) ) . '"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span>' . esc_html__( 'Cancel', 'contactpanda' ) . '</a></div></form></section></div>'; }
+		echo '<table class="widefat striped contactpanda-campaign-groups-table"><thead><tr><th>' . esc_html__( 'Campaign', 'contactpanda' ) . '</th><th>' . esc_html__( 'Description', 'contactpanda' ) . '</th><th>' . esc_html__( 'Mailings', 'contactpanda' ) . '</th><th>' . esc_html__( 'Actions', 'contactpanda' ) . '</th></tr></thead><tbody>';
 		global $wpdb; $campaigns_table = ContactPanda_Newsletter_Schema::table_names()['campaigns'];
 		foreach ( $groups as $group ) {
-			$count = absint( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$campaigns_table}` WHERE campaign_group_id=%d", $group['id'] ) ) );
+			$count = absint( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE campaign_group_id=%d", $campaigns_table, $group['id'] ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 			$id = absint( $group['id'] ); $form_id = 'contactpanda-campaign-group-' . $id;
 			$delete = wp_nonce_url( admin_url( 'admin-post.php?action=contactpanda_campaign_group&operation=delete&id=' . $id ), 'contactpanda_campaign_group' );
 			$mailings = add_query_arg( 'campaign_group', $id, admin_url( 'admin.php?page=contactpanda-campaigns' ) );
-			echo '<tr class="contactpanda-list-inline-edit"><td><button type="button" class="button-link contactpanda-inline-edit-open"><strong>' . esc_html( $group['name'] ) . '</strong></button><div class="contactpanda-inline-edit-fields" hidden><input form="' . esc_attr( $form_id ) . '" name="name" required value="' . esc_attr( $group['name'] ) . '"></div></td><td><span class="contactpanda-inline-edit-display">' . esc_html( $group['description'] ?: '—' ) . '</span><div class="contactpanda-inline-edit-fields" hidden><input form="' . esc_attr( $form_id ) . '" name="description" value="' . esc_attr( $group['description'] ) . '"><p><button form="' . esc_attr( $form_id ) . '" class="button button-primary">' . esc_html__( 'Save', 'contactpanda' ) . '</button> <button type="button" class="button contactpanda-inline-edit-cancel">' . esc_html__( 'Cancel', 'contactpanda' ) . '</button></p></div></td><td><a href="' . esc_url( $mailings ) . '">' . esc_html( $count ) . '</a></td><td><button type="button" class="button-link contactpanda-inline-edit-open">' . esc_html__( 'Edit', 'contactpanda' ) . '</button> · <a href="' . esc_url( $delete ) . '" onclick="return confirm(' . esc_attr( wp_json_encode( __( 'Delete this campaign group? Its mailings and statistics will be retained without a campaign assignment.', 'contactpanda' ) ) ) . ');">' . esc_html__( 'Delete', 'contactpanda' ) . '</a><form id="' . esc_attr( $form_id ) . '" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_campaign_group"><input type="hidden" name="operation" value="save"><input type="hidden" name="id" value="' . esc_attr( $id ) . '">'; wp_nonce_field( 'contactpanda_campaign_group' ); echo '</form></td></tr>';
+			echo '<tr><td><strong>' . esc_html( $group['name'] ) . '</strong></td><td>' . esc_html( $group['description'] ?: '—' ) . '</td><td><a href="' . esc_url( $mailings ) . '">' . esc_html( $count ) . '</a></td><td class="contactpanda-row-actions"><a class="button" href="' . esc_url( add_query_arg( 'edit_campaign_group', $id, admin_url( 'admin.php?page=contactpanda-settings&tab=misc&misc_section=campaigns' ) ) ) . '"><span class="dashicons dashicons-edit" aria-hidden="true"></span>' . esc_html__( 'Edit', 'contactpanda' ) . '</a><a class="button contactpanda-destructive" href="' . esc_url( $delete ) . '" onclick="return confirm(' . esc_attr( wp_json_encode( __( 'Delete this campaign group? Its mailings and statistics will be retained without a campaign assignment.', 'contactpanda' ) ) ) . ');"><span class="dashicons dashicons-trash" aria-hidden="true"></span>' . esc_html__( 'Delete', 'contactpanda' ) . '</a></td></tr>';
 		}
 		if ( ! $groups ) echo '<tr><td colspan="4">' . esc_html__( 'No campaign has been created yet.', 'contactpanda' ) . '</td></tr>';
 		echo '</tbody></table></section>';
@@ -53,13 +62,13 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		if ( ! current_user_can( self::capability() ) ) wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ) );
 		check_admin_referer( 'contactpanda_campaign_group' ); global $wpdb; ContactPanda_Newsletter_Schema::install(); $table = ContactPanda_Newsletter_Schema::table_names()['campaign_groups'];
 		$operation = sanitize_key( wp_unslash( $_REQUEST['operation'] ?? '' ) );
-		if ( 'delete' === $operation ) { $id = absint( $_GET['id'] ?? 0 ); $campaigns = ContactPanda_Newsletter_Schema::table_names()['campaigns']; $wpdb->update( $campaigns, array( 'campaign_group_id' => 0, 'updated_at' => current_time( 'mysql' ) ), array( 'campaign_group_id' => $id ) ); $wpdb->delete( $table, array( 'id' => $id ) ); }
-		elseif ( 'save' === $operation ) { $name = sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) ); if ( $name ) { $id = absint( $_POST['id'] ?? 0 ); $existing = $id ?: absint( $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE name=%s", $name ) ) ); $data = array( 'name' => $name, 'description' => sanitize_text_field( wp_unslash( $_POST['description'] ?? '' ) ), 'updated_at' => current_time( 'mysql' ) ); if ( $existing ) $wpdb->update( $table, $data, array( 'id' => $existing ) ); else { $data['created_at'] = current_time( 'mysql' ); $wpdb->insert( $table, $data ); } } }
+		if ( 'delete' === $operation ) { $id = absint( $_GET['id'] ?? 0 ); $campaigns = ContactPanda_Newsletter_Schema::table_names()['campaigns']; $wpdb->update( $campaigns, array( 'campaign_group_id' => 0, 'updated_at' => current_time( 'mysql' ) ), array( 'campaign_group_id' => $id ) ); $wpdb->delete( $table, array( 'id' => $id ) ); } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		elseif ( 'save' === $operation ) { $name = sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) ); if ( $name ) { $id = absint( $_POST['id'] ?? 0 ); $existing = $id ?: absint( $wpdb->get_var( $wpdb->prepare( "SELECT id FROM %i WHERE name=%s", $table, $name ) ) ); $data = array( 'name' => $name, 'description' => sanitize_text_field( wp_unslash( $_POST['description'] ?? '' ) ), 'updated_at' => current_time( 'mysql' ) ); if ( $existing ) $wpdb->update( $table, $data, array( 'id' => $existing ) ); else { $data['created_at'] = current_time( 'mysql' ); $wpdb->insert( $table, $data ); } } } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-settings&tab=misc&misc_section=campaigns' ) ); exit;
 	}
 
 	public static function campaign_group_create_ajax() {
-		self::guard_ajax();
+		check_ajax_referer( self::ajax_nonce_action(), 'nonce' );
 		global $wpdb;
 		ContactPanda_Newsletter_Schema::install();
 		$table = ContactPanda_Newsletter_Schema::table_names()['campaign_groups'];
@@ -67,12 +76,12 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		if ( '' === $name ) {
 			wp_send_json_error( array( 'message' => __( 'Enter a campaign name.', 'contactpanda' ) ), 400 );
 		}
-		$existing = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$table}` WHERE name=%s", $name ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table.
+		$existing = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM %i WHERE name=%s", $table, $name ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		if ( $existing ) {
 			wp_send_json_success( array( 'id' => absint( $existing['id'] ), 'name' => $existing['name'], 'description' => $existing['description'], 'existing' => true ) );
 		}
 		$now = current_time( 'mysql' );
-		$wpdb->insert( $table, array( 'name' => $name, 'description' => sanitize_text_field( wp_unslash( $_POST['description'] ?? '' ) ), 'created_at' => $now, 'updated_at' => $now ) );
+		$wpdb->insert( $table, array( 'name' => $name, 'description' => sanitize_text_field( wp_unslash( $_POST['description'] ?? '' ) ), 'created_at' => $now, 'updated_at' => $now ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points.
 		if ( ! $wpdb->insert_id ) {
 			wp_send_json_error( array( 'message' => __( 'The campaign could not be created.', 'contactpanda' ) ), 500 );
 		}
@@ -108,8 +117,8 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		}
 		if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_from ) ) { $where[] = 'c.created_at >= %s'; $params[] = $date_from . ' 00:00:00'; }
 		if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_to ) ) { $where[] = 'c.created_at <= %s'; $params[] = $date_to . ' 23:59:59'; }
-		$sql = "SELECT c.*,s.name AS segment_name,t.name AS template_name,g.name AS campaign_group_name FROM `{$t['campaigns']}` c LEFT JOIN `{$t['segments']}` s ON s.id=c.segment_id LEFT JOIN `{$t['templates']}` t ON t.id=c.template_id LEFT JOIN `{$t['campaign_groups']}` g ON g.id=c.campaign_group_id WHERE " . implode( ' AND ', $where ) . ' ORDER BY c.created_at DESC LIMIT 100'; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$campaigns = $wpdb->get_results( $params ? $wpdb->prepare( $sql, $params ) : $sql, ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- prepared when needed.
+		$sql = "SELECT c.*,s.name AS segment_name,t.name AS template_name,g.name AS campaign_group_name,(SELECT COUNT(*) FROM %i br WHERE br.campaign_id=c.id AND br.status='bounced') AS bounced_count FROM %i c LEFT JOIN %i s ON s.id=c.segment_id LEFT JOIN %i t ON t.id=c.template_id LEFT JOIN %i g ON g.id=c.campaign_group_id WHERE " . implode( ' AND ', $where ) . ' ORDER BY c.created_at DESC LIMIT 100'; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$campaigns = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( array( $t['recipients'], $t['campaigns'], $t['segments'], $t['templates'], $t['campaign_groups'] ), $params ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.NotPrepared -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately. Only fixed SQL clauses/generated placeholder lists are concatenated; the complete query is passed to wpdb::prepare with identifier and scalar arguments in SQL order. No request value is concatenated.
 		$editing = ! empty( $_GET['edit_campaign'] ) ? self::campaign( absint( $_GET['edit_campaign'] ) ) : false; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only editor selection.
 		$editor_open = $editing || ! empty( $_GET['new_campaign'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presentation state only.
 		$details_open = ! empty( $_GET['campaign_id'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only details.
@@ -142,7 +151,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 			$imported = 'imported' === $campaign['status'];
 			$detail_url = admin_url( 'admin.php?page=contactpanda-campaigns&campaign_id=' . absint( $campaign['id'] ) );
 			$edit_url = admin_url( 'admin.php?page=contactpanda-campaigns&edit_campaign=' . absint( $campaign['id'] ) );
-			$links = '<a href="' . esc_url( $detail_url ) . '">' . esc_html( $imported ? __( 'View archive', 'contactpanda' ) : __( 'Recipients', 'contactpanda' ) ) . '</a>';
+			$links = '<a href="' . esc_url( $detail_url ) . '">' . esc_html( $imported ? __( 'View archive', 'contactpanda' ) : __( 'View evaluation', 'contactpanda' ) ) . '</a>';
 			if ( ! $imported && in_array( $campaign['status'], array( 'draft', 'scheduled', 'paused' ), true ) ) $links .= ' <span aria-hidden="true">|</span> <a href="' . esc_url( $edit_url ) . '">' . esc_html__( 'Edit', 'contactpanda' ) . '</a>';
 			$actions = '';
 			if ( ! $imported && in_array( $campaign['status'], array( 'draft', 'paused' ), true ) ) $actions .= self::action_link( $campaign['id'], 'start', __( 'Start', 'contactpanda' ), 'button contactpanda-start-mailing' );
@@ -161,7 +170,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 			if ( ! $imported && 'cancelled' === $campaign['status'] ) $actions .= '<span class="button contactpanda-mailing-state contactpanda-mailing-cancelled">' . esc_html__( 'Cancelled', 'contactpanda' ) . '</span>';
 			if ( ! $imported && ! in_array( $campaign['status'], array( 'completed', 'cancelled' ), true ) ) $actions .= self::action_link( $campaign['id'], 'cancel', __( 'Cancel', 'contactpanda' ), 'button contactpanda-cancel-mailing' );
 			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-			$recipient_summary = '<span data-contactpanda-mailing-total>' . esc_html( sprintf( __( '%d total', 'contactpanda' ), absint( $campaign['total_recipients'] ) ) ) . '</span><span data-contactpanda-mailing-sent>' . esc_html( sprintf( __( '%d sent', 'contactpanda' ), absint( $campaign['sent_count'] ) ) ) . '</span><span data-contactpanda-mailing-failed>' . esc_html( sprintf( __( '%d failed', 'contactpanda' ), absint( $campaign['failed_count'] ) ) ) . '</span>';
+			$recipient_summary = '<span data-contactpanda-mailing-total>' . esc_html( sprintf( __( '%d selected', 'contactpanda' ), absint( $campaign['total_recipients'] ) ) ) . '</span><span data-contactpanda-mailing-sent>' . esc_html( sprintf( __( '%d sent', 'contactpanda' ), absint( $campaign['sent_count'] ) ) ) . '</span><span data-contactpanda-mailing-failed>' . esc_html( sprintf( __( '%d failed', 'contactpanda' ), absint( $campaign['failed_count'] ) ) ) . '</span><span data-contactpanda-mailing-bounced>' . esc_html( sprintf( __( '%d bounces', 'contactpanda' ), absint( $campaign['bounced_count'] ?? 0 ) ) ) . '</span>';
 			if ( ! empty( $campaign['scheduled_at'] ) ) {
 				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				$delivery_time = sprintf( __( '%1$s at %2$s', 'contactpanda' ), mysql2date( get_option( 'date_format' ), $campaign['scheduled_at'] ), mysql2date( get_option( 'time_format' ), $campaign['scheduled_at'] ) );
@@ -208,16 +217,16 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 			echo '<div class="contactpanda-newsletter-preview-stage"><iframe sandbox="allow-popups allow-popups-to-escape-sandbox" style="width:100%;min-height:680px;border:1px solid #dcdcde;background:#fff" title="' . esc_attr__( 'Imported broadcast preview', 'contactpanda' ) . '" srcdoc="' . esc_attr( $campaign['archived_html'] ) . '"></iframe></div></section>';
 			return;
 		}
-		$aggregate = $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(*) total, SUM(sent_at IS NOT NULL) sent, SUM(status='failed') failed, SUM(status='skipped') skipped FROM `{$t['recipients']}` WHERE campaign_id=%d", $campaign_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$aggregate = $wpdb->get_row( $wpdb->prepare( "SELECT COUNT(*) total, SUM(sent_at IS NOT NULL) sent, SUM(status='failed') failed, SUM(status='skipped') skipped FROM %i WHERE campaign_id=%d", $t['recipients'], $campaign_id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		$total = absint( $aggregate['total'] ?? 0 ); $sent = absint( $aggregate['sent'] ?? 0 ); $failed = absint( $aggregate['failed'] ?? 0 ); $skipped = absint( $aggregate['skipped'] ?? 0 );
-		$filter = sanitize_key( wp_unslash( $_GET['recipient_filter'] ?? 'all' ) ); $search = sanitize_text_field( wp_unslash( $_GET['recipient_search'] ?? '' ) ); $page = max( 1, absint( $_GET['recipient_page'] ?? 1 ) ); $per_page = in_array( absint( $_GET['recipient_per_page'] ?? 50 ), array( 25, 50, 100 ), true ) ? absint( $_GET['recipient_per_page'] ?? 50 ) : 50;
-		$conditions = array( 'campaign_id=%d' ); $values = array( $campaign_id ); $filter_sql = array( 'sent' => 'sent_at IS NOT NULL', 'failed' => "status='failed'", 'skipped' => "status='skipped'" );
+		$filter = sanitize_key( wp_unslash( $_GET['recipient_filter'] ?? 'all' ) ); $search = sanitize_text_field( wp_unslash( $_GET['recipient_search'] ?? '' ) ); $page = max( 1, absint( $_GET['recipient_page'] ?? 1 ) ); $per_page = in_array( absint( $_GET['recipient_per_page'] ?? 50 ), array( 25, 50, 100 ), true ) ? absint( $_GET['recipient_per_page'] ?? 50 ) : 50; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only recipient filtering and pagination, reached through the capability-checked campaign page; all query values are sanitized and bound.
+		$conditions = array( 'campaign_id=%d' ); $values = array( $campaign_id ); $filter_sql = array( 'opened' => 'opened_at IS NOT NULL', 'clicked' => 'clicked_at IS NOT NULL', 'sent' => 'sent_at IS NOT NULL', 'failed' => "status='failed'", 'skipped' => "status='skipped'" );
 		if ( isset( $filter_sql[ $filter ] ) ) $conditions[] = $filter_sql[ $filter ];
 		if ( '' !== $search ) { $conditions[] = '(first_name LIKE %s OR last_name LIKE %s OR email LIKE %s)'; $like = '%' . $wpdb->esc_like( $search ) . '%'; array_push( $values, $like, $like, $like ); }
 		$where = implode( ' AND ', $conditions );
-		$filtered_total = absint( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$t['recipients']}` WHERE {$where}", $values ) ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$filtered_total = absint( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE {$where}", array_merge( array( $t['recipients'] ), $values ) ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately. Only fixed SQL clauses/generated placeholder lists are concatenated; the complete query is passed to wpdb::prepare with identifier and scalar arguments in SQL order. No request value is concatenated.
 		$pages = max( 1, (int) ceil( $filtered_total / $per_page ) ); $page = min( $page, $pages ); $offset = ( $page - 1 ) * $per_page; $row_values = array_merge( $values, array( $per_page, $offset ) );
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM `{$t['recipients']}` WHERE {$where} ORDER BY status ASC,email ASC LIMIT %d OFFSET %d", $row_values ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE {$where} ORDER BY status ASC,email ASC LIMIT %d OFFSET %d", array_merge( array( $t['recipients'] ), $row_values ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately. Only fixed SQL clauses/generated placeholder lists are concatenated; the complete query is passed to wpdb::prepare with identifier and scalar arguments in SQL order. No request value is concatenated. The argument array contains table, campaign, optional bound filter values, then limit/offset; its length matches the generated WHERE placeholder count (covered by SQL safety tests).
 		echo '<div class="contactpanda-mailing-report">';
 		$metrics = array( 'all' => array( __( 'Recipients', 'contactpanda' ), $total ), 'sent' => array( __( 'Sent', 'contactpanda' ), $sent ), 'failed' => array( __( 'Failed', 'contactpanda' ), $failed ), 'skipped' => array( __( 'Skipped', 'contactpanda' ), $skipped ) );
 		foreach ( $metrics as $metric_filter => $metric ) {
@@ -237,14 +246,22 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 			ContactPanda_Registration::render_plus_promotion( 'newsletter-reports' );
 		}
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		echo '<h3>' . esc_html__( 'Recipient check', 'contactpanda' ) . '</h3><form method="get" class="contactpanda-recipient-filter"><input type="hidden" name="page" value="contactpanda-campaigns"><input type="hidden" name="campaign_id" value="' . esc_attr( $campaign_id ) . '"><input type="hidden" name="recipient_filter" value="' . esc_attr( $filter ) . '"><input type="search" name="recipient_search" value="' . esc_attr( $search ) . '" placeholder="' . esc_attr__( 'Search recipients', 'contactpanda' ) . '"><select name="recipient_per_page"><option' . selected( 25, $per_page, false ) . '>25</option><option' . selected( 50, $per_page, false ) . '>50</option><option' . selected( 100, $per_page, false ) . '>100</option></select><button class="button">' . esc_html__( 'Search', 'contactpanda' ) . '</button></form><p>' . esc_html( sprintf( __( 'Showing %1$d–%2$d of %3$d recipients.', 'contactpanda' ), $filtered_total ? $offset + 1 : 0, min( $offset + $per_page, $filtered_total ), $filtered_total ) ) . '</p><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Recipient', 'contactpanda' ) . '</th><th>' . esc_html__( 'Status', 'contactpanda' ) . '</th><th>' . esc_html__( 'Sent at', 'contactpanda' ) . '</th><th>' . esc_html__( 'Reason', 'contactpanda' ) . '</th></tr></thead><tbody>';
+		echo '<h3>' . esc_html__( 'Recipient check', 'contactpanda' ) . '</h3><form method="get" class="contactpanda-recipient-filter"><input type="hidden" name="page" value="contactpanda-campaigns"><input type="hidden" name="campaign_id" value="' . esc_attr( $campaign_id ) . '"><input type="hidden" name="recipient_filter" value="' . esc_attr( $filter ) . '"><input type="search" name="recipient_search" value="' . esc_attr( $search ) . '" placeholder="' . esc_attr__( 'Search recipients', 'contactpanda' ) . '"><select name="recipient_per_page"><option' . selected( 25, $per_page, false ) . '>25</option><option' . selected( 50, $per_page, false ) . '>50</option><option' . selected( 100, $per_page, false ) . '>100</option></select><button class="button">' . esc_html__( 'Search', 'contactpanda' ) . '</button></form><p>' . esc_html( sprintf( __( 'Showing %1$d–%2$d of %3$d recipients.', 'contactpanda' ), $filtered_total ? $offset + 1 : 0, min( $offset + $per_page, $filtered_total ), $filtered_total ) ) . '</p><table class="widefat striped"><thead><tr><th>' . esc_html__( 'Recipient', 'contactpanda' ) . '</th><th>' . esc_html__( 'Status', 'contactpanda' ) . '</th><th>' . esc_html__( 'Interactions', 'contactpanda' ) . '</th><th>' . esc_html__( 'Sent at', 'contactpanda' ) . '</th><th>' . esc_html__( 'Reason', 'contactpanda' ) . '</th></tr></thead><tbody>';
 		foreach ( $rows as $row ) {
 			$name = trim( $row['first_name'] . ' ' . $row['last_name'] ); $person_url = admin_url( 'admin.php?page=contactpanda-people&person=' . absint( $row['contact_id'] ) );
 			$format_time = static function ( $value ) { return $value ? mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $value ) : '—'; };
-			echo '<tr><td><a href="' . esc_url( $person_url ) . '">' . esc_html( $name ?: $row['email'] ) . '</a><br><small>' . esc_html( $row['email'] ) . '</small></td><td>' . esc_html( ucfirst( $row['status'] ) ) . '</td><td>' . esc_html( $format_time( $row['sent_at'] ?? '' ) ) . '</td><td>' . esc_html( $reasons[ $row['reason'] ] ?? $row['reason'] ) . '</td></tr>';
+			$status_labels = array( 'queued' => __( 'Queued', 'contactpanda' ), 'sent' => __( 'Sent', 'contactpanda' ), 'failed' => __( 'Failed', 'contactpanda' ), 'bounced' => __( 'Bounced', 'contactpanda' ) );
+			$status_label  = $status_labels[ $row['status'] ] ?? ucfirst( (string) $row['status'] );
+			if ( ! empty( $row['clicked_at'] ) ) $interaction = '<span class="contactpanda-interaction contactpanda-interaction--clicked">' . esc_html__( 'Clicked', 'contactpanda' ) . '</span>';
+			elseif ( ! empty( $row['opened_at'] ) ) $interaction = '<span class="contactpanda-interaction contactpanda-interaction--opened">' . esc_html__( 'Opened', 'contactpanda' ) . '</span>';
+			elseif ( ! empty( $row['sent_at'] ) ) $interaction = '<span class="contactpanda-interaction contactpanda-interaction--delivered">' . esc_html__( 'Delivered', 'contactpanda' ) . '</span>';
+			else $interaction = '<span class="contactpanda-interaction contactpanda-interaction--prepared">' . esc_html__( 'Prepared', 'contactpanda' ) . '</span>';
+			echo '<tr><td><a href="' . esc_url( $person_url ) . '">' . esc_html( $name ?: $row['email'] ) . '</a><br><small>' . esc_html( $row['email'] ) . '</small></td><td>' . esc_html( $status_label ) . '</td><td>' . wp_kses_post( $interaction ) . '</td><td>' . esc_html( $format_time( $row['sent_at'] ?? '' ) ) . '</td><td>' . esc_html( $reasons[ $row['reason'] ] ?? $row['reason'] ) . '</td></tr>';
 		}
-		if ( ! $rows ) { echo '<tr><td colspan="4">' . esc_html__( 'No recipients have been prepared yet.', 'contactpanda' ) . '</td></tr>'; }
-		echo '</tbody></table>' . wp_kses_post( paginate_links( array( 'base' => add_query_arg( 'recipient_page', '%#%' ), 'format' => '', 'current' => $page, 'total' => $pages, 'type' => 'list' ) ) ) . '</section>';
+		if ( ! $rows ) { echo '<tr><td colspan="5">' . esc_html__( 'No recipients have been prepared yet.', 'contactpanda' ) . '</td></tr>'; }
+		echo '</tbody></table>';
+		ContactPanda_Pagination::render( $page, $pages, 1, remove_query_arg( 'recipient_page' ), 'recipient_page' );
+		echo '</section>';
 	}
 
 	private static function render_form( $campaign = false ) {
@@ -263,7 +280,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		echo '</select></div><button type="button" class="button contactpanda-open-inline-search">' . esc_html__( 'Create new search', 'contactpanda' ) . '</button></div>';
 		echo '<fieldset class="contactpanda-audience-source"><legend>' . esc_html__( 'Recipient source', 'contactpanda' ) . '</legend>';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		if ( $manual_ids ) echo '<label class="contactpanda-manual-audience"><input type="radio" name="audience_source" value="manual"' . checked( $value( 'audience_source', $default_source ), 'manual', false ) . '> ' . esc_html( sprintf( _n( '%d selected person from the people list', '%d selected people from the people list', count( $manual_ids ), 'contactpanda' ), count( $manual_ids ) ) ) . '</label><input type="hidden" name="manual_contact_ids" value="' . esc_attr( implode( ',', $manual_ids ) ) . '">';
+		echo '<label class="contactpanda-manual-audience"' . ( $manual_ids ? '' : ' hidden' ) . '><input type="radio" name="audience_source" value="manual"' . checked( $value( 'audience_source', $default_source ), 'manual', false ) . '> <span class="cp-manual-selection-label">' . esc_html( sprintf( _n( '%d ausgewählte Person aus der Personenliste', '%d ausgewählte Personen aus der Personenliste', count( $manual_ids ), 'contactpanda' ), count( $manual_ids ) ) ) . '</span></label><input type="hidden" name="manual_contact_ids" value="' . esc_attr( implode( ',', $manual_ids ) ) . '">';
 		echo '<label><input type="radio" name="audience_source" value="contacts"' . checked( $value( 'audience_source', $default_source ), 'contacts', false ) . '> ' . esc_html__( 'Contacts from the saved search', 'contactpanda' ) . '</label><label><input type="radio" name="audience_source" value="registered_customers"' . checked( $value( 'audience_source', $default_source ), 'registered_customers', false ) . '> ' . esc_html__( 'Registered customers', 'contactpanda' ) . '</label><label><input type="radio" name="audience_source" value="all_contacts"' . checked( $value( 'audience_source', $default_source ), 'all_contacts', false ) . '> ' . esc_html__( 'All contacts', 'contactpanda' ) . '</label><div class="contactpanda-customer-recipient-search"><label class="contactpanda-customer-search-field"><span>' . esc_html__( 'Customer search', 'contactpanda' ) . '</span><input type="search" name="recipient_search" value="' . esc_attr( $value( 'recipient_search' ) ) . '" placeholder="' . esc_attr__( 'Search by name, email address or company', 'contactpanda' ) . '" autocomplete="off"></label><p class="description">' . esc_html__( 'Unsubscribed, blocked, complained, undeliverable and suppressed addresses always remain excluded.', 'contactpanda' ) . '</p><div class="contactpanda-customer-search-results" aria-live="polite" data-manual-count="' . esc_attr( count( $manual_ids ) ) . '"></div></div></fieldset>';
 		if ( current_user_can( 'manage_options' ) ) {
 			$override = ! empty( $campaign['ignore_marketing_consent'] );
@@ -287,7 +304,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 	}
 
 	public static function save() {
-		self::guard( 'contactpanda_save_campaign' ); global $wpdb; ContactPanda_Newsletter_Schema::install(); $t = ContactPanda_Newsletter_Schema::table_names();
+		check_admin_referer( self::admin_nonce_action( 'contactpanda_save_campaign' ) ); global $wpdb; ContactPanda_Newsletter_Schema::install(); $t = ContactPanda_Newsletter_Schema::table_names();
 		$submit_mode = sanitize_key( wp_unslash( $_POST['submit_mode'] ?? 'save' ) );
 		$submit_modes = (array) apply_filters( 'contactpanda_campaign_submit_modes', array( 'save', 'send_now' ) );
 		if ( ! in_array( $submit_mode, $submit_modes, true ) ) {
@@ -296,7 +313,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		$template_id = absint( $_POST['template_id'] ?? 0 ); $template = ContactPanda_Basic_Newsletters::template( $template_id );
 		if ( ! $template || ! empty( $template['imported_readonly'] ) || 'published' !== ( $template['status'] ?? '' ) ) { wp_die( esc_html__( 'Please select a published email template.', 'contactpanda' ) ); }
 		$now = current_time( 'mysql' ); $id = absint( $_POST['campaign_id'] ?? 0 );
-		$language = preg_replace( '/[^A-Za-z0-9_@.\-]/', '', (string) wp_unslash( $_POST['language'] ?? 'de_DE' ) );
+		$language = preg_replace( '/[^A-Za-z0-9_@.\-]/', '', sanitize_text_field( wp_unslash( $_POST['language'] ?? 'de_DE' ) ) );
 		$sender_settings = ContactPanda_Basic_Newsletters::public_settings();
 		$from_name = sanitize_text_field( $sender_settings['from_name'] ?? '' );
 		$from_email = sanitize_email( $sender_settings['from_email'] ?? '' );
@@ -323,19 +340,19 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		$data = (array) apply_filters( 'contactpanda_campaign_save_data', $data, $_POST, $id );
 		if ( $id ) {
 			$existing = self::campaign( $id ); if ( ! $existing || ! in_array( $existing['status'], array( 'draft', 'scheduled', 'paused' ), true ) ) wp_die( esc_html__( 'This campaign can no longer be edited.', 'contactpanda' ) );
-			wp_unschedule_hook( self::CRON_HOOK, array( $id ) ); $wpdb->update( $t['campaigns'], $data, array( 'id' => $id ) );
+			wp_unschedule_hook( self::CRON_HOOK, array( $id ) ); $wpdb->update( $t['campaigns'], $data, array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		} else {
-			$data['created_by'] = get_current_user_id(); $data['created_at'] = $now; $wpdb->insert( $t['campaigns'], $data ); $id = absint( $wpdb->insert_id );
+			$data['created_by'] = get_current_user_id(); $data['created_at'] = $now; $wpdb->insert( $t['campaigns'], $data ); $id = absint( $wpdb->insert_id ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points.
 		}
 		if ( 'static' === $audience_mode ) {
 			self::prepare_recipients( $id );
-			$wpdb->update( $t['campaigns'], array( 'audience_resolved_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) );
+			$wpdb->update( $t['campaigns'], array( 'audience_resolved_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		} else {
-			$wpdb->delete( $t['recipients'], array( 'campaign_id' => $id ) );
-			$wpdb->update( $t['campaigns'], array( 'total_recipients' => 0, 'queued_count' => 0, 'sent_count' => 0, 'failed_count' => 0, 'skipped_count' => 0, 'audience_resolved_at' => null, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) );
+			$wpdb->delete( $t['recipients'], array( 'campaign_id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+			$wpdb->update( $t['campaigns'], array( 'total_recipients' => 0, 'queued_count' => 0, 'sent_count' => 0, 'failed_count' => 0, 'skipped_count' => 0, 'audience_resolved_at' => null, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		}
 		if ( 'send_now' === $submit_mode ) {
-			$wpdb->update( $t['campaigns'], array( 'status' => 'queued', 'scheduled_at' => null, 'started_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) );
+			$wpdb->update( $t['campaigns'], array( 'status' => 'queued', 'scheduled_at' => null, 'started_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 			self::schedule( $id, time() + 2 );
 		} elseif ( 'save' !== $submit_mode ) {
 			apply_filters( 'contactpanda_campaign_handle_submit_mode', false, $submit_mode, $id, $data );
@@ -355,7 +372,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		} elseif ( 'contacts' === ( $campaign['audience_source'] ?? 'contacts' ) && $campaign['segment_id'] ) {
 			$contacts = ContactPanda_Basic_Segments::filter_contacts( $contacts, $campaign['segment_id'] );
 		}
-		$wpdb->delete( $t['recipients'], array( 'campaign_id' => $campaign_id ) ); $counts = array( 'queued' => 0, 'skipped' => 0 );
+		$wpdb->delete( $t['recipients'], array( 'campaign_id' => $campaign_id ) ); $counts = array( 'queued' => 0, 'skipped' => 0 ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		$override_count = 0;
 		foreach ( $contacts as $contact ) {
 			$email = sanitize_email( ContactPanda_Plugin::extension_value( $contact, array( 'email', 'get_email' ) ) ); $contact_id = absint( ContactPanda_Plugin::extension_value( $contact, array( 'id', 'ID' ) ) );
@@ -366,21 +383,21 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 			elseif ( ! ContactPanda_Plugin::extension_is_marketable( $contact ) && empty( $campaign['ignore_marketing_consent'] ) ) { $status = 'skipped'; $reason = 'consent_missing'; }
 			elseif ( ! ContactPanda_Plugin::extension_is_marketable( $contact ) ) { $override_count++; }
 			$variant_b = (bool) apply_filters( 'contactpanda_campaign_recipient_variant_b', false, $campaign, $email, $campaign_id );
-			$wpdb->insert( $t['recipients'], array( 'campaign_id' => $campaign_id, 'contact_id' => $contact_id, 'email' => strtolower( $email ), 'first_name' => sanitize_text_field( ContactPanda_Plugin::extension_value( $contact, array( 'first_name' ) ) ), 'last_name' => sanitize_text_field( ContactPanda_Plugin::extension_value( $contact, array( 'last_name' ) ) ), 'subject_variant' => $variant_b ? 'b' : 'a', 'status' => $status, 'reason' => $reason, 'created_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ) );
+			$wpdb->insert( $t['recipients'], array( 'campaign_id' => $campaign_id, 'contact_id' => $contact_id, 'email' => strtolower( $email ), 'first_name' => sanitize_text_field( ContactPanda_Plugin::extension_value( $contact, array( 'first_name' ) ) ), 'last_name' => sanitize_text_field( ContactPanda_Plugin::extension_value( $contact, array( 'last_name' ) ) ), 'subject_variant' => $variant_b ? 'b' : 'a', 'status' => $status, 'reason' => $reason, 'created_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points.
 			$counts[ $status ]++;
 		}
-		$wpdb->update( $t['campaigns'], array( 'total_recipients' => count( $contacts ), 'queued_count' => $counts['queued'], 'skipped_count' => $counts['skipped'], 'consent_override_count' => $override_count, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $campaign_id ) );
+		$wpdb->update( $t['campaigns'], array( 'total_recipients' => count( $contacts ), 'queued_count' => $counts['queued'], 'skipped_count' => $counts['skipped'], 'consent_override_count' => $override_count, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $campaign_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 	}
 
 	public static function campaign_action() {
-		self::guard( 'contactpanda_campaign_action' ); global $wpdb; $t = ContactPanda_Newsletter_Schema::table_names(); $id = absint( $_GET['campaign_id'] ?? 0 ); $command = sanitize_key( wp_unslash( $_GET['command'] ?? '' ) ); $campaign = self::campaign( $id );
+		check_admin_referer( self::admin_nonce_action( 'contactpanda_campaign_action' ) ); global $wpdb; $t = ContactPanda_Newsletter_Schema::table_names(); $id = absint( $_GET['campaign_id'] ?? 0 ); $command = sanitize_key( wp_unslash( $_GET['command'] ?? '' ) ); $campaign = self::campaign( $id );
 		if ( ! $campaign ) { wp_die( esc_html__( 'Campaign not found.', 'contactpanda' ) ); }
 		if ( 'imported' === $campaign['status'] ) { wp_die( esc_html__( 'Imported broadcasts are read-only archives.', 'contactpanda' ) ); }
 		if ( 'start' === $command ) {
 			$timestamp = $campaign['scheduled_at'] ? get_gmt_from_date( $campaign['scheduled_at'], 'U' ) : time(); $status = $timestamp > time() ? 'scheduled' : 'queued';
-			$wpdb->update( $t['campaigns'], array( 'status' => $status, 'started_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); self::schedule( $id, max( time() + 2, $timestamp ) );
-		} elseif ( 'pause' === $command ) { $wpdb->update( $t['campaigns'], array( 'status' => 'paused', 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); }
-		elseif ( 'cancel' === $command ) { $wpdb->update( $t['campaigns'], array( 'status' => 'cancelled', 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); }
+			$wpdb->update( $t['campaigns'], array( 'status' => $status, 'started_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); self::schedule( $id, max( time() + 2, $timestamp ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		} elseif ( 'pause' === $command ) { $wpdb->update( $t['campaigns'], array( 'status' => 'paused', 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		elseif ( 'cancel' === $command ) { $wpdb->update( $t['campaigns'], array( 'status' => 'cancelled', 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-campaigns' ) ); exit;
 	}
 
@@ -389,14 +406,14 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		if ( ! $campaign || ! in_array( $campaign['status'], array( 'queued', 'sending', 'scheduled' ), true ) ) { return; }
 		if ( 'dynamic' === ( $campaign['audience_mode'] ?? 'dynamic' ) && empty( $campaign['audience_resolved_at'] ) ) {
 			self::prepare_recipients( $campaign_id );
-			$wpdb->update( $t['campaigns'], array( 'audience_resolved_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $campaign_id ) );
+			$wpdb->update( $t['campaigns'], array( 'audience_resolved_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $campaign_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 			$campaign = self::campaign( $campaign_id );
 		}
-		$wpdb->update( $t['campaigns'], array( 'status' => 'sending', 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $campaign_id ) );
+		$wpdb->update( $t['campaigns'], array( 'status' => 'sending', 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $campaign_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		$mails_per_hour = min( 3000, max( 1, absint( $campaign['mails_per_hour'] ?? 300 ) ) );
 		$batch_size = max( 1, (int) ceil( $mails_per_hour / 60 ) );
 		$batch_interval = max( 60, (int) ceil( ( 3600 * $batch_size ) / $mails_per_hour ) );
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM `{$t['recipients']}` WHERE campaign_id=%d AND status IN ('queued','retry') AND attempts<3 ORDER BY id ASC LIMIT %d", $campaign_id, $batch_size ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE campaign_id=%d AND status IN ('queued','retry') AND attempts<3 ORDER BY id ASC LIMIT %d", $t['recipients'], $campaign_id, $batch_size ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		$template = ContactPanda_Basic_Newsletters::template( $campaign['template_id'] ); $settings = ContactPanda_Basic_Newsletters::public_settings();
 		foreach ( $rows as $row ) {
 			$live_contact = ! empty( $row['contact_id'] ) ? ContactPanda_Plugin::extension_contact( absint( $row['contact_id'] ) ) : false;
@@ -415,28 +432,31 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 			$sent = wp_mail( $row['email'], $subject, $html, $headers ); $attempts = absint( $row['attempts'] ) + 1;
 			self::recipient_result( $row, $sent ? 'sent' : ( $attempts < 3 ? 'retry' : 'failed' ), $sent ? '' : 'wp_mail_failed', $sent ? '' : __( 'WordPress could not hand the message to the configured mail system.', 'contactpanda' ), $attempts );
 		}
-		self::refresh_counts( $campaign_id ); $remaining = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$t['recipients']}` WHERE campaign_id=%d AND status IN ('queued','retry') AND attempts<3", $campaign_id ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		if ( $remaining ) { self::schedule( $campaign_id, time() + $batch_interval ); } else { $wpdb->update( $t['campaigns'], array( 'status' => 'completed', 'completed_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $campaign_id ) ); }
+		self::refresh_counts( $campaign_id ); $remaining = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE campaign_id=%d AND status IN ('queued','retry') AND attempts<3", $t['recipients'], $campaign_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		if ( $remaining ) { self::schedule( $campaign_id, time() + $batch_interval ); } else { $wpdb->update( $t['campaigns'], array( 'status' => 'completed', 'completed_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $campaign_id ) ); } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 	}
 
 	private static function recipient_result( $row, $status, $reason, $error = '', $attempts = null ) {
 		global $wpdb; $data = array( 'status' => $status, 'reason' => $reason, 'error_message' => $error, 'updated_at' => current_time( 'mysql' ) ); if ( null !== $attempts ) { $data['attempts'] = $attempts; } if ( 'sent' === $status ) { $data['sent_at'] = current_time( 'mysql' ); }
-		$wpdb->update( ContactPanda_Newsletter_Schema::table_names()['recipients'], $data, array( 'id' => $row['id'] ) );
+		$wpdb->update( ContactPanda_Newsletter_Schema::table_names()['recipients'], $data, array( 'id' => $row['id'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 	}
 
 	private static function refresh_counts( $id ) {
-		global $wpdb; $t = ContactPanda_Newsletter_Schema::table_names(); $counts = array(); foreach ( array( 'queued', 'retry', 'sent', 'failed', 'skipped' ) as $status ) { $counts[ $status ] = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$t['recipients']}` WHERE campaign_id=%d AND status=%s", $id, $status ) ); } // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$wpdb->update( $t['campaigns'], array( 'queued_count' => $counts['queued'] + $counts['retry'], 'sent_count' => $counts['sent'], 'failed_count' => $counts['failed'], 'skipped_count' => $counts['skipped'], 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) );
+		global $wpdb; $t = ContactPanda_Newsletter_Schema::table_names(); $counts = array(); foreach ( array( 'queued', 'retry', 'sent', 'failed', 'skipped' ) as $status ) { $counts[ $status ] = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE campaign_id=%d AND status=%s", $t['recipients'], $id, $status ) ); } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		$wpdb->update( $t['campaigns'], array( 'queued_count' => $counts['queued'] + $counts['retry'], 'sent_count' => $counts['sent'], 'failed_count' => $counts['failed'], 'skipped_count' => $counts['skipped'], 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 	}
 
 	public static function statuses_ajax() {
-		self::guard_ajax();
+		check_ajax_referer( self::ajax_nonce_action(), 'nonce' );
 		$ids = array_values( array_unique( array_filter( array_map( 'absint', (array) wp_unslash( $_POST['ids'] ?? array() ) ) ) ) );
 		$ids = array_slice( $ids, 0, 100 );
 		$statuses = array();
 		foreach ( $ids as $id ) {
 			$campaign = self::campaign( $id );
 			if ( ! $campaign ) continue;
+			global $wpdb;
+			$recipients_table = ContactPanda_Newsletter_Schema::table_names()['recipients'];
+			$bounced = absint( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE campaign_id=%d AND status='bounced'", $recipients_table, $id ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 			$eligible = max( 0, absint( $campaign['total_recipients'] ) - absint( $campaign['skipped_count'] ) );
 			$delivered = absint( $campaign['sent_count'] );
 			$rate = static function ( $count, $base ) { return $base ? number_format_i18n( ( 100 * $count ) / $base, 1 ) . '%' : '0%'; };
@@ -450,11 +470,13 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 				'failed'            => absint( $campaign['failed_count'] ),
 				'total'             => absint( $campaign['total_recipients'] ),
 				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-				'totalText'         => sprintf( __( '%d total', 'contactpanda' ), absint( $campaign['total_recipients'] ) ),
+				'totalText'         => sprintf( __( '%d selected', 'contactpanda' ), absint( $campaign['total_recipients'] ) ),
 				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				'sentText'          => sprintf( __( '%d sent', 'contactpanda' ), absint( $campaign['sent_count'] ) ),
 				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				'failedText'        => sprintf( __( '%d failed', 'contactpanda' ), absint( $campaign['failed_count'] ) ),
+				/* translators: %d: Number of bounced messages. */
+				'bouncedText'       => sprintf( __( '%d bounces', 'contactpanda' ), $bounced ),
 				'delivered'         => $delivered . ' · ' . $rate( $delivered, $eligible ),
 				'progress'          => $progress,
 				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
@@ -466,7 +488,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 	}
 
 	public static function customer_search_ajax() {
-		self::guard_ajax();
+		check_ajax_referer( self::ajax_nonce_action(), 'nonce' );
 		$source = sanitize_key( wp_unslash( $_POST['source'] ?? 'registered_customers' ) );
 		if ( ! in_array( $source, array( 'contacts', 'registered_customers', 'all_contacts' ), true ) ) $source = 'registered_customers';
 		$query = substr( sanitize_text_field( wp_unslash( $_POST['query'] ?? '' ) ), 0, 190 );
@@ -489,7 +511,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 	}
 
 	public static function preview_ajax() {
-		self::guard_ajax();
+		check_ajax_referer( self::ajax_nonce_action(), 'nonce' );
 		$template = ContactPanda_Basic_Newsletters::template( absint( $_POST['template_id'] ?? 0 ) );
 		if ( ! $template ) wp_send_json_error( array( 'message' => __( 'Please select an email template.', 'contactpanda' ) ), 400 );
 		$user = wp_get_current_user();
@@ -498,7 +520,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 	}
 
 	public static function test_ajax() {
-		self::guard_ajax();
+		check_ajax_referer( self::ajax_nonce_action(), 'nonce' );
 		$template = ContactPanda_Basic_Newsletters::template( absint( $_POST['template_id'] ?? 0 ) );
 		$email = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
 		$subject = sanitize_text_field( wp_unslash( $_POST['subject'] ?? '' ) );
@@ -514,24 +536,27 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 	}
 
 	public static function unsubscribe() {
-		global $wpdb; ContactPanda_Newsletter_Schema::install(); $request = 'POST' === ( $_SERVER['REQUEST_METHOD'] ?? '' ) ? $_POST : $_GET; $id = absint( $request['recipient'] ?? 0 ); $token = sanitize_text_field( wp_unslash( $request['token'] ?? '' ) ); $t = ContactPanda_Newsletter_Schema::table_names(); $row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$t['recipients']}` WHERE id=%d", $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		global $wpdb; ContactPanda_Newsletter_Schema::install(); $request = 'POST' === strtoupper( sanitize_key( wp_unslash( $_SERVER['REQUEST_METHOD'] ?? '' ) ) ) ? $_POST : $_GET; $id = absint( $request['recipient'] ?? 0 ); $token = sanitize_text_field( wp_unslash( $request['token'] ?? '' ) ); $t = ContactPanda_Newsletter_Schema::table_names(); $row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM %i WHERE id=%d", $t['recipients'], $id ), ARRAY_A ); // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.NonceVerification.Recommended,WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Public unsubscribe link checks the recipient HMAC; POST additionally checks a purpose-specific confirmation HMAC before suppression. Login/session nonces cannot protect emailed links. Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		if ( ! $row || ! hash_equals( self::token( $row ), $token ) ) { wp_die( esc_html__( 'This unsubscribe link is invalid.', 'contactpanda' ), '', array( 'response' => 403 ) ); }
 		if ( self::is_suppressed( $row['email'] ) || 'unsubscribed' === ( $row['reason'] ?? '' ) ) {
 			self::render_unsubscribe_page( __( 'Already finally unsubscribed', 'contactpanda' ), __( 'This email address has already been finally unsubscribed from the newsletter.', 'contactpanda' ), $row );
 		}
-		if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) ) {
+		if ( 'POST' !== strtoupper( sanitize_key( wp_unslash( $_SERVER['REQUEST_METHOD'] ?? '' ) ) ) ) {
 			self::render_unsubscribe_page( __( 'Confirm final unsubscribe', 'contactpanda' ), __( 'Please confirm that you want to finally unsubscribe this address from the newsletter.', 'contactpanda' ), $row, true, $token );
 		}
-		$confirmation = sanitize_text_field( wp_unslash( $_POST['confirmation'] ?? '' ) );
+		$confirmation = sanitize_text_field( wp_unslash( $_POST['confirmation'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Public unsubscribe link checks the recipient HMAC; POST additionally checks a purpose-specific confirmation HMAC before suppression. Login/session nonces cannot protect emailed links.
 		if ( ! hash_equals( self::confirmation_token( $row ), $confirmation ) ) wp_die( esc_html__( 'The unsubscribe confirmation is invalid or expired.', 'contactpanda' ), '', array( 'response' => 403 ) );
 		$now = current_time( 'mysql' );
-		$wpdb->replace( $t['suppressions'], array( 'contact_id' => $row['contact_id'], 'email_hash' => hash( 'sha256', strtolower( $row['email'] ) ), 'reason' => 'unsubscribed', 'source' => 'newsletter_link', 'created_at' => $now ) );
-		$wpdb->update( $t['recipients'], array( 'reason' => 'unsubscribed', 'updated_at' => $now ), array( 'id' => $row['id'] ) );
-		$unsubscribed = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM `{$t['recipients']}` WHERE campaign_id=%d AND reason='unsubscribed'", $row['campaign_id'] ) ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$wpdb->update( $t['campaigns'], array( 'unsubscribed_count' => $unsubscribed, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $row['campaign_id'] ) );
+		$wpdb->replace( $t['suppressions'], array( 'contact_id' => $row['contact_id'], 'email_hash' => hash( 'sha256', strtolower( $row['email'] ) ), 'reason' => 'unsubscribed', 'source' => 'newsletter_link', 'created_at' => $now ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		$wpdb->update( $t['recipients'], array( 'reason' => 'unsubscribed', 'updated_at' => $now ), array( 'id' => $row['id'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		$unsubscribed = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE campaign_id=%d AND reason='unsubscribed'", $t['recipients'], $row['campaign_id'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		$wpdb->update( $t['campaigns'], array( 'unsubscribed_count' => $unsubscribed, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $row['campaign_id'] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
+		$unsubscribe_reason = substr( sanitize_textarea_field( wp_unslash( $_POST['unsubscribe_reason'] ?? '' ) ), 0, 1000 ); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Public unsubscribe link checks the recipient HMAC; POST additionally checks a purpose-specific confirmation HMAC before suppression. Login/session nonces cannot protect emailed links.
+		if ( $unsubscribe_reason && $row['contact_id'] ) ContactPanda_Plugin::extension_update_custom_meta( 'contacts', $row['contact_id'], array( 'contactpanda_unsubscribe_reason' => $unsubscribe_reason ) );
+		/* translators: 1: Email address, 2: Campaign ID, 3: Unsubscribe date and time. */
 		ContactPanda_Plugin::extension_unsubscribe_contact( $row['contact_id'], 'newsletter_link', sprintf( __( 'Email address %1$s finally unsubscribed through campaign %2$d at %3$s.', 'contactpanda' ), sanitize_email( $row['email'] ), $row['campaign_id'], $now ), $row['email'] );
-		do_action( 'contactpanda_plus_email_event', 'unsubscribe', array( 'contact_id' => absint( $row['contact_id'] ), 'email' => sanitize_email( $row['email'] ), 'campaign_id' => absint( $row['campaign_id'] ), 'source' => 'newsletter_link', 'occurred_at' => $now ) );
+		do_action( 'contactpanda_plus_email_event', 'unsubscribe', array( 'contact_id' => absint( $row['contact_id'] ), 'email' => sanitize_email( $row['email'] ), 'campaign_id' => absint( $row['campaign_id'] ), 'source' => 'newsletter_link', 'occurred_at' => $now, 'reason' => $unsubscribe_reason ) );
 		self::render_unsubscribe_page( __( 'Finally unsubscribed', 'contactpanda' ), __( 'Your email address has been finally unsubscribed from the newsletter.', 'contactpanda' ), $row );
 	}
 
@@ -555,7 +580,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		wp_print_styles( array( 'contactpanda-unsubscribe' ) );
 		echo '</head><body><main class="cp-box"><div class="cp-brand">' . wp_kses_post( $logo ) . '<div class="cp-site-name">' . esc_html( $site_name ) . '</div><a class="cp-site-url" href="' . esc_url( $site_url ) . '">' . esc_html( untrailingslashit( $site_url ) ) . '</a></div><h1>' . esc_html( $title ) . '</h1><p>' . esc_html( $message ) . '</p><div class="cp-person"><strong>' . esc_html( $full_name ?: __( 'Newsletter subscriber', 'contactpanda' ) ) . '</strong><span>' . esc_html( sanitize_email( $row['email'] ?? '' ) ) . '</span></div>';
 		if ( $show_form ) {
-			echo '<div class="cp-actions"><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_newsletter_unsubscribe"><input type="hidden" name="recipient" value="' . esc_attr( absint( $row['id'] ?? 0 ) ) . '"><input type="hidden" name="token" value="' . esc_attr( $token ) . '"><input type="hidden" name="confirmation" value="' . esc_attr( self::confirmation_token( $row ) ) . '"><button class="cp-button" type="submit">' . esc_html__( 'Finally unsubscribe', 'contactpanda' ) . '</button></form><a class="cp-button is-secondary" href="' . esc_url( $site_url ) . '">' . esc_html__( 'Do not unsubscribe', 'contactpanda' ) . '</a></div>';
+			echo '<div class="cp-actions"><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_newsletter_unsubscribe"><input type="hidden" name="recipient" value="' . esc_attr( absint( $row['id'] ?? 0 ) ) . '"><input type="hidden" name="token" value="' . esc_attr( $token ) . '"><input type="hidden" name="confirmation" value="' . esc_attr( self::confirmation_token( $row ) ) . '"><label class="cp-unsubscribe-reason">' . esc_html__( 'Reason for unsubscribing (optional)', 'contactpanda' ) . '<textarea name="unsubscribe_reason" rows="3" maxlength="1000"></textarea></label><button class="cp-button" type="submit">' . esc_html__( 'Finally unsubscribe', 'contactpanda' ) . '</button></form><a class="cp-button is-secondary" href="' . esc_url( $site_url ) . '">' . esc_html__( 'Do not unsubscribe', 'contactpanda' ) . '</a></div>';
 		} else {
 			echo '<div class="cp-actions"><a class="cp-button is-secondary" href="' . esc_url( $site_url ) . '">' . esc_html__( 'Back to website', 'contactpanda' ) . '</a></div>';
 		}
@@ -563,13 +588,13 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		exit;
 	}
 
-	private static function campaign( $id ) { global $wpdb; $table = ContactPanda_Newsletter_Schema::table_names()['campaigns']; return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM `{$table}` WHERE id=%d", absint( $id ) ), ARRAY_A ); } // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	private static function campaign( $id ) { global $wpdb; $table = ContactPanda_Newsletter_Schema::table_names()['campaigns']; return $wpdb->get_row( $wpdb->prepare( "SELECT * FROM %i WHERE id=%d", $table, absint( $id ) ), ARRAY_A ); } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 	private static function selected_contact_ids_from_request() {
-		$ids = array();
+		$ids = class_exists( 'ContactPanda_Selections' ) ? ( ContactPanda_Selections::requested() ?? array() ) : array();
 		if ( ! empty( $_GET['contact_ids'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only form prefill.
 			$ids = explode( ',', sanitize_text_field( wp_unslash( $_GET['contact_ids'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
-		$token = isset( $_GET['people_selection'] ) ? substr( preg_replace( '/[^a-z0-9]/', '', strtolower( (string) wp_unslash( $_GET['people_selection'] ) ) ), 0, 24 ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- opaque read-only selection token.
+		$token = isset( $_GET['people_selection'] ) ? substr( preg_replace( '/[^a-z0-9]/', '', strtolower( sanitize_text_field( wp_unslash( $_GET['people_selection'] ) ) ) ), 0, 24 ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- opaque read-only selection token.
 		if ( $token ) {
 			$state = get_transient( 'contactpanda_people_state_' . get_current_user_id() . '_' . $token );
 			if ( is_array( $state ) ) $ids = (array) ( $state['ids'] ?? array() );
@@ -612,14 +637,14 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		);
 		return $labels[ $reason ] ?? __( 'Administrative exception', 'contactpanda' );
 	}
-	private static function is_suppressed( $email ) { global $wpdb; $table = ContactPanda_Newsletter_Schema::table_names()['suppressions']; return (bool) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE email_hash=%s", hash( 'sha256', strtolower( $email ) ) ) ); } // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	private static function is_suppressed( $email ) { global $wpdb; $table = ContactPanda_Newsletter_Schema::table_names()['suppressions']; return (bool) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM %i WHERE email_hash=%s", $table, hash( 'sha256', strtolower( $email ) ) ) ); } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 	private static function token( $row ) { return hash_hmac( 'sha256', absint( $row['id'] ) . '|' . absint( $row['campaign_id'] ), wp_salt( 'auth' ) ); }
 	private static function confirmation_token( $row ) { return hash_hmac( 'sha256', 'confirm|' . absint( $row['id'] ) . '|' . strtolower( sanitize_email( $row['email'] ) ), wp_salt( 'secure_auth' ) ); }
 	private static function unsubscribe_url( $row ) { return add_query_arg( array( 'action' => 'contactpanda_newsletter_unsubscribe', 'recipient' => absint( $row['id'] ), 'token' => self::token( $row ) ), admin_url( 'admin-post.php' ) ); }
 	private static function schedule( $id, $timestamp ) { if ( ! wp_next_scheduled( self::CRON_HOOK, array( absint( $id ) ) ) ) { wp_schedule_single_event( $timestamp, self::CRON_HOOK, array( absint( $id ) ) ); } }
 	private static function action_link( $id, $command, $label, $class = '' ) { return '<a class="' . esc_attr( $class ) . '" href="' . esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=contactpanda_campaign_action&campaign_id=' . absint( $id ) . '&command=' . $command ), 'contactpanda_campaign_action' ) ) . '">' . esc_html( $label ) . '</a>'; }
 	private static function status_label( $status ) { $labels = array( 'draft' => __( 'Draft', 'contactpanda' ), 'scheduled' => __( 'Scheduled', 'contactpanda' ), 'queued' => __( 'Queued', 'contactpanda' ), 'sending' => __( 'Sending', 'contactpanda' ), 'paused' => __( 'Paused', 'contactpanda' ), 'completed' => __( 'Completed', 'contactpanda' ), 'cancelled' => __( 'Cancelled', 'contactpanda' ), 'imported' => __( 'Imported archive', 'contactpanda' ) ); return $labels[ $status ] ?? $status; }
-	private static function guard( $nonce ) { if ( ! current_user_can( self::capability() ) ) { wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ) ); } check_admin_referer( $nonce ); }
-	private static function guard_ajax() { if ( ! current_user_can( self::capability() ) ) wp_send_json_error( array( 'message' => __( 'You do not have permission.', 'contactpanda' ) ), 403 ); check_ajax_referer( 'contactpanda_newsletter_editor', 'nonce' ); }
+	private static function admin_nonce_action( $nonce ) { if ( ! current_user_can( self::capability() ) ) { wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ) ); } return $nonce; }
+	private static function ajax_nonce_action() { if ( ! current_user_can( self::capability() ) ) wp_send_json_error( array( 'message' => __( 'You do not have permission.', 'contactpanda' ) ), 403 ); return 'contactpanda_newsletter_editor'; }
 	private static function capability() { return class_exists( 'ContactPanda_Capabilities' ) ? ContactPanda_Capabilities::for_area( 'marketing' ) : ( class_exists( 'WooCommerce' ) ? 'manage_woocommerce' : 'manage_options' ); }
 }

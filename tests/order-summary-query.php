@@ -85,7 +85,7 @@ for ( $index = 1; $index <= 205; $index++ ) {
 
 $GLOBALS['summary_queries'] = array();
 $method = new ReflectionMethod( 'ContactPanda_Plugin', 'contact_order_summaries' );
-$method->setAccessible( true );
+if ( PHP_VERSION_ID < 80100 ) $method->setAccessible( true );
 $summaries = $method->invoke( null, $contacts );
 
 verify( 1 === $summaries[1]['count'] && 90.0 === $summaries[1]['total'], 'Completed order and refund amount are summarized for the matching contact.' );
