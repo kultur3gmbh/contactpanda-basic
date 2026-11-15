@@ -9715,3 +9715,54 @@ msgstr "Firmenzuordnung nicht gefunden."
 
 msgid "The company changes could not be saved."
 msgstr "Die Firmenänderungen konnten nicht gespeichert werden."
+
+msgid "About me"
+msgstr "Über mich"
+
+msgid "Access denied."
+msgstr "Zugriff verweigert."
+
+msgid "All search words must occur in the same person record, in any order. These fields apply to person searches in lists and connected Panda selection windows."
+msgstr "Alle Suchwörter müssen bei derselben Person vorkommen, unabhängig von der Reihenfolge. Diese Felder gelten für die Personensuche in Listen und verbundenen Panda-Auswahlfenstern."
+
+msgid "Applies to person and company details on wide screens. Narrow layouts scroll as one page."
+msgstr "Gilt für Personen- und Firmendetails auf breiten Bildschirmen. Schmale Ansichten scrollen als gesamte Seite."
+
+msgid "Invalid profile data."
+msgstr "Ungültige Profildaten."
+
+msgid "No self-description saved."
+msgstr "Keine Selbstbeschreibung gespeichert."
+
+msgid "Person and company workspace"
+msgstr "Personen- und Firmenbearbeitung"
+
+msgid "Person not found."
+msgstr "Person nicht gefunden."
+
+msgid "Save self-description"
+msgstr "Selbstbeschreibung speichern"
+
+msgid "Scroll the left and right columns independently"
+msgstr "Linke und rechte Spalte unabhängig scrollen"
+
+msgid "Searchable person fields"
+msgstr "Durchsuchbare Personenfelder"
+
+msgid "Selecting no fields disables text matching. Access permissions remain unchanged."
+msgstr "Ohne ausgewählte Felder liefert die Textsuche keine Treffer. Zugriffsrechte bleiben unverändert."
+
+msgid "Self-description"
+msgstr "Selbstbeschreibung"
+
+msgid "Self-description saved."
+msgstr "Selbstbeschreibung gespeichert."
+
+msgid "The profile could not be saved."
+msgstr "Das Profil konnte nicht gespeichert werden."
+
+msgid "The self-description could not be saved."
+msgstr "Die Selbstbeschreibung konnte nicht gespeichert werden."
+
+msgid "This text can be shown in a separate PandaWoo product tab."
+msgstr "Dieser Text kann in einem eigenen PandaWoo-Produkt-Tab angezeigt werden."

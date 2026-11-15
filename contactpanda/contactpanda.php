@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
- * Version: 0.9.107
+ * Version: 0.9.108
  * Author: Kultur3 GmbH
  * License: GPLv3
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -14,11 +14,11 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.9.107' );
+define( 'CONTACTPANDA_VERSION', '0.9.108' );
 // Keep browser caches independent from the public plugin version so that
 // corrected admin interactions are loaded even for same-version test builds.
 define( 'CONTACTPANDA_ASSET_VERSION', CONTACTPANDA_VERSION . '-20261112-2' );
-define( 'CONTACTPANDA_EXTENSION_API_VERSION', '1.0' );
+define( 'CONTACTPANDA_EXTENSION_API_VERSION', '1.1' );
 define( 'CONTACTPANDA_FILE', __FILE__ );
 define( 'CONTACTPANDA_PATH', plugin_dir_path( __FILE__ ) );
 define( 'CONTACTPANDA_URL', plugin_dir_url( __FILE__ ) );
@@ -27,6 +27,26 @@ define( 'CONTACTPANDA_URL', plugin_dir_url( __FILE__ ) );
 add_action( 'init', static function () {
 	load_plugin_textdomain( 'contactpanda', false, dirname( plugin_basename( CONTACTPANDA_FILE ) ) . '/languages' ); // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Bundled German catalogs are required for offline/sideloaded installations; register at init so frontend forms work without a WordPress.org language pack.
 }, 0 );
+
+/** Basic 1.1 integration contract; lookup never grants additional CRM permissions. */
+function contactpanda_search_people( $query = '', $limit = 25, $offset = 0 ) {
+	if ( ! current_user_can( ContactPanda_Capabilities::for_area( 'view' ) ) ) return new WP_Error( 'contactpanda_search_forbidden', __( 'Access denied.', 'contactpanda' ) );
+	return ContactPanda_Plugin::extension_search_contacts( $query, $limit, $offset );
+}
+
+function contactpanda_get_person_profile( $contact_id ) {
+	return ContactPanda_Person_Profile::get( $contact_id );
+}
+
+/** HTTP callers must verify their own nonce; this API checks person editing rights. */
+function contactpanda_update_person_profile( $contact_id, $values ) {
+	return ContactPanda_Person_Profile::update( $contact_id, $values );
+}
+
+/** Explicitly public biography output, with no other person data. Empty output hides product tabs. */
+function contactpanda_get_person_biography_html( $contact_id ) {
+	return ContactPanda_Person_Profile::biography_html( $contact_id );
+}
 
 /** Read a person's canonical VAT ID without depending on WooCommerce user meta. */
 function contactpanda_get_person_vat_id( $contact_id ) {
@@ -97,6 +117,8 @@ add_filter( 'debug_information', array( 'ContactPanda_Runtime', 'site_health_inf
 /** Load family classes only when WordPress actually invokes them. */
 function contactpanda_autoload( $class ) {
 	$map = array(
+		'ContactPanda_Search' => 'class-contactpanda-search.php',
+		'ContactPanda_Person_Profile' => 'class-contactpanda-person-profile.php',
 		'ContactPanda_Pagination' => 'class-contactpanda-pagination.php',
 		'ContactPanda_Plugin' => 'class-contactpanda-plugin.php', 'ContactPanda_Modules' => 'class-contactpanda-modules.php',
 		'ContactPanda_Company_Profile' => 'class-contactpanda-company-profile.php',
@@ -136,6 +158,7 @@ function contactpanda_boot_context() {
 	ContactPanda_Spam_Protection::boot();
 	if ( ContactPanda_Runtime::is_backoffice() ) {
 		ContactPanda_Plugin::boot();
+		ContactPanda_Person_Profile::boot();
 		ContactPanda_Capabilities::boot();
 		ContactPanda_Trash::boot();
 		ContactPanda_Data_Tools::boot();

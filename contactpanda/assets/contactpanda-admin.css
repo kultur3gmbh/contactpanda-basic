@@ -436,3 +436,13 @@ body.contactpanda-modal-open{overflow:hidden}.contactpanda-mailing-modal{z-index
 .contactpanda-search-add-icon{flex:none;vertical-align:middle}
 
 .contactpanda-action-icon-search-add{mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%3E%3Ccircle%20cx%3D%2710%27%20cy%3D%2710%27%20r%3D%276%27%2F%3E%3Cpath%20d%3D%27m14.5%2014.5%206%206M7%2010h6M10%207v6%27%2F%3E%3C%2Fsvg%3E");-webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%3E%3Ccircle%20cx%3D%2710%27%20cy%3D%2710%27%20r%3D%276%27%2F%3E%3Cpath%20d%3D%27m14.5%2014.5%206%206M7%2010h6M10%207v6%27%2F%3E%3C%2Fsvg%3E")}
+
+/* Optional detail panes: one shared opt-in behavior for people and companies. */
+.contactpanda-search-field{display:block;margin:6px 0}
+@media(min-width:1100px){
+ .contactpanda-record-workspace.contactpanda-independent-scroll{align-items:start;overflow:visible}
+ .contactpanda-record-workspace.contactpanda-independent-scroll>aside,.contactpanda-record-workspace.contactpanda-independent-scroll>main{position:sticky;top:48px;max-height:calc(100dvh - 64px);overflow:auto;min-width:0;scrollbar-gutter:stable;padding-right:8px;box-sizing:border-box;overscroll-behavior:contain}
+}
+@media print{.contactpanda-record-workspace.contactpanda-independent-scroll>aside,.contactpanda-record-workspace.contactpanda-independent-scroll>main{position:static;max-height:none;overflow:visible}}
+
+@media(min-width:1100px){.contactpanda-record-workspace.contactpanda-independent-scroll>aside>*,.contactpanda-record-workspace.contactpanda-independent-scroll>main>*{flex-shrink:0}}

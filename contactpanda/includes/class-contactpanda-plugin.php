@@ -2573,7 +2573,7 @@ final class ContactPanda_Plugin {
 		if ( $navigation['previous'] ) echo '<a class="button" href="' . esc_url( $navigation['previous'] ) . '">' . esc_html__( '← Previous person', 'contactpanda' ) . '</a>';
 		if ( $navigation['next'] ) echo '<a class="button" href="' . esc_url( $navigation['next'] ) . '">' . esc_html__( 'Next person →', 'contactpanda' ) . '</a>';
 		echo '</span></span></div>';
-		echo '<div class="contactpanda-grid"><aside>';
+		echo '<div class="contactpanda-grid contactpanda-record-workspace' . ( ! empty( get_option( 'contactpanda_general_settings', array() )['independent_scroll'] ) ? ' contactpanda-independent-scroll' : '' ) . '"><aside>';
 		echo '<section class="contactpanda-card contactpanda-master-data"><h2>' . esc_html__( 'Master data', 'contactpanda' ) . '</h2>';
 		if ( $readonly ) {
 			self::field( __( 'First name', 'contactpanda' ), $first_name );
@@ -2803,7 +2803,7 @@ final class ContactPanda_Plugin {
 		if ( '' !== $search ) {
 			$companies = array_values( array_filter( $companies, static function ( $company ) use ( $search ) {
 				$haystack = self::value( $company, array( 'get_name', 'name', 'company_name' ) ) . ' ' . ContactPanda_Custom_Fields::searchable_text( $company, 'companies' );
-				return false !== stripos( $haystack, $search );
+				return ContactPanda_Search::matches( $search, array( $haystack ) );
 			} ) );
 		}
 		$companies = apply_filters( 'contactpanda_company_records', $companies, isset( $_GET['segment'] ) ? absint( $_GET['segment'] ) : 0 ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only saved-search filter.
@@ -2991,6 +2991,10 @@ final class ContactPanda_Plugin {
 	}
 
 	private static function contact_search( $search = '', $limit = 50, $offset = 0 ) {
+		if ( ! ContactPanda_Store::standalone() && '' !== trim( $search ) ) {
+			$contacts = ContactPanda_Search::filter_contacts( self::all_contacts( '' ), $search );
+			return array( 'contacts' => array_slice( $contacts, $offset, $limit ), 'total_items' => count( $contacts ) );
+		}
 		if ( ContactPanda_Store::standalone() ) {
 			return ContactPanda_Store::search_contacts( $search, $limit, $offset );
 		}
@@ -3010,6 +3014,7 @@ final class ContactPanda_Plugin {
 	}
 
 	private static function all_contacts( $search = '' ) {
+		if ( ! ContactPanda_Store::standalone() && '' !== trim( $search ) ) return ContactPanda_Search::filter_contacts( self::all_contacts( '' ), $search );
 		// Groundhogg's ability response can report the current page size as its
 		// total on some installations. The advanced search must never trust that
 		// value, because doing so silently limits every filter to the first page.
@@ -3065,6 +3070,7 @@ final class ContactPanda_Plugin {
 	 * attendees. Full contacts are hydrated after filtering and pagination.
 	 */
 	private static function all_contact_identities( $search = '' ) {
+		if ( ! ContactPanda_Store::standalone() && '' !== trim( $search ) ) return self::all_contacts( $search );
 		if ( ContactPanda_Store::standalone() ) {
 			return self::all_contacts( $search );
 		}
@@ -3360,7 +3366,7 @@ final class ContactPanda_Plugin {
 		}
 		// Older Groundhogg releases expose different search semantics. Fall back
 		// to the existing complete read API only when the targeted search misses.
-		foreach ( self::all_contacts( $email ) as $contact ) {
+		foreach ( self::all_contacts( '' ) as $contact ) {
 			$contact_email = strtolower( sanitize_email( self::value( $contact, array( 'email', 'get_email' ) ) ) );
 			if ( $contact_email && hash_equals( $email, $contact_email ) ) {
 				return $contact;
@@ -4002,7 +4008,7 @@ final class ContactPanda_Plugin {
 			echo '<a class="button button-primary contactpanda-heading-action" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-firmen&firma=' . $id ) ) . __( '">Edit</a>', 'contactpanda' );
 		}
 		echo '</header>';
-		echo '<div class="contactpanda-grid">';
+		echo '<div class="contactpanda-grid contactpanda-record-workspace' . ( ! empty( get_option( 'contactpanda_general_settings', array() )['independent_scroll'] ) ? ' contactpanda-independent-scroll' : '' ) . '">';
 		echo '<aside><section class="contactpanda-card contactpanda-master-data"><h2>' . esc_html__( 'Master data', 'contactpanda' ) . '</h2>';
 		if ( $readonly ) {
 			self::field( __( 'Company name', 'contactpanda' ), $name );

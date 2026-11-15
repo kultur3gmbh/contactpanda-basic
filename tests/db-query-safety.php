@@ -21,7 +21,7 @@ function esc_html__( $v, $d = '' ) { return $v; }
 class SafetyQueryReached extends RuntimeException {}
 function dbDelta( $sql ) { preg_match( '/CREATE TABLE ([a-zA-Z0-9_]+)/', $sql, $m ); $GLOBALS['wpdb']->tables[$m[1]] = true; ++$GLOBALS['delta_count']; }
 class WP_Error { public function __construct( ...$unused ) {} }
-class ContactPanda_Custom_Fields { const PREFIX = 'custom_'; }
+class ContactPanda_Custom_Fields { const PREFIX = 'custom_'; static function integration_definitions($entity=''){return [];} }
 class SafetyDB {
  public $stop_on = ''; public $campaign_fixture = false;
  public $prefix = 'fixture_73_'; public $tables = array(); public $prepared = array(); public $reads = 0;
@@ -55,6 +55,7 @@ class SafetyDB {
 }
 function db_assert( $ok, $why ) { if ( ! $ok ) throw new RuntimeException( $why ); }
 require __DIR__ . '/../contactpanda/includes/class-contactpanda-schema.php';
+require __DIR__ . '/../contactpanda/includes/class-contactpanda-search.php';
 require __DIR__ . '/../contactpanda/includes/class-contactpanda-newsletter-schema.php';
 require __DIR__ . '/../contactpanda/includes/class-contactpanda-store.php';
 require __DIR__ . '/../contactpanda/includes/class-contactpanda-newsletter-campaigns.php';
@@ -74,7 +75,7 @@ try {
   $result = ContactPanda_Store::search_contacts( $search, 12, 24 ); db_assert( $result['total_items'] === 0, 'Empty fixture result.' );
   $call = end( $db->prepared ); $args = $call[1];
   db_assert( array_slice( $args, -2 ) === array( 12, 24 ), 'Search pagination remains bound as integers.' );
-  if ( $search ) db_assert( in_array( '%' . $db->esc_like( $search ) . '%', $args, true ), 'Wildcard characters must remain escaped search values.' );
+  foreach ( ContactPanda_Search::words( $search ) as $word ) db_assert( in_array( '%' . $db->esc_like( $word ) . '%', $args, true ), 'Every word must remain a bound, wildcard-escaped search value.' );
  }
  foreach ( array( false, true ) as $trash ) {
   ContactPanda_Store::contact( 17, $trash ); $call = end( $db->prepared ); db_assert( $call[1] === array( 'fixture_73_cp_contacts', 17, (int) $trash ), 'Trash visibility must remain a bound boolean.' );

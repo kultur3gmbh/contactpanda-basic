@@ -58,7 +58,7 @@
 		query = String(query || '').toLocaleLowerCase();
 		var found = 0;
 		var html = (field.options || []).map(function (option) {
-			if (query && String(option.label).toLocaleLowerCase().indexOf(query) === -1) return '';
+			if (query && !query.split(/\s+/).filter(Boolean).every(function (word) { return String(option.label).toLocaleLowerCase().indexOf(word) !== -1; })) return '';
 			found++;
 			return '<button type="button" class="contactpanda-option-picker-result' + (String(option.value) === String(selected) ? ' is-selected' : '') + '" data-value="' + escapeHtml(option.value) + '">' + escapeHtml(option.label) + '</button>';
 		}).join('');

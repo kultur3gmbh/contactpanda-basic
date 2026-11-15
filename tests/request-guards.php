@@ -4,14 +4,16 @@ define( 'ABSPATH', __DIR__ . '/' );
 class RequestRejected extends RuntimeException {}
 function current_user_can( $capability ) { return $GLOBALS['request_allowed']; }
 function is_user_logged_in() { return true; }
+function absint( $value ) { return abs( (int) $value ); }
 function __( $text, $domain = '' ) { return $text; }
 function esc_html__( $text, $domain = '' ) { return $text; }
 function wp_die( $message, ...$rest ) { throw new RequestRejected( 'permission' ); }
 function wp_send_json_error( $data, $status = 400 ) { throw new RequestRejected( 'permission' ); }
 function check_admin_referer( $action ) { throw new RequestRejected( 'nonce:' . $action ); }
 function check_ajax_referer( $action, $key = false ) { throw new RequestRejected( 'nonce:' . $action ); }
-foreach ( array( 'plugin', 'registration', 'data-tools', 'newsletters', 'newsletter-campaigns', 'segments', 'events', 'my-account', 'import-review' ) as $file ) require_once __DIR__ . '/../contactpanda/includes/class-contactpanda-' . $file . '.php';
+foreach ( array( 'plugin', 'registration', 'data-tools', 'newsletters', 'newsletter-campaigns', 'segments', 'events', 'my-account', 'import-review', 'person-profile' ) as $file ) require_once __DIR__ . '/../contactpanda/includes/class-contactpanda-' . $file . '.php';
 $handlers = array(
+ 'ContactPanda_Person_Profile' => array( 'save_biography' ),
  'ContactPanda_Plugin' => array( 'update_contact_field', 'save_contact_channel', 'delete_contact_channel', 'update_marketing_consent', 'bulk_marketing_consent', 'export_contacts', 'print_contacts', 'create_contact', 'create_company', 'manage_contact_tag', 'bulk_manage_contact_tags', 'preview_broadcast', 'preview_order', 'create_user_account', 'update_customer_address', 'validate_vat' ),
  'ContactPanda_Registration' => array( 'handle_migrate_wordpress_users', 'handle_migrate_newsletter_plugin', 'handle_migrate_fluentcrm', 'handle_import_woocommerce', 'handle_setup_standalone', 'handle_migrate_groundhogg', 'handle_reset_standalone' ),
  'ContactPanda_Data_Tools' => array( 'handle_csv_preview', 'handle_csv_import', 'handle_merge_preview', 'handle_merge_group', 'handle_merge_commit', 'handle_central_settings', 'handle_notice_settings' ),
@@ -20,7 +22,7 @@ $handlers = array(
  'ContactPanda_Basic_Segments' => array( 'ajax_filter_count', 'ajax_save_inline_search' ),
  'ContactPanda_Events' => array( 'preview_event' ),
 );
-$_POST = array( 'ids' => array( '1 OR 1=1', array( 'unexpected' ) ), 'value' => '<script>fixture</script>', '_wpnonce' => 'forged' );
+$_POST = array( 'contact_id' => 1, 'ids' => array( '1 OR 1=1', array( 'unexpected' ) ), 'value' => '<script>fixture</script>', '_wpnonce' => 'forged' );
 $_GET = array( 'id' => 1, 'command' => 'delete', '_wpnonce' => 'forged' );
 $attempts = 0;
 foreach ( $handlers as $class => $methods ) foreach ( $methods as $method ) foreach ( array( false, true ) as $allowed ) {

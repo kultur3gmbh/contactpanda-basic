@@ -88,16 +88,14 @@ final class ContactPanda_Store {
 	public static function search_contacts( $search = '', $limit = 50, $offset = 0 ) {
 		global $wpdb;
 		$tables = ContactPanda_Schema::table_names();
-		$where = "deleted_at IS NULL";
+		$where = "c.deleted_at IS NULL";
 		$params = array( $tables['contacts'] );
-		if ( '' !== trim( $search ) ) {
-			$like = '%' . $wpdb->esc_like( trim( $search ) ) . '%';
-			$where .= " AND (first_name LIKE %s OR last_name LIKE %s OR email LIKE %s OR id IN (SELECT custom_meta.contact_id FROM %i custom_meta WHERE custom_meta.meta_key LIKE %s AND custom_meta.meta_value LIKE %s))";
-			$params = array( $tables['contacts'], $like, $like, $like, $tables['contactmeta'], ContactPanda_Custom_Fields::PREFIX . '%', $like );
-		}
-		$count_sql = "SELECT COUNT(*) FROM %i WHERE {$where}";
+		list( $predicate, $arguments ) = ContactPanda_Search::predicate( $search );
+		$where .= $predicate;
+		$params = array_merge( $params, $arguments );
+		$count_sql = "SELECT COUNT(*) FROM %i c WHERE {$where}";
 		$total = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.NotPrepared -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately. Only fixed SQL clauses/generated placeholder lists are concatenated; the complete query is passed to wpdb::prepare with identifier and scalar arguments in SQL order. No request value is concatenated.
-		$sql = "SELECT * FROM %i WHERE {$where} ORDER BY last_name ASC, first_name ASC LIMIT %d OFFSET %d";
+		$sql = "SELECT * FROM %i c WHERE {$where} ORDER BY last_name ASC, first_name ASC LIMIT %d OFFSET %d";
 		$rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( $params, array( absint( $limit ), absint( $offset ) ) ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.NotPrepared -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately. Only fixed SQL clauses/generated placeholder lists are concatenated; the complete query is passed to wpdb::prepare with identifier and scalar arguments in SQL order. No request value is concatenated.
 		return array( 'contacts' => array_map( array( __CLASS__, 'hydrate_contact' ), (array) $rows ), 'total_items' => $total );
 	}
@@ -319,7 +317,7 @@ final class ContactPanda_Store {
 			$core['email_normalized'] = $email ? strtolower( $email ) : null;
 		}
 		$core['updated_at'] = current_time( 'mysql' );
-		$wpdb->update( $table, $core, array( 'id' => absint( $id ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		if ( false === $wpdb->update( $table, $core, array( 'id' => absint( $id ) ) ) ) return false; // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		$meta = isset( $data['meta'] ) && is_array( $data['meta'] ) ? $data['meta'] : array();
 		foreach ( array( 'anrede', 'titel_vorangestellt', 'titel_nachgestellt', 'berufsbezeichnung', 'primary_phone', 'optin_status', 'groundhogg_contact_id' ) as $key ) {
 			if ( array_key_exists( $key, $data ) ) {
@@ -327,7 +325,7 @@ final class ContactPanda_Store {
 			}
 		}
 		foreach ( $meta as $key => $value ) {
-			self::set_contact_meta( $id, $key, $value );
+			if ( ! self::set_contact_meta( $id, $key, $value ) ) return false;
 		}
 		if ( class_exists( 'ContactPanda_Identity_Store' ) && self::ready() ) ContactPanda_Identity_Store::sync_contact( $id );
 		return true;

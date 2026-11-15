@@ -149,6 +149,8 @@ final class ContactPanda_Registration {
 		$theme_styles = array_key_exists( 'theme_styles', $input ) ? ( empty( $input['theme_styles'] ) ? 0 : 1 ) : (int) ( $current['theme_styles'] ?? 0 );
 		return array(
 			'data_source'         => $source,
+			'search_fields' => isset( $input['search_fields_present'] ) ? array_values( array_intersect( array_keys( ContactPanda_Search::fields() ), array_filter( (array) ( $input['search_fields'] ?? array() ), 'is_string' ) ) ) : ( $current['search_fields'] ?? array_keys( ContactPanda_Search::fields() ) ),
+			'independent_scroll' => array_key_exists( 'independent_scroll', $input ) ? ( empty( $input['independent_scroll'] ) ? 0 : 1 ) : (int) ( $current['independent_scroll'] ?? 0 ),
 			'theme_styles'        => $theme_styles,
 			'theme_stylesheet'    => $theme_styles ? sanitize_key( $theme->get_stylesheet() ) : '',
 			'theme_name'          => $theme_styles ? sanitize_text_field( $theme->get( 'Name' ) ?: $theme->get_stylesheet() ) : '',
@@ -616,6 +618,7 @@ The link is valid for 24 hours.',
 		self::render_automatic_updates();
 		echo '<form method="post" action="options.php">';
 		settings_fields( 'contactpanda_general' );
+		ContactPanda_Search::render_settings( $settings );
 		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'External news service', 'contactpanda' ) . '</h2>';
 		echo '<div class="contactpanda-setting-row"><input type="hidden" name="' . esc_attr( self::GENERAL_OPTION ) . '[external_news_enabled]" value="0"><label><input type="checkbox" name="' . esc_attr( self::GENERAL_OPTION ) . '[external_news_enabled]" value="1"' . checked( ! empty( $settings['external_news_enabled'] ), true, false ) . '> ' . esc_html__( 'Allow ContactPanda news to be loaded from pandacosmo.com.', 'contactpanda' ) . '</label><p class="description">' . esc_html__( 'Optional. When enabled, the dashboard requests the public news feed from Kultur3 GmbH. This sends the server IP address and normal connection data, but no contacts, orders or mailing lists. You can withdraw permission here at any time.', 'contactpanda' ) . ' <a href="https://pandacosmo.com/privacy-policy/" target="_blank" rel="noopener">' . esc_html__( 'Privacy information', 'contactpanda' ) . '</a></p></div>';
 		submit_button( __( 'Save general settings', 'contactpanda' ) );

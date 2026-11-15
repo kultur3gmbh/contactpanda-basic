@@ -44,10 +44,10 @@ try{
  $doc=new DOMDocument();@$doc->loadHTML('<?xml encoding="UTF-8">'.$html);$xpath=new DOMXPath($doc);$buttons=$xpath->query('//button[@role="tab"]');$panels=$xpath->query('//div[@role="tabpanel"]');
  profile_expect(trim($buttons[0]->textContent)==='About me'&&strpos($buttons[1]->getAttribute('id'),'-notes-tab')!==false,'About me is the first tab directly before Notes');
  profile_expect($buttons[0]->getAttribute('aria-selected')==='true'&&!$panels[0]->hasAttribute('hidden')&&$panels[1]->hasAttribute('hidden'),'About me opens as the sole active initial tab');
- profile_expect(substr_count($html,'id="contactpanda-plus-biography-card"')===1,'Self-description editor rendered once');
+ profile_expect(substr_count($html,'id="contactpanda-biography-card"')===1,'Self-description editor rendered once');
  remove_filter('contactpanda_person_detail_tabs',['ContactPanda_Plus_Donations','tabs'],20);
  ob_start();$tabs->invoke(null,$contacts[0],null,$contact,[],[],false,[],false);$html=ob_get_clean();
- profile_expect(strpos($html,'-about_me')===false&&strpos($html,'-notes-tab" role="tab" aria-selected="true"')!==false,'Basic without Plus retains Notes as first active tab');
+ profile_expect(strpos($html,'-about_me-tab" role="tab" aria-selected="true"')!==false,'Basic retains About me without Plus');
 }finally{
  wp_set_current_user($admin_id);if($view_user&&!is_wp_error($view_user)){require_once ABSPATH.'wp-admin/includes/user.php';wp_delete_user($view_user);}
  update_option('contactpanda_general_settings',$general);

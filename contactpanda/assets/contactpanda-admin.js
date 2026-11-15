@@ -1,3 +1,4 @@
+window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, values) { var words = String(query || '').trim().toLocaleLowerCase().split(/\s+/).filter(Boolean); return words.every(function (word) { return values.some(function (value) { return String(value || '').toLocaleLowerCase().indexOf(word) !== -1; }); }); }};
 (function () {
 	document.addEventListener('change', function (event) {
 		if (event.target.matches('.contactpanda-custom-field-form select[name="field_type"]')) {
@@ -1152,7 +1153,7 @@
 		var matches = 0;
 		suggestions.querySelectorAll('.contactpanda-token-suggestion').forEach(function (suggestion) {
 			var assigned = !!entry.querySelector('.contactpanda-tag[data-tag="' + suggestion.dataset.tag + '"]');
-			var visible = !!query && !assigned && suggestion.dataset.name.toLocaleLowerCase().indexOf(query) !== -1 && matches < 10;
+			var visible = !!query && !assigned && window.PandaQuickSearch.matches(query, [suggestion.dataset.name]) && matches < 10;
 			suggestion.hidden = !visible;
 			if (visible) matches += 1;
 		});

@@ -492,9 +492,9 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		$source = sanitize_key( wp_unslash( $_POST['source'] ?? 'registered_customers' ) );
 		if ( ! in_array( $source, array( 'contacts', 'registered_customers', 'all_contacts' ), true ) ) $source = 'registered_customers';
 		$query = substr( sanitize_text_field( wp_unslash( $_POST['query'] ?? '' ) ), 0, 190 );
-		$contacts = ContactPanda_Plugin::extension_contacts();
+		$contacts = ContactPanda_Plugin::extension_contacts( $query );
 		if ( 'registered_customers' === $source ) {
-			$contacts = self::registered_customer_contacts( $contacts, $query );
+			$contacts = self::registered_customer_contacts( $contacts, '' );
 		} elseif ( 'contacts' === $source ) {
 			$contacts = ! empty( $_POST['segment_id'] ) ? ContactPanda_Basic_Segments::filter_contacts( $contacts, absint( $_POST['segment_id'] ) ) : array();
 		}
@@ -608,21 +608,13 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		return $email && (bool) get_user_by( 'email', $email );
 	}
 	private static function registered_customer_contacts( $contacts, $search = '' ) {
-		$query = trim( (string) $search );
-		$query = function_exists( 'mb_strtolower' ) ? mb_strtolower( $query ) : strtolower( $query );
-		$company_map = ContactPanda_Plugin::extension_company_map();
-		return array_values( array_filter( (array) $contacts, static function ( $contact ) use ( $query, $company_map ) {
+		if ( '' !== trim( $search ) ) $contacts = ContactPanda_Search::filter_contacts( $contacts, $search );
+		return array_values( array_filter( (array) $contacts, static function ( $contact ) {
 			$email = sanitize_email( ContactPanda_Plugin::extension_value( $contact, array( 'email', 'get_email' ) ) );
-			if ( ! is_email( $email ) || ! self::is_registered_customer( $contact ) || self::has_protected_optout_status( $contact ) || self::is_suppressed( $email ) ) return false;
-			if ( '' === $query ) return true;
-			$id = absint( ContactPanda_Plugin::extension_value( $contact, array( 'id', 'ID' ) ) );
-			$companies = array();
-			foreach ( (array) ( $company_map[ $id ] ?? array() ) as $company ) $companies[] = ContactPanda_Plugin::extension_value( $company, array( 'name', 'company_name', 'get_name' ) );
-			$haystack = implode( ' ', array( ContactPanda_Plugin::extension_value( $contact, array( 'first_name' ) ), ContactPanda_Plugin::extension_value( $contact, array( 'last_name' ) ), $email, implode( ' ', $companies ) ) );
-			$haystack = function_exists( 'mb_strtolower' ) ? mb_strtolower( $haystack ) : strtolower( $haystack );
-			return false !== strpos( $haystack, $query );
+			return is_email( $email ) && self::is_registered_customer( $contact ) && ! self::has_protected_optout_status( $contact ) && ! self::is_suppressed( $email );
 		} ) );
 	}
+
 	private static function has_protected_optout_status( $contact ) {
 		$status = ContactPanda_Plugin::extension_optin_status( $contact );
 		return in_array( $status, array( 3, 6, 7, 8, 9, '3', '6', '7', '8', '9', 'unsubscribed', 'hard_bounce', 'bounced', 'spam', 'complained', 'blocked' ), true );

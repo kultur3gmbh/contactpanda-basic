@@ -10226,3 +10226,54 @@ msgstr ""
 
 msgid "The company changes could not be saved."
 msgstr ""
+
+msgid "About me"
+msgstr ""
+
+msgid "Access denied."
+msgstr ""
+
+msgid "All search words must occur in the same person record, in any order. These fields apply to person searches in lists and connected Panda selection windows."
+msgstr ""
+
+msgid "Applies to person and company details on wide screens. Narrow layouts scroll as one page."
+msgstr ""
+
+msgid "Invalid profile data."
+msgstr ""
+
+msgid "No self-description saved."
+msgstr ""
+
+msgid "Person and company workspace"
+msgstr ""
+
+msgid "Person not found."
+msgstr ""
+
+msgid "Save self-description"
+msgstr ""
+
+msgid "Scroll the left and right columns independently"
+msgstr ""
+
+msgid "Searchable person fields"
+msgstr ""
+
+msgid "Selecting no fields disables text matching. Access permissions remain unchanged."
+msgstr ""
+
+msgid "Self-description"
+msgstr ""
+
+msgid "Self-description saved."
+msgstr ""
+
+msgid "The profile could not be saved."
+msgstr ""
+
+msgid "The self-description could not be saved."
+msgstr ""
+
+msgid "This text can be shown in a separate PandaWoo product tab."
+msgstr ""
