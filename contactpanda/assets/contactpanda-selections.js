@@ -1,6 +1,8 @@
 (function () {
  'use strict';
  var c = window.CP_SELECTIONS; if (!c) return;
+ // wp_localize_script serializes top-level scalars as strings: '0' is truthy.
+ var current = Number(c.current);
  var labels = c.i18n, key = 'cp-selection:' + c.user + ':' + c.source, basket = [], additive = false;
  function store() { try { sessionStorage.setItem(key, JSON.stringify({ids:basket,add:additive,query:query()})); } catch (_) {} }
  function query() { var u = new URL(location.href); ['contactpanda_page','orderby','order','list_state'].forEach(function (k) { u.searchParams.delete(k); }); return u.search; }
@@ -29,7 +31,7 @@
  var toolbar=document.querySelector('.contactpanda-bulk-toolbar');
  if(toolbar || document.querySelector('.cp-selection-add')){
   try{var previous=JSON.parse(sessionStorage.getItem(key)||'{}');additive=!!previous.add;if(previous.query===query() || additive)basket=ids(previous.ids||[]);}catch(_){}
-  if(c.current && !additive)request('load',{id:c.current}).then(function(row){basket=ids(row.ids);boxes().forEach(function(b){b.checked=basket.indexOf(b.value)!==-1;});store();refresh();}).catch(function(e){window.alert(e.message);});
+  if(Number.isSafeInteger(current) && current > 0 && !additive)request('load',{id:current}).then(function(row){basket=ids(row.ids);boxes().forEach(function(b){b.checked=basket.indexOf(b.value)!==-1;});store();refresh();}).catch(function(e){window.alert(e.message);});
   boxes().forEach(function(b){if(additive && new URL(location.href).searchParams.get('s'))basket.push(b.value);b.checked=basket.indexOf(b.value)!==-1;});basket=ids(basket);
   var add=document.querySelector('.cp-selection-add');if(add){add.setAttribute('aria-pressed',String(additive));add.classList.toggle('button-primary',additive);add.onclick=function(){additive=!additive;add.setAttribute('aria-pressed',String(additive));add.classList.toggle('button-primary',additive);store();};}
   document.addEventListener('change',function(e){if(e.target.matches('.contactpanda-person-select,.contactpanda-select-all')){collect();refresh();}});

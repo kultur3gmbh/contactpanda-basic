@@ -491,6 +491,24 @@ final class ContactPanda_Store {
 		return $updated;
 	}
 
+
+	/** Rename the existing CRM company and edit this person's role atomically. */
+	public static function update_contact_company_details( $company_id, $contact_id, $name, $position, $primary_company ) {
+		global $wpdb;
+		if ( ! self::standalone() ) return new WP_Error( 'contactpanda_readonly', __( 'Groundhogg data is read-only. Migrate to ContactPanda before editing.', 'contactpanda' ) );
+		$name = trim( sanitize_text_field( $name ) );
+		if ( '' === $name || ( function_exists( 'mb_strlen' ) ? mb_strlen( $name ) : strlen( $name ) ) > 190 ) return new WP_Error( 'contactpanda_company_name', __( 'Enter a company name of up to 190 characters.', 'contactpanda' ) );
+		$linked = false;
+		foreach ( self::contact_company_relations( $contact_id ) as $relation ) if ( absint( $relation['company_id'] ) === absint( $company_id ) ) $linked = true;
+		if ( ! $linked || ! self::company( $company_id ) ) return new WP_Error( 'contactpanda_company_assignment', __( 'Company assignment not found.', 'contactpanda' ) );
+		if ( false === $wpdb->query( 'START TRANSACTION' ) ) return new WP_Error( 'contactpanda_company_save', __( 'The company changes could not be saved.', 'contactpanda' ) );
+		if ( ! self::update_company( $company_id, 'name', $name ) || ! self::update_contact_company_relation( $company_id, $contact_id, $position, $primary_company ) || false === $wpdb->query( 'COMMIT' ) ) {
+			$wpdb->query( 'ROLLBACK' );
+			return new WP_Error( 'contactpanda_company_save', __( 'The company changes could not be saved.', 'contactpanda' ) );
+		}
+		return true;
+	}
+
 	private static function ensure_primary_company( $contact_id ) {
 		global $wpdb;
 		$table = ContactPanda_Schema::table_names()['company_contacts'];

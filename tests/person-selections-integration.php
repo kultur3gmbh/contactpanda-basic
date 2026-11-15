@@ -11,6 +11,7 @@ try{
  foreach(array('One','Two')as$name){$contact=ContactPanda_Store::create_contact(array('first_name'=>'Fixture '.$name,'email'=>strtolower($name).'-'.wp_generate_uuid4().'@example.invalid'));selection_expect(!is_wp_error($contact),'Synthetic person created');$contacts[]=(int)$contact;}
  $auth=array('nonce'=>wp_create_nonce('contactpanda_selection'));
  $invalid=selection_ajax(array('nonce'=>'invalid','operation'=>'save','name'=>'Rejected','ids'=>$contacts));selection_expect(empty($invalid['success']),'Invalid nonce cannot save a selection');
+ $missing=selection_ajax($auth+array('cp_selection_operation'=>'load','id'=>0));selection_expect(empty($missing['success'])&&$missing['data']['message']===__('The selection no longer exists in this data source.','contactpanda'),'Absent selection has an explicit missing-selection error');
  $response=selection_ajax($auth+array('operation'=>'save','name'=>'Fixture selection','ids'=>array_merge($contacts,$contacts,array(999999999))));
  selection_expect(!empty($response['success']),'Selection saved through authenticated AJAX');$post_id=$response['data']['id'];
  $loaded=selection_ajax($auth+array('cp_selection_operation'=>'load','operation'=>'unrelated','id'=>$post_id));selection_expect(!empty($loaded['success'])&&$loaded['data']['ids']===$contacts,'Namespaced load cannot collide with another operation');

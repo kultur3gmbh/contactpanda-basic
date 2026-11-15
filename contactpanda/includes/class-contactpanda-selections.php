@@ -40,7 +40,10 @@ final class ContactPanda_Selections {
   $op = sanitize_key( wp_unslash( $_POST['cp_selection_operation'] ?? $_POST['operation'] ?? '' ) ); $id = absint( $_POST['id'] ?? 0 );
   $row = $id ? self::get( $id ) : null;
   if ( $id && ! $row ) wp_send_json_error( array( 'message' => __( 'The selection no longer exists in this data source.', 'contactpanda' ) ), 404 );
-  if ( 'load' === $op && $row ) wp_send_json_success( $row );
+  if ( 'load' === $op ) {
+   if ( ! $row ) wp_send_json_error( array( 'message' => __( 'The selection no longer exists in this data source.', 'contactpanda' ) ), 404 );
+   wp_send_json_success( $row );
+  }
   if ( 'delete' === $op && $row ) {
    if ( '1' !== ( $_POST['confirmed'] ?? '' ) ) wp_send_json_error( array( 'message' => __( 'Confirm deletion first.', 'contactpanda' ) ), 400 );
    $result = wp_trash_post( $id );

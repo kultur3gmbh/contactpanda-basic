@@ -9703,3 +9703,15 @@ msgstr "Tags aller ausgewählten Personen bleiben erhalten. Gleiche Tags werden 
 
 msgid "The print view could not be prepared."
 msgstr "Die Druckansicht konnte nicht vorbereitet werden."
+
+msgid "The company name is updated for all linked people. The position only applies to this person."
+msgstr "Der Firmenname wird für alle verknüpften Personen geändert. Die Funktion gilt nur für diese Person."
+
+msgid "Enter a company name of up to 190 characters."
+msgstr "Bitte einen Firmennamen mit höchstens 190 Zeichen eingeben."
+
+msgid "Company assignment not found."
+msgstr "Firmenzuordnung nicht gefunden."
+
+msgid "The company changes could not be saved."
+msgstr "Die Firmenänderungen konnten nicht gespeichert werden."

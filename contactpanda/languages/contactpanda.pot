@@ -10214,3 +10214,15 @@ msgstr ""
 
 msgid "The print view could not be prepared."
 msgstr ""
+
+msgid "The company name is updated for all linked people. The position only applies to this person."
+msgstr ""
+
+msgid "Enter a company name of up to 190 characters."
+msgstr ""
+
+msgid "Company assignment not found."
+msgstr ""
+
+msgid "The company changes could not be saved."
+msgstr ""

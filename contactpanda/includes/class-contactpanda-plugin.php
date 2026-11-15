@@ -2676,6 +2676,7 @@ final class ContactPanda_Plugin {
 	}
 
 	private static function render_contact_companies( $contact_id, $readonly ) {
+		$readonly = $readonly || ! current_user_can( class_exists( 'ContactPanda_Capabilities' ) ? ContactPanda_Capabilities::for_area( 'contacts' ) : self::access_capability() );
 		$relations = ContactPanda_Store::contact_company_relations( $contact_id );
 		echo '<div class="contactpanda-company-relations"><div class="contactpanda-channel-heading"><span>' . esc_html__( 'Companies', 'contactpanda' ) . '</span></div>';
 		if ( ! $relations ) echo '<p class="contactpanda-muted">' . esc_html__( 'No company assigned.', 'contactpanda' ) . '</p>';
@@ -2691,7 +2692,7 @@ final class ContactPanda_Plugin {
 			if ( ! $readonly ) {
 				echo '<div id="' . esc_attr( $modal_id ) . '" class="contactpanda-consent-modal contactpanda-company-relation-modal" role="dialog" aria-modal="true" aria-labelledby="' . esc_attr( $modal_id . '-title' ) . '" hidden><div class="contactpanda-modal-panel"><h2 id="' . esc_attr( $modal_id . '-title' ) . '">' . esc_html__( 'Edit company assignment', 'contactpanda' ) . '</h2><p><strong>' . esc_html( $relation['name'] ) . '</strong></p><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-company-relation-form"><input type="hidden" name="action" value="contactpanda_contact_company"><input type="hidden" name="contact_id" value="' . esc_attr( $contact_id ) . '"><input type="hidden" name="company_id" value="' . esc_attr( $relation['company_id'] ) . '">';
 				wp_nonce_field( 'contactpanda_contact_company_' . $contact_id );
-				echo '<label><span>' . esc_html__( 'Position / role', 'contactpanda' ) . '</span><input name="position" value="' . esc_attr( $relation['position'] ) . '"></label><label class="contactpanda-company-primary"><input type="checkbox" name="primary_company" value="1"' . checked( ! empty( $relation['is_primary_company'] ), true, false ) . '> ' . esc_html__( 'Use as primary company', 'contactpanda' ) . '</label><div class="contactpanda-modal-actions"><button class="button button-primary" name="operation" value="update">' . esc_html__( 'Save', 'contactpanda' ) . '</button><button type="button" class="button contactpanda-close-company-relation">' . esc_html__( 'Cancel', 'contactpanda' ) . '</button><button class="button-link-delete" name="operation" value="remove" onclick="return confirm(' . esc_attr( wp_json_encode( __( 'Remove this company assignment?', 'contactpanda' ) ) ) . ');">' . esc_html__( 'Remove assignment', 'contactpanda' ) . '</button></div></form></div></div>';
+				echo '<label><span>' . esc_html__( 'Company name', 'contactpanda' ) . '</span><input name="company_name" required maxlength="190" value="' . esc_attr( $relation['name'] ) . '"></label><p class="description">' . esc_html__( 'The company name is updated for all linked people. The position only applies to this person.', 'contactpanda' ) . '</p><label><span>' . esc_html__( 'Position / role', 'contactpanda' ) . '</span><input name="position" value="' . esc_attr( $relation['position'] ) . '"></label><label class="contactpanda-company-primary"><input type="checkbox" name="primary_company" value="1"' . checked( ! empty( $relation['is_primary_company'] ), true, false ) . '> ' . esc_html__( 'Use as primary company', 'contactpanda' ) . '</label><div class="contactpanda-modal-actions"><button class="button button-primary" name="operation" value="update">' . esc_html__( 'Save', 'contactpanda' ) . '</button><button type="button" class="button contactpanda-close-company-relation">' . esc_html__( 'Cancel', 'contactpanda' ) . '</button><button class="button-link-delete" name="operation" value="remove" onclick="return confirm(' . esc_attr( wp_json_encode( __( 'Remove this company assignment?', 'contactpanda' ) ) ) . ');">' . esc_html__( 'Remove assignment', 'contactpanda' ) . '</button></div></form></div></div>';
 			}
 			echo '</div>';
 		}
@@ -2710,7 +2711,7 @@ final class ContactPanda_Plugin {
 
 	public static function handle_contact_company() {
 		if ( class_exists( 'ContactPanda_Store' ) && 'groundhogg' === ContactPanda_Store::source() ) wp_die( esc_html__( 'Groundhogg data is read-only. Migrate to ContactPanda before editing.', 'contactpanda' ), '', array( 'response' => 403 ) );
-		if ( ! current_user_can( self::access_capability() ) || ! ContactPanda_Store::standalone() ) wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ), '', array( 'response' => 403 ) );
+		if ( ! current_user_can( class_exists( 'ContactPanda_Capabilities' ) ? ContactPanda_Capabilities::for_area( 'contacts' ) : self::access_capability() ) || ! ContactPanda_Store::standalone() ) wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ), '', array( 'response' => 403 ) );
 		$contact_id = absint( $_POST['contact_id'] ?? 0 );
 		check_admin_referer( 'contactpanda_contact_company_' . $contact_id );
 		$operation = sanitize_key( wp_unslash( $_POST['operation'] ?? '' ) );
@@ -2722,7 +2723,12 @@ final class ContactPanda_Plugin {
 		}
 		if ( $contact_id && $company_id ) {
 			if ( 'remove' === $operation ) ContactPanda_Store::remove_company_contact( $company_id, $contact_id );
-			elseif ( 'update' === $operation ) ContactPanda_Store::update_contact_company_relation( $company_id, $contact_id, sanitize_text_field( wp_unslash( $_POST['position'] ?? '' ) ), ! empty( $_POST['primary_company'] ) );
+			elseif ( 'update' === $operation ) {
+				$company = ContactPanda_Store::company( $company_id );
+				$name = isset( $_POST['company_name'] ) && is_string( $_POST['company_name'] ) ? sanitize_text_field( wp_unslash( $_POST['company_name'] ) ) : ( $company['name'] ?? '' );
+				$result = ContactPanda_Store::update_contact_company_details( $company_id, $contact_id, $name, sanitize_text_field( wp_unslash( $_POST['position'] ?? '' ) ), ! empty( $_POST['primary_company'] ) );
+				if ( is_wp_error( $result ) ) wp_die( esc_html( $result->get_error_message() ), '', array( 'response' => 400 ) );
+			}
 			elseif ( 'add' === $operation ) ContactPanda_Store::link_company_contact( $company_id, $contact_id, sanitize_text_field( wp_unslash( $_POST['position'] ?? '' ) ), false, ! empty( $_POST['primary_company'] ) );
 		}
 		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-people&person=' . $contact_id ) );
@@ -4066,8 +4072,10 @@ final class ContactPanda_Plugin {
 			$normalized_extension_tabs[ $key ] = array(
 				'label' => sanitize_text_field( $tab['label'] ),
 				'count' => isset( $tab['count'] ) ? absint( $tab['count'] ) : null,
+				'position' => 'before_notes' === ( $tab['position'] ?? '' ) ? 'before_notes' : 'default',
 			);
 		}
+		$leading_tabs = array_filter( $normalized_extension_tabs, static function ( $tab ) { return 'before_notes' === $tab['position']; } );
 		$notes = self::contact_notes( $contact_id );
 		$activities = ContactPanda_Store::activities( $contact_id, 0, 'activity' );
 		$partition = self::partition_contact_notes( $notes );
@@ -4076,12 +4084,18 @@ final class ContactPanda_Plugin {
 		usort( $activities, static function ( $left, $right ) { return strcmp( (string) self::value( $right, array( 'date_created', 'created_at' ) ), (string) self::value( $left, array( 'date_created', 'created_at' ) ) ); } );
 		$broadcast_page_arg = isset( $_GET['broadcast_page'] ) && is_scalar( $_GET['broadcast_page'] ) ? absint( $_GET['broadcast_page'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only pagination.
 		$show_broadcasts = absint( $broadcast_page_arg ) > 0;
+		$show_notes = ! $show_broadcasts && ! $leading_tabs;
 		echo '<section class="contactpanda-card contactpanda-tabs-card" data-tabs><div class="contactpanda-tabs" role="tablist" aria-label="' . esc_attr__( 'Person data', 'contactpanda' ) . '">';
-		echo '<button type="button" class="contactpanda-tab' . ( $show_broadcasts ? '' : ' is-active' ) . '" id="' . esc_attr( $tabs_id . '-notes-tab' ) . '" role="tab" aria-selected="' . ( $show_broadcasts ? 'false' : 'true' ) . '" aria-controls="' . esc_attr( $tabs_id . '-notes' ) . '" tabindex="' . ( $show_broadcasts ? '-1' : '0' ) . '">' . esc_html__( 'Notes', 'contactpanda' ) . ' <span class="contactpanda-count">' . esc_html( count( $notes ) ) . '</span></button>';
+		foreach ( $leading_tabs as $key => $tab ) {
+			$active = ! $show_broadcasts && $key === array_key_first( $leading_tabs );
+			echo '<button type="button" class="contactpanda-tab' . ( $active ? ' is-active' : '' ) . '" id="' . esc_attr( $tabs_id . '-' . $key . '-tab' ) . '" role="tab" aria-selected="' . ( $active ? 'true' : 'false' ) . '" aria-controls="' . esc_attr( $tabs_id . '-' . $key ) . '" tabindex="' . ( $active ? '0' : '-1' ) . '">' . esc_html( $tab['label'] ) . '</button>';
+		}
+		echo '<button type="button" class="contactpanda-tab' . ( $show_notes ? ' is-active' : '' ) . '" id="' . esc_attr( $tabs_id . '-notes-tab' ) . '" role="tab" aria-selected="' . ( $show_notes ? 'true' : 'false' ) . '" aria-controls="' . esc_attr( $tabs_id . '-notes' ) . '" tabindex="' . ( $show_notes ? '0' : '-1' ) . '">' . esc_html__( 'Notes', 'contactpanda' ) . ' <span class="contactpanda-count">' . esc_html( count( $notes ) ) . '</span></button>';
 		echo '<button type="button" class="contactpanda-tab" id="' . esc_attr( $tabs_id . '-activities-tab' ) . '" role="tab" aria-selected="false" aria-controls="' . esc_attr( $tabs_id . '-activities' ) . '" tabindex="-1">' . esc_html__( 'Activities', 'contactpanda' ) . ' <span class="contactpanda-count">' . esc_html( count( $activities ) ) . '</span></button>';
 		echo '<button type="button" class="contactpanda-tab" id="' . esc_attr( $tabs_id . '-orders-tab' ) . '" role="tab" aria-selected="false" aria-controls="' . esc_attr( $tabs_id . '-orders' ) . '" tabindex="-1">' . esc_html__( 'Orders', 'contactpanda' ) . ' <span class="contactpanda-count">' . esc_html( count( $orders ) ) . '</span></button>';
 		echo '<button type="button" class="contactpanda-tab" id="' . esc_attr( $tabs_id . '-addresses-tab' ) . '" role="tab" aria-selected="false" aria-controls="' . esc_attr( $tabs_id . '-addresses' ) . '" tabindex="-1">' . esc_html__( 'Addresses', 'contactpanda' ) . '</button>';
 		foreach ( $normalized_extension_tabs as $key => $tab ) {
+			if ( 'before_notes' === $tab['position'] ) continue;
 			echo '<button type="button" class="contactpanda-tab" id="' . esc_attr( $tabs_id . '-' . $key . '-tab' ) . '" role="tab" aria-selected="false" aria-controls="' . esc_attr( $tabs_id . '-' . $key ) . '" tabindex="-1">' . esc_html( $tab['label'] );
 			if ( null !== $tab['count'] ) echo ' <span class="contactpanda-count">' . esc_html( $tab['count'] ) . '</span>';
 			echo '</button>';
@@ -4092,7 +4106,13 @@ final class ContactPanda_Plugin {
 		}
 		echo '<button type="button" class="contactpanda-tab' . ( $show_broadcasts ? ' is-active' : '' ) . '" id="' . esc_attr( $tabs_id . '-broadcasts-tab' ) . '" role="tab" aria-selected="' . ( $show_broadcasts ? 'true' : 'false' ) . '" aria-controls="' . esc_attr( $tabs_id . '-broadcasts' ) . '" tabindex="' . ( $show_broadcasts ? '0' : '-1' ) . '">' . esc_html__( 'Mailings', 'contactpanda' ) . ' <span class="contactpanda-count">' . esc_html( count( $broadcasts ) ) . '</span></button>';
 		echo '</div>';
-		echo '<div class="contactpanda-tab-panel' . ( $show_broadcasts ? '' : ' is-active' ) . '" id="' . esc_attr( $tabs_id . '-notes' ) . '" role="tabpanel" aria-labelledby="' . esc_attr( $tabs_id . '-notes-tab' ) . '"' . ( $show_broadcasts ? ' hidden' : '' ) . '>';
+		foreach ( $leading_tabs as $key => $tab ) {
+			$active = ! $show_broadcasts && $key === array_key_first( $leading_tabs );
+			echo '<div class="contactpanda-tab-panel' . ( $active ? ' is-active' : '' ) . '" id="' . esc_attr( $tabs_id . '-' . $key ) . '" role="tabpanel" aria-labelledby="' . esc_attr( $tabs_id . '-' . $key . '-tab' ) . '"' . ( $active ? '' : ' hidden' ) . '>';
+			do_action( 'contactpanda_render_person_detail_tab_' . $key, $contact_id, $contact, $editable );
+			echo '</div>';
+		}
+		echo '<div class="contactpanda-tab-panel' . ( $show_notes ? ' is-active' : '' ) . '" id="' . esc_attr( $tabs_id . '-notes' ) . '" role="tabpanel" aria-labelledby="' . esc_attr( $tabs_id . '-notes-tab' ) . '"' . ( $show_notes ? '' : ' hidden' ) . '>';
 		self::render_contact_notes( $contact_id, $notes, false, $editable );
 		echo '</div><div class="contactpanda-tab-panel" id="' . esc_attr( $tabs_id . '-activities' ) . '" role="tabpanel" aria-labelledby="' . esc_attr( $tabs_id . '-activities-tab' ) . '" hidden>';
 		self::render_activity_timeline( $activities, false );
@@ -4102,6 +4122,7 @@ final class ContactPanda_Plugin {
 		self::render_customer_addresses( $contact_id, $customer, $contact, false, $editable );
 		echo '</div>';
 		foreach ( $normalized_extension_tabs as $key => $tab ) {
+			if ( 'before_notes' === $tab['position'] ) continue;
 			echo '<div class="contactpanda-tab-panel" id="' . esc_attr( $tabs_id . '-' . $key ) . '" role="tabpanel" aria-labelledby="' . esc_attr( $tabs_id . '-' . $key . '-tab' ) . '" hidden>';
 			do_action( 'contactpanda_render_person_detail_tab_' . $key, $contact_id, $contact, $editable );
 			echo '</div>';
