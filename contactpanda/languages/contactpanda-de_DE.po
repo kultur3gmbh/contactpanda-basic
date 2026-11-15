@@ -9685,3 +9685,21 @@ msgstr "Das Zusammenführen von Datensätzen erfordert eine aktive ContactPanda-
 
 msgid "Record merging requires ContactPanda Plus."
 msgstr "Das Zusammenführen von Datensätzen erfordert ContactPanda Plus."
+
+msgid "No tags assigned."
+msgstr "Keine Tags zugeordnet."
+
+msgid "Preparing print view…"
+msgstr "Druckansicht wird vorbereitet …"
+
+msgid "Tags after merging"
+msgstr "Tags nach dem Zusammenführen"
+
+msgid "Tags can also be included by selecting the Tags column."
+msgstr "Tags können über die Spalte „Tags“ mitgedruckt werden."
+
+msgid "Tags from all selected people are retained. Identical tags are included only once. The record numbers show their origin."
+msgstr "Tags aller ausgewählten Personen bleiben erhalten. Gleiche Tags werden nur einmal übernommen. Die Datensatznummern zeigen ihre Herkunft."
+
+msgid "The print view could not be prepared."
+msgstr "Die Druckansicht konnte nicht vorbereitet werden."

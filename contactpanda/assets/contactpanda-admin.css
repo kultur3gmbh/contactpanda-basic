@@ -428,3 +428,11 @@ body.contactpanda-modal-open{overflow:hidden}.contactpanda-mailing-modal{z-index
 .cp-selection-dialog input { min-height:40px; width:100%; }
 .cp-selection-dialog .button { display:inline-flex; align-items:center; gap:8px; min-height:40px; margin-right:8px; }
 .cp-selection-add[aria-pressed="true"] { background:#5c5c5c; color:#fff; }
+
+/* Print preparation stays on the current screen until the native dialog opens. */
+.contactpanda-print-frame{position:fixed;left:-10000px;top:0;width:1000px;height:800px;border:0}
+.contactpanda-merge-tags{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 16px}
+.contactpanda-merge-tags [hidden]{display:none!important}
+.contactpanda-search-add-icon{flex:none;vertical-align:middle}
+
+.contactpanda-action-icon-search-add{mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%3E%3Ccircle%20cx%3D%2710%27%20cy%3D%2710%27%20r%3D%276%27%2F%3E%3Cpath%20d%3D%27m14.5%2014.5%206%206M7%2010h6M10%207v6%27%2F%3E%3C%2Fsvg%3E");-webkit-mask-image:url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%2024%2024%27%20fill%3D%27none%27%20stroke%3D%27black%27%20stroke-width%3D%272%27%20stroke-linecap%3D%27round%27%3E%3Ccircle%20cx%3D%2710%27%20cy%3D%2710%27%20r%3D%276%27%2F%3E%3Cpath%20d%3D%27m14.5%2014.5%206%206M7%2010h6M10%207v6%27%2F%3E%3C%2Fsvg%3E")}

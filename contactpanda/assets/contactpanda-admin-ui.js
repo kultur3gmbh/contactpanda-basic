@@ -14,7 +14,7 @@
 		undo: {icon: 'undo'}, redo: {icon: 'redo'}, image: {icon: 'format-image'}, desktop: {icon: 'desktop'}, tablet: {icon: 'tablet'}, mobile: {icon: 'smartphone'},
 		template: {icon: 'layout'}, templateCreate: {icon: 'insert', state: 'primary'}, templateGallery: {icon: 'grid-view'}, draft: {icon: 'edit-page'}, save: {icon: 'saved', state: 'success'},
 		schedule: {icon: 'calendar-alt'}, levelUp: {customIcon: 'corner-left-up'}, back: {icon: 'arrow-left-alt2'}, print: {icon: 'printer'}, attachment: {icon: 'paperclip'},
-		search: {icon: 'search'}, filter: {icon: 'filter'}, list: {icon: 'list-view'}, unlock: {icon: 'unlock'}, restore: {icon: 'undo'},
+		search: {icon: 'search'}, searchAdd: {customIcon: 'search-add'}, filter: {icon: 'filter'}, list: {icon: 'list-view'}, unlock: {icon: 'unlock'}, restore: {icon: 'undo'},
 		apply: {icon: 'yes-alt'}, accept: {customIcon: 'arrow-right-to-line'}, activate: {customIcon: 'power'}, reset: {icon: 'undo'},
 		test: {icon: 'admin-tools'}, start: {icon: 'controls-play'}
 	};

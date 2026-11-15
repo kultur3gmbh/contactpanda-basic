@@ -8,7 +8,7 @@
  function boxes() { return Array.from(document.querySelectorAll('.contactpanda-person-select')); }
  function collect() { boxes().forEach(function (box) { basket = basket.filter(function (id) { return id !== box.value; }); if (box.checked) basket.push(box.value); }); basket=ids(basket); store(); }
  function refresh() { var action = document.getElementById('contactpanda-bulk-action'); if (action) action.dispatchEvent(new Event('change', {bubbles:true})); }
- function request(operation, values) { var data = new URLSearchParams({action:'contactpanda_selection',nonce:c.nonce,operation:operation}); Object.keys(values || {}).forEach(function (k) { if (Array.isArray(values[k])) values[k].forEach(function (v) { data.append(k+'[]',v); }); else data.set(k,values[k]); }); return fetch(c.ajax,{method:'POST',credentials:'same-origin',body:data}).then(function (r) { return r.json(); }).then(function (r) { if (!r.success) throw new Error(r.data && r.data.message || labels.error); return r.data; }); }
+ function request(operation, values) { var data = new URLSearchParams({action:'contactpanda_selection',nonce:c.nonce,cp_selection_operation:operation}); Object.keys(values || {}).forEach(function (k) { if (Array.isArray(values[k])) values[k].forEach(function (v) { data.append(k+'[]',v); }); else data.set(k,values[k]); }); return fetch(c.ajax,{method:'POST',credentials:'same-origin',body:data}).then(function (r) { return r.json(); }).then(function (r) { if (!r.success) throw new Error(r.data && r.data.message || labels.error); return r.data; }); }
  function nameDialog(value, done) {
   var dialog=document.createElement('dialog'); dialog.className='cp-selection-dialog';
   var form=document.createElement('form'); form.method='dialog';

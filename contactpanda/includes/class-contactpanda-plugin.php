@@ -450,6 +450,8 @@ final class ContactPanda_Plugin {
 					'confirmBulkDeleteTags'    => __( 'Delete the selected tags and all their contact assignments? The people themselves will not be deleted.', 'contactpanda' ),
 					'exportContacts'           => __( 'Export contacts', 'contactpanda' ),
 					'printContactList'         => __( 'Print contact list', 'contactpanda' ),
+					'preparingPrint' => __( 'Preparing print view…', 'contactpanda' ),
+					'printFailed' => __( 'The print view could not be prepared.', 'contactpanda' ),
 					'chooseOutputScope'        => __( 'Choose whether selected people or all filtered people should be used.', 'contactpanda' ),
 					'confirmRollbackImport'    => __( 'Roll back this import? New records will be moved to Trash, earlier values will be restored, and later edits will be retained as conflicts.', 'contactpanda' ),
 				),
@@ -1143,7 +1145,7 @@ final class ContactPanda_Plugin {
 			}
 			echo '</tr>';
 		}
-		echo '</tbody></table><script>window.addEventListener("load",function(){window.print();});</script></body></html>';
+		echo '</tbody></table><script>window.addEventListener("load",function(){if(window.parent===window){window.print();}});</script></body></html>';
 		exit;
 	}
 
@@ -1241,7 +1243,7 @@ final class ContactPanda_Plugin {
 				'title_prefix' => self::meta( $contact, array( 'titel_vorangestellt', 'title_prefix' ) ), 'title_suffix' => self::meta( $contact, array( 'titel_nachgestellt', 'title_suffix' ) ),
 				'email' => self::value( $contact, array( 'email', 'get_email' ) ), 'phone' => self::format_phone( self::meta( $contact, array( 'primary_phone', 'phone', 'phone_number' ) ) ), 'company' => $company, 'position' => self::meta( $contact, array( 'berufsbezeichnung', 'job_title', 'position' ) ), 'uid' => $uid,
 				'address_1' => $address['address_1'] ?? '', 'address_2' => $address['address_2'] ?? '', 'postcode' => $address['postcode'] ?? '', 'city' => $address['city'] ?? '', 'state' => $address['state'] ?? '', 'country' => isset( $countries[ $address['country'] ?? '' ] ) ? $countries[ $address['country'] ] : ( $address['country'] ?? '' ),
-				'tags' => implode( ', ', $tag_names ), 'roles' => implode( ', ', $roles ), 'optin_status' => self::status_label( $status ), 'email_confirmed' => $confirmed ? __( 'Yes', 'contactpanda' ) : __( 'No', 'contactpanda' ), 'marketable' => self::is_marketable_status( $status ) ? __( 'Yes', 'contactpanda' ) : __( 'No', 'contactpanda' ),
+				'tags' => implode( ', ', array_filter( array_unique( $tag_names ) ) ), 'roles' => implode( ', ', $roles ), 'optin_status' => self::status_label( $status ), 'email_confirmed' => $confirmed ? __( 'Yes', 'contactpanda' ) : __( 'No', 'contactpanda' ), 'marketable' => self::is_marketable_status( $status ) ? __( 'Yes', 'contactpanda' ) : __( 'No', 'contactpanda' ),
 				'orders' => (string) $summary['count'], 'order_total' => function_exists( 'wc_format_decimal' ) ? wc_format_decimal( $summary['total'], 2 ) : number_format( (float) $summary['total'], 2, '.', '' ), 'events' => (string) ( $event_summaries[ $id ]['count'] ?? $event_summaries[ $id ]['visited'] ?? 0 ), 'created_at' => self::value( $contact, array( 'created_at', 'date_created', 'get_date_created' ) ),
 			);
 			$rows[] = (array) apply_filters( 'contactpanda_contact_output_row', $row, $contact );
@@ -4244,6 +4246,7 @@ final class ContactPanda_Plugin {
 		}
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		echo '<fieldset class="contactpanda-output-scope"><legend>' . esc_html__( 'People to include', 'contactpanda' ) . '</legend><label><input type="radio" name="scope" value="selected"> <span class="contactpanda-output-selected-label">' . esc_html__( 'No person selected', 'contactpanda' ) . '</span></label><label><input type="radio" name="scope" value="all" checked> ' . esc_html( sprintf( __( 'All filtered people (%d)', 'contactpanda' ), $total ) ) . '</label></fieldset>';
+		echo '<p class="description">' . esc_html__( 'Tags can also be included by selecting the Tags column.', 'contactpanda' ) . '</p>';
 		echo '<fieldset class="contactpanda-output-columns"><legend>' . esc_html__( 'Information to include', 'contactpanda' ) . '</legend><div class="contactpanda-output-column-grid">';
 		foreach ( self::contact_output_fields() as $key => $label ) {
 			echo '<label><input type="checkbox" name="columns[]" value="' . esc_attr( $key ) . '"' . checked( in_array( $key, $default_columns, true ), true, false ) . '> ' . esc_html( $label ) . '</label>';
@@ -5413,8 +5416,9 @@ final class ContactPanda_Plugin {
 		self::render_activity_timeline( $activities );
 	}
 
-	/** Save extension-owned metadata through the currently selected data source. */
+	/** Save extension-owned metadata through the selected provider. Callers must authorize the request and verify its nonce. */
 	public static function extension_update_custom_meta( $entity, $id, $meta ) {
+		if ( ! in_array( $entity, array( 'contact', 'contacts', 'company', 'companies' ), true ) ) return false;
 		$entity = in_array( $entity, array( 'company', 'companies' ), true ) ? 'companies' : 'contacts';
 		$id = absint( $id );
 		if ( ! $id || ! is_array( $meta ) ) return false;
@@ -5422,8 +5426,13 @@ final class ContactPanda_Plugin {
 		foreach ( $meta as $key => $value ) {
 			$key = sanitize_key( $key );
 			if ( 0 !== strpos( $key, ContactPanda_Custom_Fields::PREFIX ) ) continue;
-			$clean[ $key ] = is_scalar( $value ) ? $value : '';
+			if ( ! is_scalar( $value ) ) continue;
+			if ( 'contactpanda_custom_biography' === $key ) $value = wp_kses_post( (string) $value );
+			elseif ( 'contactpanda_custom_website' === $key ) $value = esc_url_raw( (string) $value, array( 'http', 'https' ) );
+			elseif ( in_array( $key, array( 'contactpanda_custom_company_name', 'contactpanda_custom_phone' ), true ) ) $value = sanitize_text_field( (string) $value );
+			$clean[ $key ] = $value;
 		}
+		if ( ! $clean ) return false;
 		if ( ContactPanda_Store::standalone() ) {
 			if ( 'contacts' === $entity ) return ContactPanda_Store::update_contact( $id, array( 'meta' => $clean ) );
 			$result = true;
@@ -5431,7 +5440,16 @@ final class ContactPanda_Plugin {
 			return $result;
 		}
 		$ability = 'contacts' === $entity ? 'groundhogg/update-contact' : 'groundhogg-companies/update-company';
-		return false !== self::execute_ability( $ability, array( 'id' => $id, 'meta' => $clean ) );
+		return false !== self::execute_extension_meta_update( $ability, array( 'id' => $id, 'meta' => $clean ) );
+	}
+
+	/** Execute only the two explicitly supported extension-metadata writes. */
+	private static function execute_extension_meta_update( $name, $input ) {
+		if ( ! in_array( $name, array( 'groundhogg/update-contact', 'groundhogg-companies/update-company' ), true ) || ! function_exists( 'wp_get_ability' ) ) return false;
+		$ability = wp_get_ability( $name );
+		if ( ! $ability ) return false;
+		$result = $ability->execute( $input );
+		return is_wp_error( $result ) ? false : $result;
 	}
 
 	private static function execute_ability( $name, $input ) {

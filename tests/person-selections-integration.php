@@ -13,6 +13,7 @@ try{
  $invalid=selection_ajax(array('nonce'=>'invalid','operation'=>'save','name'=>'Rejected','ids'=>$contacts));selection_expect(empty($invalid['success']),'Invalid nonce cannot save a selection');
  $response=selection_ajax($auth+array('operation'=>'save','name'=>'Fixture selection','ids'=>array_merge($contacts,$contacts,array(999999999))));
  selection_expect(!empty($response['success']),'Selection saved through authenticated AJAX');$post_id=$response['data']['id'];
+ $loaded=selection_ajax($auth+array('cp_selection_operation'=>'load','operation'=>'unrelated','id'=>$post_id));selection_expect(!empty($loaded['success'])&&$loaded['data']['ids']===$contacts,'Namespaced load cannot collide with another operation');
  $row=ContactPanda_Selections::get($post_id);selection_expect($row['ids']===$contacts,'Duplicate and absent IDs excluded');
  $response=selection_ajax($auth+array('operation'=>'rename','id'=>$post_id,'name'=>'Renamed fixture'));
  selection_expect($response['success']&&ContactPanda_Selections::get($post_id)['ids']===$contacts,'Renaming retains fixed membership');

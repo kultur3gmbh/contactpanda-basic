@@ -426,6 +426,17 @@
 		});
 	}
 
+
+	function activateLinkedTab() {
+		var id = location.hash.slice(1), panel = id && document.getElementById(id);
+		if (!panel || !panel.classList.contains('contactpanda-tab-panel')) return;
+		var tab = document.getElementById(panel.getAttribute('aria-labelledby'));
+		if (tab) activateTab(tab);
+	}
+	window.addEventListener('hashchange', activateLinkedTab);
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', activateLinkedTab);
+	else activateLinkedTab();
+
 	function startEditing(field) {
 		if (!field || field.classList.contains('is-editing')) return;
 		var valueNode = field.querySelector('.contactpanda-field-value');
@@ -691,15 +702,45 @@
 		document.body.classList.add('contactpanda-modal-open');
 		modal.querySelector('#contactpanda-output-title').textContent = isPrint ? tr('printContactList', 'Print contact list') : tr('exportContacts', 'Export contacts');
 		modal.querySelector('.contactpanda-output-columns').hidden = false;
-		modal.querySelector('.contactpanda-submit-output').textContent = isPrint ? tr('printContactList', 'Print contact list') : tr('exportContacts', 'Export contacts');
+		var submit = modal.querySelector('.contactpanda-submit-output');
+		submit.replaceChildren();
+		var icon = document.createElement('span'); icon.className = 'dashicons dashicons-' + (isPrint ? 'printer' : 'download'); icon.setAttribute('aria-hidden', 'true');
+		submit.appendChild(icon); submit.appendChild(document.createTextNode(isPrint ? tr('printContactList', 'Print contact list') : tr('exportContacts', 'Export contacts')));
 		form.querySelector('input[name="action"]').value = isPrint ? 'contactpanda_print_contacts' : 'contactpanda_export_contacts';
-		form.target = isPrint ? '_blank' : '_self';
+		form.target = '_self';
+		form.dataset.outputMode = mode;
 		form.querySelector('input[name="selected_ids"]').value = selected.join(',');
 		var selectedOption = form.querySelector('input[name="scope"][value="selected"]');
 		selectedOption.disabled = !selected.length;
 		if (!selected.length && selectedOption.checked) form.querySelector('input[name="scope"][value="all"]').checked = true;
 		updateBulkSelection();
 	}
+
+
+	// Prepare print content in-place; never navigate to an empty new tab.
+	document.addEventListener('submit', function (event) {
+		var form = event.target;
+		if (!form.matches('.contactpanda-output-form') || form.dataset.outputMode !== 'print') return;
+		event.preventDefault();
+		var modal = form.closest('.contactpanda-output-modal');
+		var button = form.querySelector('.contactpanda-submit-output');
+		var message = modal.querySelector('.contactpanda-modal-message');
+		button.disabled = true;
+		message.textContent = tr('preparingPrint', 'Preparing print view…');
+		fetch(form.action, {method:'POST', credentials:'same-origin', body:new FormData(form)})
+			.then(function (response) { if (!response.ok) throw new Error(tr('printFailed', 'The print view could not be prepared.')); return response.text(); })
+			.then(function (html) {
+				var old = document.getElementById('contactpanda-print-frame'); if (old) old.remove();
+				var frame = document.createElement('iframe'); frame.id = 'contactpanda-print-frame';
+				frame.className = 'contactpanda-print-frame'; frame.title = tr('printContactList', 'Print contact list');
+				frame.onload = function () {
+					button.disabled = false; message.textContent = ''; closeContactOutput();
+					var ready = frame.contentDocument.fonts ? frame.contentDocument.fonts.ready : Promise.resolve();
+					ready.then(function () { frame.contentWindow.focus(); frame.contentWindow.print(); });
+				};
+				frame.srcdoc = html; document.body.appendChild(frame);
+			}).catch(function (error) { button.disabled = false; message.textContent = error.message; });
+	});
 
 	function closeContactOutput() {
 		var modal = document.querySelector('.contactpanda-output-modal');
@@ -1321,6 +1362,12 @@
 			document.querySelectorAll('[data-contactpanda-primary-record="' + recordId + '"], [data-contactpanda-merge-source="' + recordId + '"] input').forEach(function (input) {
 				input.disabled = !enabled;
 				if (!enabled && input.checked) input.checked = false;
+			});
+			document.querySelectorAll('[data-contactpanda-merge-tag-sources]').forEach(function (tag) {
+				tag.hidden = !(tag.dataset.contactpandaMergeTagSources || '').split(',').some(function (id) {
+					var box = document.querySelector('.contactpanda-merge-record-toggle[value="' + id + '"]');
+					return box && box.checked;
+				});
 			});
 			var selected = document.querySelectorAll('.contactpanda-merge-record-toggle:checked');
 			var primary = document.querySelector('[data-contactpanda-primary-record]:checked');

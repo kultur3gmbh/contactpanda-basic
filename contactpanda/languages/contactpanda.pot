@@ -10196,3 +10196,21 @@ msgstr ""
 
 msgid "Record merging requires ContactPanda Plus."
 msgstr ""
+
+msgid "No tags assigned."
+msgstr ""
+
+msgid "Preparing print view…"
+msgstr ""
+
+msgid "Tags after merging"
+msgstr ""
+
+msgid "Tags can also be included by selecting the Tags column."
+msgstr ""
+
+msgid "Tags from all selected people are retained. Identical tags are included only once. The record numbers show their origin."
+msgstr ""
+
+msgid "The print view could not be prepared."
+msgstr ""

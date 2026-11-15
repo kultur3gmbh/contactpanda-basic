@@ -619,8 +619,26 @@ final class ContactPanda_Data_Tools {
 			echo '</td></tr>';
 		}
 		echo '</tbody></table>';
-		if ( 'contacts' === $state['entity'] ) self::render_merge_channels( $records );
+		if ( 'contacts' === $state['entity'] ) { self::render_merge_tags( $records ); self::render_merge_channels( $records ); }
 		echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'After confirmation, source fragments are moved to the ContactPanda Trash. External systems, orders, invoices, and source records are not changed.', 'contactpanda' ) . '</p></div><p><label><input type="checkbox" name="confirmed" value="1" required> ' . esc_html__( 'I reviewed the primary record and every conflicting value.', 'contactpanda' ) . '</label></p><p><button class="button button-primary">' . esc_html__( 'Merge records', 'contactpanda' ) . '</button> <a class="button" href="' . esc_url( self::duplicates_url() ) . '">' . esc_html__( 'Cancel', 'contactpanda' ) . '</a></p></form></div></div>';
+	}
+
+
+	private static function render_merge_tags( $records ) {
+		$tags = array();
+		foreach ( $records as $record_id => $record ) {
+			foreach ( (array) ( $record['tags'] ?? array() ) as $tag ) {
+				$name = sanitize_text_field( $tag['name'] ?? '' );
+				$key = absint( $tag['id'] ?? 0 );
+				if ( ! $key || '' === $name ) continue;
+				if ( ! isset( $tags[ $key ] ) ) $tags[ $key ] = array( 'name' => $name, 'sources' => array() );
+				$tags[ $key ]['sources'][] = absint( $record_id );
+			}
+		}
+		echo '<h3>' . esc_html__( 'Tags after merging', 'contactpanda' ) . '</h3><p class="description">' . esc_html__( 'Tags from all selected people are retained. Identical tags are included only once. The record numbers show their origin.', 'contactpanda' ) . '</p><div class="contactpanda-merge-tags" aria-live="polite">';
+		foreach ( $tags as $tag ) echo '<span class="contactpanda-mini-badge" data-contactpanda-merge-tag-sources="' . esc_attr( implode( ',', $tag['sources'] ) ) . '">' . esc_html( $tag['name'] ) . ' <small>#' . esc_html( implode( ', #', $tag['sources'] ) ) . '</small></span>';
+		if ( ! $tags ) echo '<span class="contactpanda-muted">' . esc_html__( 'No tags assigned.', 'contactpanda' ) . '</span>';
+		echo '</div>';
 	}
 
 	private static function render_merge_channels( $records ) {
