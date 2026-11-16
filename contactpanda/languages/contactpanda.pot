@@ -10277,3 +10277,31 @@ msgstr ""
 
 msgid "This text can be shown in a separate PandaWoo product tab."
 msgstr ""
+
+#: paid-license-lifecycle
+msgid "Archive mode from"
+msgstr ""
+
+#: paid-license-lifecycle
+msgid "Archive mode"
+msgstr ""
+
+#: paid-license-lifecycle
+msgid "License grace period"
+msgstr ""
+
+#: paid-license-lifecycle
+msgid "Paid period ends: %1$s. Archive mode from: %2$s."
+msgstr ""
+
+#: paid-license-lifecycle
+msgid "Archive mode: existing data can be viewed, searched, exported and deleted. Renew the license to create, edit, import or send with paid features."
+msgstr ""
+
+#: paid-license-lifecycle
+msgid "Renew to create, edit, import or send with paid features. Existing data remains readable, searchable and exportable. Deletion and consent withdrawal remain available. Free features, updates and support have separate rules."
+msgstr ""
+
+#: paid-license-lifecycle
+msgid "This content uses paid features in archive mode. Renew the license to edit, duplicate or send it. Existing data is retained."
+msgstr ""

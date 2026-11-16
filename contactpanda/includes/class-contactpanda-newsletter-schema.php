@@ -28,15 +28,6 @@ final class ContactPanda_Newsletter_Schema {
 		);
 	}
 
-	// Backwards-compatible names used by the newsletter editor contract.
-	public static function newsletter_table_names() {
-		return self::table_names();
-	}
-
-	public static function install_newsletters() {
-		return self::install();
-	}
-
 	/**
 	 * Remove only a voluntary newsletter unsubscribe suppression.
 	 *

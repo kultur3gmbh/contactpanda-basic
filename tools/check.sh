@@ -19,6 +19,7 @@ if command -v php >/dev/null 2>&1; then
     php tests/person-selections-integration.php || status=1
     php tests/person-profile-corrections.php || status=1
     php tests/search-profile-integration.php || status=1
+    if [[ -n "${CONTACTPANDA_TEST_FAMILY_ROOT:-}" ]]; then php tests/family-cleanup-integration.php || status=1; fi
   fi
   php tests/db-query-safety.php || status=1
   php tests/external-services.php || status=1

@@ -177,7 +177,7 @@ final class ContactPanda_MCP {
 		$subject = sanitize_text_field( $args['subject'] ?? '' );
 		if ( '' === $name || '' === $subject ) return new WP_Error( 'template_fields_required', __( 'Template name and subject are required.', 'contactpanda' ) );
 		global $wpdb;
-		$installed = ContactPanda_Newsletter_Schema::install_newsletters();
+		$installed = ContactPanda_Newsletter_Schema::install();
 		if ( is_wp_error( $installed ) ) return $installed;
 		$settings = ContactPanda_Basic_Newsletters::settings();
 		$content = wp_kses_post( $args['content'] ?? '' );
@@ -185,7 +185,7 @@ final class ContactPanda_MCP {
 		if ( '' !== trim( wp_strip_all_tags( $content ) ) ) $blocks[] = array( 'type' => 'text', 'content' => $content );
 		$now = current_time( 'mysql' );
 		$inserted = $wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points.
-			ContactPanda_Newsletter_Schema::newsletter_table_names()['templates'],
+			ContactPanda_Newsletter_Schema::table_names()['templates'],
 			array(
 				'name' => $name, 'subject' => $subject, 'preview_text' => sanitize_text_field( $args['preview_text'] ?? '' ),
 				'from_name' => sanitize_text_field( $settings['from_name'] ?? '' ), 'reply_to' => sanitize_email( $settings['reply_to'] ?? '' ),

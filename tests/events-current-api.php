@@ -27,8 +27,8 @@ if ( ! ContactPanda_Events::tec_available() ) {
 	exit( 1 );
 }
 
-$sources = ContactPanda_Events::available_sources();
-if ( array( 'tec' => 'The Events Calendar' ) !== $sources ) {
+$sources = ContactPanda_Events::sources();
+if ( array( 'tec' => true ) !== $sources ) {
 	fwrite( STDERR, "The current Event Tickets source was not exposed.\n" );
 	exit( 1 );
 }

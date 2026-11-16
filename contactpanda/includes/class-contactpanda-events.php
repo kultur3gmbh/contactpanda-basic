@@ -82,20 +82,6 @@ final class ContactPanda_Events {
 		);
 	}
 
-	/**
-	 * Backward-compatible labelled source list used by earlier Plus releases.
-	 *
-	 * Keep the compact boolean map in sources() for internal feature detection,
-	 * while extensions may continue to render the established labels.
-	 */
-	public static function available_sources() {
-		$labels = array(
-			'tec'    => 'The Events Calendar',
-			'amelia' => 'Amelia',
-		);
-		return array_intersect_key( $labels, self::sources() );
-	}
-
 	public static function source() {
 		$sources = array_keys( self::sources() );
 		if ( 1 === count( $sources ) ) {

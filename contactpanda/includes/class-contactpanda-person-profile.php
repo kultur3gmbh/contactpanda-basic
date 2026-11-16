@@ -11,12 +11,6 @@ final class ContactPanda_Person_Profile {
 		add_action( 'contactpanda_render_person_detail_tab_about_me', array( __CLASS__, 'render_about_me' ), 10, 3 );
 		add_action( 'admin_post_contactpanda_save_biography', array( __CLASS__, 'save_biography' ) );
 		add_action( 'wp_ajax_contactpanda_save_biography', array( __CLASS__, 'save_biography' ) );
-		// Prevent duplicate editors while an older Plus is still installed.
-		add_action( 'init', array( __CLASS__, 'remove_legacy_renderer' ), 99 );
-	}
-
-	public static function remove_legacy_renderer() {
-		remove_action( 'contactpanda_render_person_detail_tab_about_me', array( 'ContactPanda_Plus_Donations', 'render_about_me' ), 10 );
 	}
 
 	public static function tabs( $tabs ) {

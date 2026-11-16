@@ -313,6 +313,8 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		$template_id = absint( $_POST['template_id'] ?? 0 ); $template = ContactPanda_Basic_Newsletters::template( $template_id );
 		if ( ! $template || ! empty( $template['imported_readonly'] ) || 'published' !== ( $template['status'] ?? '' ) ) { wp_die( esc_html__( 'Please select a published email template.', 'contactpanda' ) ); }
 		$now = current_time( 'mysql' ); $id = absint( $_POST['campaign_id'] ?? 0 );
+		ContactPanda_Basic_Newsletters::require_content_operation( $template );
+		if ( $id ) ContactPanda_Basic_Newsletters::require_content_operation( self::campaign( $id ) );
 		$language = preg_replace( '/[^A-Za-z0-9_@.\-]/', '', sanitize_text_field( wp_unslash( $_POST['language'] ?? 'de_DE' ) ) );
 		$sender_settings = ContactPanda_Basic_Newsletters::public_settings();
 		$from_name = sanitize_text_field( $sender_settings['from_name'] ?? '' );
@@ -338,6 +340,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		$recipient_search = 'registered_customers' === $audience_source ? substr( sanitize_text_field( wp_unslash( $_POST['recipient_search'] ?? '' ) ), 0, 190 ) : '';
 		$data = array( 'name' => sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) ), 'subject' => sanitize_text_field( wp_unslash( $_POST['subject'] ?? '' ) ), 'template_id' => $template_id, 'segment_id' => $segment_id, 'manual_contact_ids' => $manual_ids ? implode( ',', $manual_ids ) : null, 'audience_mode' => $audience_mode, 'audience_source' => $audience_source, 'recipient_search' => $recipient_search, 'audience_resolved_at' => null, 'ignore_marketing_consent' => $ignore_consent ? 1 : 0, 'consent_override_reason' => $ignore_consent ? $override_reason : '', 'consent_override_user_id' => $ignore_consent ? get_current_user_id() : 0, 'consent_override_at' => $ignore_consent ? $now : null, 'consent_override_count' => 0, 'campaign_group_id' => absint( $_POST['campaign_group_id'] ?? 0 ), 'language' => $language ?: 'de_DE', 'from_name' => $from_name, 'from_email' => $from_email, 'reply_to' => $reply_to, 'mails_per_hour' => min( 3000, max( 1, absint( $_POST['mails_per_hour'] ?? 300 ) ) ), 'status' => 'draft', 'scheduled_at' => null, 'updated_at' => $now );
 		$data = (array) apply_filters( 'contactpanda_campaign_save_data', $data, $_POST, $id );
+		ContactPanda_Basic_Newsletters::require_content_operation( $data );
 		if ( $id ) {
 			$existing = self::campaign( $id ); if ( ! $existing || ! in_array( $existing['status'], array( 'draft', 'scheduled', 'paused' ), true ) ) wp_die( esc_html__( 'This campaign can no longer be edited.', 'contactpanda' ) );
 			wp_unschedule_hook( self::CRON_HOOK, array( $id ) ); $wpdb->update( $t['campaigns'], $data, array( 'id' => $id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
@@ -394,6 +397,8 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 		if ( ! $campaign ) { wp_die( esc_html__( 'Campaign not found.', 'contactpanda' ) ); }
 		if ( 'imported' === $campaign['status'] ) { wp_die( esc_html__( 'Imported broadcasts are read-only archives.', 'contactpanda' ) ); }
 		if ( 'start' === $command ) {
+			ContactPanda_Basic_Newsletters::require_content_operation( $campaign, 'send' );
+			ContactPanda_Basic_Newsletters::require_content_operation( ContactPanda_Basic_Newsletters::template( $campaign['template_id'] ), 'send' );
 			$timestamp = $campaign['scheduled_at'] ? get_gmt_from_date( $campaign['scheduled_at'], 'U' ) : time(); $status = $timestamp > time() ? 'scheduled' : 'queued';
 			$wpdb->update( $t['campaigns'], array( 'status' => $status, 'started_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); self::schedule( $id, max( time() + 2, $timestamp ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		} elseif ( 'pause' === $command ) { $wpdb->update( $t['campaigns'], array( 'status' => 'paused', 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
@@ -404,6 +409,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 	public static function process_queue( $campaign_id ) {
 		global $wpdb; $t = ContactPanda_Newsletter_Schema::table_names(); $campaign = self::campaign( $campaign_id );
 		if ( ! $campaign || ! in_array( $campaign['status'], array( 'queued', 'sending', 'scheduled' ), true ) ) { return; }
+		if ( ! ContactPanda_Basic_Newsletters::content_operation_allowed( $campaign, 'send' ) || ! ContactPanda_Basic_Newsletters::content_operation_allowed( ContactPanda_Basic_Newsletters::template( $campaign['template_id'] ), 'send' ) ) { self::schedule( $campaign_id, time() + HOUR_IN_SECONDS ); return; }
 		if ( 'dynamic' === ( $campaign['audience_mode'] ?? 'dynamic' ) && empty( $campaign['audience_resolved_at'] ) ) {
 			self::prepare_recipients( $campaign_id );
 			$wpdb->update( $t['campaigns'], array( 'audience_resolved_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $campaign_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
@@ -513,6 +519,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 	public static function preview_ajax() {
 		check_ajax_referer( self::ajax_nonce_action(), 'nonce' );
 		$template = ContactPanda_Basic_Newsletters::template( absint( $_POST['template_id'] ?? 0 ) );
+		ContactPanda_Basic_Newsletters::require_content_operation( $template, 'send' );
 		if ( ! $template ) wp_send_json_error( array( 'message' => __( 'Please select an email template.', 'contactpanda' ) ), 400 );
 		$user = wp_get_current_user();
 		$recipient = array( 'contact_id' => 0, 'first_name' => $user->first_name, 'last_name' => $user->last_name, 'email' => $user->user_email );
@@ -522,6 +529,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 	public static function test_ajax() {
 		check_ajax_referer( self::ajax_nonce_action(), 'nonce' );
 		$template = ContactPanda_Basic_Newsletters::template( absint( $_POST['template_id'] ?? 0 ) );
+		ContactPanda_Basic_Newsletters::require_content_operation( $template, 'send' );
 		$email = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
 		$subject = sanitize_text_field( wp_unslash( $_POST['subject'] ?? '' ) );
 		$from_name = sanitize_text_field( wp_unslash( $_POST['from_name'] ?? '' ) );

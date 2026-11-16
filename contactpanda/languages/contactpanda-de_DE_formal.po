@@ -1,5 +1,7 @@
 msgid ""
 msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: de_DE_formal\n"
 
 msgid "Website owner"
 msgstr "Website-Verantwortliche"
@@ -9766,3 +9768,31 @@ msgstr "Die Selbstbeschreibung konnte nicht gespeichert werden."
 
 msgid "This text can be shown in a separate PandaWoo product tab."
 msgstr "Dieser Text kann in einem eigenen PandaWoo-Produkt-Tab angezeigt werden."
+
+#: paid-license-lifecycle
+msgid "Archive mode from"
+msgstr "Archivmodus ab"
+
+#: paid-license-lifecycle
+msgid "Archive mode"
+msgstr "Archivmodus"
+
+#: paid-license-lifecycle
+msgid "License grace period"
+msgstr "Übergangsfrist der Lizenz"
+
+#: paid-license-lifecycle
+msgid "Paid period ends: %1$s. Archive mode from: %2$s."
+msgstr "Bezahlte Laufzeit endet: %1$s. Archivmodus ab: %2$s."
+
+#: paid-license-lifecycle
+msgid "Archive mode: existing data can be viewed, searched, exported and deleted. Renew the license to create, edit, import or send with paid features."
+msgstr "Archivmodus: Vorhandene Daten können angezeigt, durchsucht, exportiert und gelöscht werden. Verlängern Sie die Lizenz, um kostenpflichtige Funktionen zum Erstellen, Bearbeiten, Importieren und Versenden zu verwenden."
+
+#: paid-license-lifecycle
+msgid "Renew to create, edit, import or send with paid features. Existing data remains readable, searchable and exportable. Deletion and consent withdrawal remain available. Free features, updates and support have separate rules."
+msgstr "Verlängern Sie die Lizenz für kostenpflichtiges Erstellen, Bearbeiten, Importieren und Versenden. Vorhandene Daten bleiben lesbar, durchsuchbar und exportierbar. Löschen und Einwilligungswiderruf bleiben möglich. Für kostenlose Funktionen, Updates und Support gelten getrennte Regeln."
+
+#: paid-license-lifecycle
+msgid "This content uses paid features in archive mode. Renew the license to edit, duplicate or send it. Existing data is retained."
+msgstr "Dieser Inhalt nutzt kostenpflichtige Funktionen im Archivmodus. Verlängern Sie die Lizenz, um ihn zu bearbeiten, zu duplizieren oder zu versenden. Vorhandene Daten bleiben erhalten."

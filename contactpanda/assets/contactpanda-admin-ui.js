@@ -427,8 +427,6 @@
 		root.dataset.contactpandaImageReady = '1';
 		var url = root.querySelector('[data-contactpanda-image-url], input[type="url"]');
 		var id = root.querySelector('[data-contactpanda-image-id], input[type="hidden"]');
-		var legacyButton = root.querySelector('.contactpanda-newsletter-media-button');
-		var legacyPreview = root.querySelector('.contactpanda-newsletter-logo-preview');
 		var picker = createImagePicker({
 			url: url ? url.value : '', attachmentId: id ? id.value : 0,
 			onChange: function (image) {
@@ -440,8 +438,6 @@
 		if (url) { url.hidden = true; url.classList.add('contactpanda-image-picker-storage'); url.setAttribute('aria-hidden', 'true'); url.tabIndex = -1; }
 		if (id) { id.hidden = true; id.classList.add('contactpanda-image-picker-storage'); }
 		if (url) url.addEventListener('change', function () { picker.contactPandaSetImages(url.value ? [{id: id ? id.value : 0, url: url.value, alt: ''}] : []); });
-		if (legacyButton) legacyButton.hidden = true;
-		if (legacyPreview) legacyPreview.hidden = true;
 	}
 
 	function actionIcon(control) {

@@ -12,7 +12,6 @@ final class ContactPanda_Data_Tools {
 	public static function boot() {
 		Panda_Transfer_UI::register( 'contactpanda', 'manage_options' );
 		add_action( 'admin_menu', array( __CLASS__, 'menu' ), 25 );
-		add_action( 'admin_init', array( __CLASS__, 'redirect_legacy_migration_url' ) );
 		add_filter( 'cron_schedules', array( __CLASS__, 'cron_schedules' ) );
 		add_filter( 'contactpanda_settings_tabs', array( __CLASS__, 'settings_tabs' ) );
 		add_action( 'contactpanda_render_other_settings_section_duplicates', array( __CLASS__, 'render_duplicate_settings' ) );
@@ -32,19 +31,6 @@ final class ContactPanda_Data_Tools {
 		add_action( 'wp_ajax_contactpanda_dismiss_admin_notice', array( __CLASS__, 'dismiss_admin_notice' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_notice_helper' ), 100 );
 		add_action( 'contactpanda_central_salutation_sync', array( __CLASS__, 'scheduled_central_sync' ) );
-	}
-
-	/** Preserve old bookmarks while keeping migration out of Settings. */
-	public static function redirect_legacy_migration_url() {
-		if ( ! current_user_can( 'manage_options' ) ) return;
-		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation.
-		$tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation.
-		$section = isset( $_GET['other_section'] ) ? sanitize_key( wp_unslash( $_GET['other_section'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation.
-		$legacy_transfer = 'contactpanda-data-transfer' === $page && 'migration' === sanitize_key( wp_unslash( $_GET['transfer_section'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only navigation.
-		$legacy_settings = 'contactpanda-settings' === $page && ( 'migration' === $tab || 'migration' === $section );
-		if ( ! $legacy_transfer && ! $legacy_settings ) return;
-		wp_safe_redirect( admin_url( 'admin.php?page=contactpanda-migration' ) );
-		exit;
 	}
 
 	public static function menu() {
