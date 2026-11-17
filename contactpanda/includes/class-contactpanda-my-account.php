@@ -25,6 +25,9 @@ final class ContactPanda_My_Account {
 		add_action( 'wp_loaded', array( __CLASS__, 'replace_account_callbacks' ) );
 		add_action( 'woocommerce_account_contactpanda-password_endpoint', array( __CLASS__, 'password_form' ) );
 		add_action( 'init', array( __CLASS__, 'register_password_endpoint' ) );
+		add_action( 'init', static function () { add_rewrite_endpoint( 'contactpanda-communication', EP_ROOT | EP_PAGES ); add_rewrite_endpoint( 'contactpanda-events', EP_ROOT | EP_PAGES ); } );
+		add_action( 'woocommerce_account_contactpanda-communication_endpoint', array( __CLASS__, 'communication' ) );
+		add_action( 'woocommerce_account_contactpanda-events_endpoint', array( 'ContactPanda_Customer_Portal', 'render_events' ) );
 		add_action( 'init', array( __CLASS__, 'maybe_flush_routes' ), 99 );
 		add_action( 'admin_post_contactpanda_save_profile', array( __CLASS__, 'save_profile' ) );
 		add_action( 'admin_post_contactpanda_save_addresses', array( __CLASS__, 'save_addresses' ) );
@@ -97,6 +100,10 @@ final class ContactPanda_My_Account {
 			$ordered['edit-account'] = __( 'My profile', 'contactpanda' );
 		}
 		$ordered['contactpanda-password'] = __( 'Change password', 'contactpanda' );
+		$ordered['contactpanda-communication'] = __( 'Communication', 'contactpanda' );
+		if ( ContactPanda_Customer_Portal::account_events() ) $ordered['contactpanda-events'] = __( 'Event archive', 'contactpanda' );
+		if ( isset( $items['downloads'] ) && function_exists( 'wc_get_customer_available_downloads' ) && wc_get_customer_available_downloads( get_current_user_id() ) ) $ordered['downloads'] = $items['downloads'];
+		if ( isset( $items['orders'] ) && function_exists( 'wc_get_customer_order_count' ) && wc_get_customer_order_count( get_current_user_id() ) > 0 ) $ordered['orders'] = __( 'Purchase archive', 'contactpanda' );
 		if ( isset( $items['edit-address'] ) ) {
 			$ordered['edit-address'] = $items['edit-address'];
 		}
@@ -126,6 +133,9 @@ final class ContactPanda_My_Account {
 
 	/** Keep account tabs limited to services that are usable by this customer. */
 	private static function hide_unavailable_endpoint( $endpoint ) {
+		$available = apply_filters( 'contactpanda_account_endpoint_has_content', null, $endpoint, get_current_user_id() );
+		if ( is_bool( $available ) ) return ! $available;
+		if ( 'subscriptions' === $endpoint && function_exists( 'wcs_get_users_subscriptions' ) ) return ! wcs_get_users_subscriptions( get_current_user_id() );
 		if ( ! in_array( $endpoint, array( 'memberships', 'members-area', 'my-membership-content' ), true ) ) {
 			return false;
 		}
@@ -149,7 +159,7 @@ final class ContactPanda_My_Account {
 		if ( ! is_user_logged_in() || ! function_exists( 'wc_logout_url' ) ) {
 			return;
 		}
-		echo '<footer class="contactpanda-account-footer"><a href="' . esc_url( wc_logout_url() ) . '">' . esc_html__( 'Log out', 'contactpanda' ) . '</a></footer>';
+		echo '<footer class="contactpanda-account-footer"><a class="button" href="' . esc_url( wc_logout_url() ) . '"><span class="dashicons dashicons-exit" aria-hidden="true"></span> ' . esc_html__( 'Log out', 'contactpanda' ) . '</a></footer>';
 	}
 
 	public static function profile_title() {
@@ -165,9 +175,9 @@ final class ContactPanda_My_Account {
 	}
 
 	public static function maybe_flush_routes() {
-		if ( '1' !== get_option( 'contactpanda_account_routes_version' ) ) {
+		if ( '3' !== get_option( 'contactpanda_account_routes_version' ) ) {
 			flush_rewrite_rules( false );
-			update_option( 'contactpanda_account_routes_version', '1', false );
+			update_option( 'contactpanda_account_routes_version', '3', false );
 		}
 	}
 
@@ -241,6 +251,13 @@ final class ContactPanda_My_Account {
 			array( 'return_url' => wc_customer_edit_account_url() )
 		);
 		echo '</div></div>';
+	}
+
+	public static function communication() {
+		$identity = ContactPanda_Identity::resolve_user( get_current_user_id(), false );
+		echo '<div class="contactpanda-portal" data-contactpanda-portal>';
+		ContactPanda_Customer_Portal::render_preferences( $identity, array( 'return_url' => wc_get_account_endpoint_url( 'contactpanda-communication' ) ) );
+		echo '</div>';
 	}
 
 	public static function password_form() {
@@ -328,7 +345,7 @@ final class ContactPanda_My_Account {
 	}
 
 	public static function save_profile() {
-		self::guard_account_action( 'contactpanda_save_profile' );
+		check_admin_referer( self::account_nonce_action( 'contactpanda_save_profile' ) );
 		$result = self::persist_profile();
 		if ( is_wp_error( $result ) ) {
 			self::account_redirect( wc_customer_edit_account_url(), $result->get_error_message(), 'error' );
@@ -337,7 +354,7 @@ final class ContactPanda_My_Account {
 	}
 
 	public static function save_profile_ajax() {
-		self::guard_account_ajax();
+		check_ajax_referer( self::account_ajax_nonce_action(), 'nonce' );
 		$result = self::persist_profile();
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ), 400 );
@@ -382,8 +399,8 @@ final class ContactPanda_My_Account {
 	}
 
 	public static function save_addresses() {
-		self::guard_account_action( 'contactpanda_save_addresses' );
-		$result = self::persist_addresses();
+		check_admin_referer( self::account_nonce_action( 'contactpanda_save_addresses' ) );
+		$result = self::persist_addresses( $_POST );
 		$url = wc_get_endpoint_url( 'edit-address', '', wc_get_page_permalink( 'myaccount' ) );
 		if ( is_wp_error( $result ) ) {
 			self::account_redirect( $url, $result->get_error_message(), 'error' );
@@ -392,18 +409,18 @@ final class ContactPanda_My_Account {
 	}
 
 	public static function save_addresses_ajax() {
-		self::guard_account_ajax();
-		$result = self::persist_addresses();
+		check_ajax_referer( self::account_ajax_nonce_action(), 'nonce' );
+		$result = self::persist_addresses( $_POST );
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ), 400 );
 		}
 		wp_send_json_success( array( 'message' => __( 'Your addresses have been saved.', 'contactpanda' ), 'vatVerified' => ! empty( $result['vat_verified'] ) ) );
 	}
 
-	private static function persist_addresses() {
+	private static function persist_addresses( $request ) {
 		$user_id = get_current_user_id();
 		$customer = new WC_Customer( $user_id );
-		$different = ! empty( $_POST['shipping_different'] );
+		$different = ! empty( $request['shipping_different'] );
 		$countries = WC()->countries->get_countries();
 		$billing = self::posted_address( 'billing' );
 		if ( ! self::valid_required_address( $billing ) || ! isset( $countries[ $billing['country'] ] ) ) {
@@ -533,12 +550,12 @@ final class ContactPanda_My_Account {
 	}
 
 	public static function change_password() {
-		self::guard_account_action( 'contactpanda_change_password' );
+		check_admin_referer( self::account_nonce_action( 'contactpanda_change_password' ) );
 		$url = wc_get_endpoint_url( 'contactpanda-password', '', wc_get_page_permalink( 'myaccount' ) );
 		$user = wp_get_current_user();
-		$current = isset( $_POST['password_current'] ) ? (string) wp_unslash( $_POST['password_current'] ) : '';
-		$password = isset( $_POST['password_1'] ) ? (string) wp_unslash( $_POST['password_1'] ) : '';
-		$confirmation = isset( $_POST['password_2'] ) ? (string) wp_unslash( $_POST['password_2'] ) : '';
+		$current = isset( $_POST['password_current'] ) && is_string( $_POST['password_current'] ) ? wp_unslash( $_POST['password_current'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Preserve the validated string exactly for WordPress password verification/hashing; text sanitization would change the password.
+		$password = isset( $_POST['password_1'] ) && is_string( $_POST['password_1'] ) ? wp_unslash( $_POST['password_1'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Preserve the validated string exactly for WordPress password verification/hashing; text sanitization would change the password.
+		$confirmation = isset( $_POST['password_2'] ) && is_string( $_POST['password_2'] ) ? wp_unslash( $_POST['password_2'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Preserve the validated string exactly for WordPress password verification/hashing; text sanitization would change the password.
 		if ( ! wp_check_password( $current, $user->user_pass, $user->ID ) ) {
 			self::account_redirect( $url, __( 'The current password is incorrect.', 'contactpanda' ), 'error' );
 		}
@@ -572,19 +589,19 @@ final class ContactPanda_My_Account {
 		return true;
 	}
 
-	private static function guard_account_action( $action ) {
+	private static function account_nonce_action( $action ) {
 		if ( ! is_user_logged_in() ) {
 			wp_safe_redirect( wc_get_page_permalink( 'myaccount' ) );
 			exit;
 		}
-		check_admin_referer( $action );
+		return $action;
 	}
 
-	private static function guard_account_ajax() {
+	private static function account_ajax_nonce_action() {
 		if ( ! is_user_logged_in() ) {
 			wp_send_json_error( array( 'message' => __( 'Your session has expired. Please sign in again.', 'contactpanda' ) ), 401 );
 		}
-		check_ajax_referer( 'contactpanda_account_ajax', 'nonce' );
+		return 'contactpanda_account_ajax';
 	}
 
 	private static function account_redirect( $url, $message, $type = 'success' ) {
@@ -594,7 +611,7 @@ final class ContactPanda_My_Account {
 	}
 
 	private static function posted( $key ) {
-		return isset( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : '';
+		return isset( $_POST[ $key ] ) ? sanitize_text_field( wp_unslash( $_POST[ $key ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Private sanitized request reader; account handlers verify logged-in identity and their action nonce before calling it.
 	}
 
 	private static function normalize_profile_phone( $prefix, $national ) {

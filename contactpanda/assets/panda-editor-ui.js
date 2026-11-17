@@ -1,7 +1,7 @@
 (function () {
 	'use strict';
 
-	var VERSION = '1.0.0';
+	var VERSION = '1.1.1';
 	var existing = window.PandaEditorUI || {};
 	var registry = existing.registry || {};
 
@@ -45,7 +45,7 @@
 			tab.addEventListener('click', function () { switchPanel(editor, tab.dataset.pandaEditorTab); });
 		});
 		editor.addEventListener('click', function (event) {
-			if (!event.target.closest('[data-panda-editor-element], .contactpanda-flow-node, .pandawoo-layout-block, .panda-seasons-editor-element')) return;
+			if (!event.target.closest('[data-panda-editor-element], .contactpanda-flow-node, .pandawoo-layout-block, .panda-seasons-editor-element, .panda-seasons-composer__door, .panda-seasons-design-layer, .panda-seasons-free-editor-door')) return;
 			switchPanel(editor, 'edit');
 		});
 		var initial = editor.querySelector('[data-panda-editor-tab].is-active');
@@ -55,6 +55,39 @@
 	function enhanceAll(root) {
 		(root || document).querySelectorAll('[data-panda-editor]').forEach(enhance);
 	}
+
+
+	var insertion = null;
+	function clearInsertion() { if (insertion && insertion.slot) insertion.slot.remove(); insertion = null; }
+	var sequenceItems = '.contactpanda-newsletter-block,.contactpanda-column-child,[data-system-email-block],.pandawoo-layout-block';
+	document.addEventListener('dragstart', function(event) {
+		if (event.target.closest('[contenteditable="true"]')) return;
+		if (!event.target.closest(sequenceItems + ',[data-block-type],[data-add-visual-block],[data-system-email-type],[data-type],.contactpanda-block-palette button,.pandawoo-layout-palette button')) return;
+		document.documentElement.classList.add('panda-sequence-dragging');
+	}, true);
+	document.addEventListener('dragover', function(event) {
+		if (!document.documentElement.classList.contains('panda-sequence-dragging')) return;
+		if (event.target.closest('.panda-insertion-slot')) { event.preventDefault(); event.stopPropagation(); return; }
+		var item = event.target.closest(sequenceItems);
+		if (!item || item.classList.contains('is-dragging') || event.target.closest('.contactpanda-column-dropzone:empty')) return;
+		var rect = item.getBoundingClientRect(), offset=insertion&&insertion.slot.parentNode===item.parentNode&&(insertion.slot.compareDocumentPosition(item)&Node.DOCUMENT_POSITION_FOLLOWING)?insertion.slot.getBoundingClientRect().height:0, after = event.clientY >= rect.top-offset + rect.height / 2;
+		if (insertion && insertion.item === item && insertion.after === after) return;
+		clearInsertion();
+		var slot = document.createElement('div'); slot.className = 'panda-insertion-slot'; slot.setAttribute('aria-hidden','true');
+		item.parentNode.insertBefore(slot, after ? item.nextSibling : item);
+		insertion = {item:item,after:after,slot:slot}; event.preventDefault();
+	}, true);
+	document.addEventListener('drop', function(event) {
+		if (!insertion) return;
+		if (event.target.closest('.panda-insertion-slot')) {
+			event.preventDefault(); event.stopPropagation();
+			var item = insertion.item, after = insertion.after;
+			clearInsertion();var rect=item.getBoundingClientRect();
+			item.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:event.dataTransfer,clientX:rect.left + rect.width / 2,clientY:rect.top + rect.height * (after ? .75 : .25)}));
+		} else { setTimeout(clearInsertion,0); }
+		document.documentElement.classList.remove('panda-sequence-dragging');
+	}, true);
+	document.addEventListener('dragend',function(){clearInsertion();document.documentElement.classList.remove('panda-sequence-dragging');},true);
 
 	registerBlocks({
 		text: {label: 'Text', icon: 'editor-alignleft', group: 'content'},

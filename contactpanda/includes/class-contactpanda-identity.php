@@ -143,23 +143,11 @@ final class ContactPanda_Identity {
 			if ( $linked && $linked !== absint( $user->ID ) ) {
 				return new WP_Error( 'contactpanda_portal_contact_linked', __( 'This email address is already linked to another WordPress account.', 'contactpanda' ) );
 			}
-			if ( ! $linked && method_exists( $contact, 'update' ) ) {
-				$contact->update( array( 'user_id' => $user->ID ) );
-			}
+
 			return self::normalize( $contact, 'groundhogg' );
 		}
-		if ( ! $create || ! method_exists( 'ContactPanda_Plugin', 'extension_create_contact' ) ) {
-			return self::empty_identity( $user, 'groundhogg' );
-		}
-		$id = ContactPanda_Plugin::extension_create_contact( array( 'first_name' => get_user_meta( $user->ID, 'first_name', true ), 'last_name' => get_user_meta( $user->ID, 'last_name', true ), 'email' => $user->user_email ) );
-		if ( is_wp_error( $id ) ) {
-			return $id;
-		}
-		$contact = ContactPanda_Plugin::extension_contact( $id );
-		if ( $contact && method_exists( $contact, 'update' ) ) {
-			$contact->update( array( 'user_id' => $user->ID ) );
-		}
-		return $contact ? self::normalize( $contact, 'groundhogg' ) : self::empty_identity( $user, 'groundhogg' );
+		// Preview mode never creates or links source-plugin accounts.
+		return self::empty_identity( $user, 'groundhogg' );
 	}
 
 	private static function normalize( $contact, $source ) {

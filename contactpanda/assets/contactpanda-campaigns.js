@@ -150,12 +150,14 @@
 			row.dataset.contactpandaCampaignStatus = item.status;
 			var sent = row.querySelector('[data-contactpanda-mailing-sent]');
 			var failed = row.querySelector('[data-contactpanda-mailing-failed]');
+			var bounced = row.querySelector('[data-contactpanda-mailing-bounced]');
 			var total = row.querySelector('[data-contactpanda-mailing-total]');
 			var delivered = row.querySelector('[data-contactpanda-mailing-delivered]');
 			var progress = row.querySelector('.contactpanda-mailing-progress');
 			if (total) total.textContent = item.totalText;
 			if (sent) sent.textContent = item.sentText;
 			if (failed) failed.textContent = item.failedText;
+			if (bounced) bounced.textContent = item.bouncedText;
 			if (delivered) delivered.textContent = item.delivered;
 			if (progress) {
 				progress.setAttribute('aria-label', item.progressLabel);
