@@ -110,9 +110,35 @@ final class ContactPanda_Customer_Portal {
 			'preferences' => array( 'label' => __( 'Communication', 'contactpanda' ), 'callback' => array( __CLASS__, 'render_preferences' ), 'priority' => 20 ),
 			'privacy' => array( 'label' => __( 'Privacy', 'contactpanda' ), 'callback' => array( __CLASS__, 'render_privacy' ), 'priority' => 90 ),
 		);
+		if ( self::account_events() ) $tabs['events'] = array( 'label' => __( 'Event archive', 'contactpanda' ), 'callback' => array( __CLASS__, 'render_events' ), 'priority' => 30 );
 		$tabs = apply_filters( 'contactpanda_customer_portal_tabs', $tabs, $identity );
 		uasort( $tabs, static function ( $a, $b ) { return absint( $a['priority'] ?? 50 ) <=> absint( $b['priority'] ?? 50 ); } );
 		return $tabs;
+	}
+
+	/** Resolve only the signed-in customer's records; never accept a requested contact ID. */
+	public static function account_events() {
+		if ( ! is_user_logged_in() ) return array();
+		$identity = ContactPanda_Identity::resolve_user( get_current_user_id(), false );
+		if ( is_wp_error( $identity ) || empty( $identity['id'] ) ) return array();
+		return array_values( array_filter( (array) apply_filters( 'contactpanda_contact_events', array(), $identity ) , 'is_array' ) );
+	}
+
+	public static function render_events( $identity = array(), $context = array() ) {
+		$events = self::account_events();
+		echo '<section><h2>' . esc_html__( 'Event archive', 'contactpanda' ) . '</h2>';
+		if ( ! $events ) { echo '<p>' . esc_html__( 'No events available.', 'contactpanda' ) . '</p></section>'; return; }
+		$page = max( 1, absint( $_GET['event_page'] ?? 1 ) ); $pages = max( 1, (int) ceil( count( $events ) / 20 ) ); $page = min( $page, $pages ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view/filter routing; no mutation or permission grant. Writes use separate capability and nonce checks.
+		echo '<table class="shop_table"><thead><tr><th>' . esc_html__( 'Event', 'contactpanda' ) . '</th><th>' . esc_html__( 'Date', 'contactpanda' ) . '</th><th>' . esc_html__( 'Status', 'contactpanda' ) . '</th></tr></thead><tbody>';
+		foreach ( array_slice( $events, ( $page - 1 ) * 20, 20 ) as $event ) {
+			// Provider URLs can point into wp-admin, so show the assigned records without those links.
+			echo '<tr><td>' . esc_html( html_entity_decode( (string) ( $event['title'] ?? '' ), ENT_QUOTES, 'UTF-8' ) ) . '</td><td>' . esc_html( $event['date'] ?? '' ) . '</td><td>' . esc_html( $event['status_label'] ?? '' ) . '</td></tr>';
+		}
+		echo '</tbody></table>';
+		if ( $pages > 1 && class_exists( 'ContactPanda_Pagination' ) ) {
+			ContactPanda_Pagination::render( $page, count( $events ), 20, remove_query_arg( 'event_page' ), 'event_page' );
+		}
+		echo '</section>';
 	}
 
 	public static function render_profile( $identity, $context = array() ) {
@@ -126,6 +152,7 @@ final class ContactPanda_Customer_Portal {
 			if ( isset( $identity[ $key ] ) && '' !== (string) $identity[ $key ] ) return $identity[ $key ];
 			return isset( $meta[ $key ] ) && '' !== (string) $meta[ $key ] ? $meta[ $key ] : $fallback;
 		};
+		self::company_relationships( $identity );
 		$return_url = ! empty( $context['return_url'] ) ? esc_url_raw( $context['return_url'] ) : self::tab_url( 'profile' );
 		echo '<section><h2>' . esc_html__( 'My profile', 'contactpanda' ) . '</h2><p>' . esc_html__( 'These details belong to your WordPress account and your linked ContactPanda person.', 'contactpanda' ) . '</p><form class="contactpanda-portal-form" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_portal_save_profile"><input type="hidden" name="return_url" value="' . esc_attr( $return_url ) . '">';
 		wp_nonce_field( 'contactpanda_portal_save_profile' );
@@ -147,7 +174,20 @@ final class ContactPanda_Customer_Portal {
 		echo '</div><p class="description">' . esc_html__( 'Changing the email address requires confirmation through the new address. Newsletter consent is not changed by this.', 'contactpanda' ) . '</p><button class="button button-primary">' . esc_html__( 'Save changes', 'contactpanda' ) . '</button></form></section>';
 	}
 
-	public static function render_preferences( $identity ) {
+	private static function company_relationships( $identity ) {
+		if ( ! ContactPanda_Store::standalone() || empty( $identity['id'] ) ) return;
+		global $wpdb; $t = ContactPanda_Schema::table_names();
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT c.name,r.position,r.is_primary,r.is_primary_company FROM %i r INNER JOIN %i c ON c.id=r.company_id WHERE r.contact_id=%d AND c.deleted_at IS NULL ORDER BY r.is_primary_company DESC,c.name LIMIT 100", $t['company_contacts'], $t['companies'], absint( $identity['id'] ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Prepared owned CRM tables have no object API; fresh authorization relationships and atomic writes must not use stale cached results.
+		if ( ! $rows ) return;
+		echo '<section><h2>' . esc_html__( 'Company relationships', 'contactpanda' ) . '</h2><ul>';
+		foreach ( $rows as $row ) {
+			$details = array_filter( array( $row['position'], ! empty( $row['is_primary_company'] ) ? __( 'Main company contact', 'contactpanda' ) : '', ! empty( $row['is_primary'] ) ? __( 'Authorized primary contact', 'contactpanda' ) : '' ) );
+			echo '<li><strong>' . esc_html( $row['name'] ) . '</strong>' . ( $details ? ' · ' . esc_html( implode( ' · ', $details ) ) : '' ) . '</li>';
+		}
+		echo '</ul><p class="description">' . esc_html__( 'Company roles are assigned by the administrator. Changing a billing company does not grant access to company licenses.', 'contactpanda' ) . '</p></section>';
+	}
+
+	public static function render_preferences( $identity, $context = array() ) {
 		if ( is_wp_error( $identity ) ) {
 			echo '<p>' . esc_html( $identity->get_error_message() ) . '</p>';
 			return;
@@ -156,7 +196,7 @@ final class ContactPanda_Customer_Portal {
 		$status = $identity['optin_status'] ?? 'unconfirmed';
 		$marketable = ContactPanda_Plugin::extension_is_marketable( $identity['object'] ?: $identity );
 		echo '<section><h2>' . esc_html__( 'Communication', 'contactpanda' ) . '</h2><div class="contactpanda-portal-status ' . ( $marketable ? 'is-active' : 'is-inactive' ) . '"><strong>' . esc_html( $marketable ? __( 'Newsletter subscribed', 'contactpanda' ) : __( 'Newsletter not subscribed', 'contactpanda' ) ) . '</strong><span>' . esc_html( $email ) . '</span></div>';
-		self::preferences_form( $identity, self::tab_url( 'preferences' ), array(), $marketable );
+		self::preferences_form( $identity, $context['return_url'] ?? self::tab_url( 'preferences' ), array(), $marketable );
 		if ( ! $marketable ) echo '<p class="description">' . esc_html__( 'Selecting email here does not grant marketing consent. A new newsletter subscription always requires a separate double opt-in confirmation.', 'contactpanda' ) . '</p>';
 		do_action( 'contactpanda_customer_portal_subscriptions', $identity, array( 'authenticated' => true, 'status' => $status ) );
 		echo '</section>';
@@ -231,7 +271,7 @@ final class ContactPanda_Customer_Portal {
 	}
 
 	public static function confirm_email_change() {
-		if ( empty( $_GET['contactpanda_email_confirm'] ) || ! is_user_logged_in() ) return;
+		if ( empty( $_GET['contactpanda_email_confirm'] ) || ! is_user_logged_in() ) return; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Logged-in user must match the stored pending email; the one-time SHA-256 confirmation token and expiry are checked before any update.
 		$user = wp_get_current_user();
 		$pending = get_user_meta( $user->ID, self::EMAIL_META, true );
 		$token = sanitize_text_field( wp_unslash( $_GET['contactpanda_email_confirm'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- one-time confirmation token.
@@ -466,7 +506,7 @@ final class ContactPanda_Customer_Portal {
 	}
 
 	private static function current_url() {
-		$request_uri = wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' );
+		$request_uri = sanitize_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ) );
 		return esc_url_raw( home_url( '/' . ltrim( $request_uri, '/' ) ) );
 	}
 
@@ -474,7 +514,7 @@ final class ContactPanda_Customer_Portal {
 		$notice_id = strtolower( wp_generate_password( 16, false, false ) );
 		$key = self::NOTICE . $notice_id;
 		set_transient( $key, array( 'success' => (bool) $success, 'message' => sanitize_text_field( $message ) ), MINUTE_IN_SECONDS );
-		$return = wp_validate_redirect( esc_url_raw( wp_unslash( $_REQUEST['return_url'] ?? self::portal_url() ) ), self::portal_url() );
+		$return = wp_validate_redirect( esc_url_raw( wp_unslash( $_REQUEST['return_url'] ?? self::portal_url() ) ), self::portal_url() ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Local navigation after action validation only; return URL is sanitized and wp_validate_redirect enforces the safe destination.
 		wp_safe_redirect( add_query_arg( 'cp_portal_notice', $notice_id, $return ) );
 		exit;
 	}

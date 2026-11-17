@@ -108,3 +108,31 @@
 }
 
 .contactpanda-virtual-registration{width:min(1120px,calc(100% - 40px));margin:48px auto}.contactpanda-virtual-registration-inner{width:100%}
+
+/* Newsletter layouts follow their actual container, including narrow widget columns. */
+.contactpanda-newsletter-signup{container-type:inline-size;display:block;width:100%;min-width:0;max-width:100%;margin:0;box-sizing:border-box}
+.contactpanda-newsletter-signup *{box-sizing:border-box;min-width:0}
+.contactpanda-newsletter-signup .contactpanda-form-section{display:grid;grid-template-columns:1fr;gap:12px;width:100%;padding:18px}
+.contactpanda-newsletter-signup .contactpanda-newsletter-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:12px}
+.contactpanda-newsletter-layout-compact .contactpanda-newsletter-fields,.contactpanda-newsletter-layout-two-line .contactpanda-newsletter-fields{grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))}
+.contactpanda-newsletter-signup .contactpanda-form-check{display:flex;align-items:flex-start;gap:9px;margin:0;width:100%;font:inherit}
+.contactpanda-newsletter-signup .contactpanda-form-check input{flex:0 0 18px;width:18px;height:18px;min-height:18px;margin:3px 0 0}
+.contactpanda-newsletter-signup .contactpanda-form-check span{overflow-wrap:anywhere}
+.contactpanda-newsletter-signup .contactpanda-registration-submit{position:static;float:none;max-width:100%;margin:12px 0 0;white-space:normal;font:inherit;cursor:pointer}
+/* Native theme button classes and public theme variables take precedence over Panda's color. */
+.contactpanda-newsletter-signup .contactpanda-registration-submit:not(.fusion-button):not(.btn){background:var(--wp--preset--color--contrast,var(--button_gradient_top_color,var(--primary-color,#333)));color:var(--wp--preset--color--base,var(--button_accent_color,#fff));border:1px solid currentColor;border-radius:var(--button_border_radius,4px);padding:10px 18px}
+.contactpanda-newsletter-signup .contactpanda-registration-submit:hover,.contactpanda-newsletter-signup .contactpanda-registration-submit:active{background:var(--button_gradient_top_color_hover,var(--wp--preset--color--contrast,#444));color:var(--button_accent_hover_color,var(--wp--preset--color--base,#fff))}
+.contactpanda-newsletter-signup .contactpanda-registration-submit:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.contactpanda-newsletter-dialog{width:min(620px,calc(100% - 24px));max-height:90dvh;overflow:auto;border:1px solid #d5dbe2;border-radius:10px;padding:34px 16px 18px;color:inherit;background:#fff}
+.contactpanda-newsletter-dialog::backdrop{background:rgba(0,0,0,.5)}
+.contactpanda-newsletter-close{position:absolute;top:4px;right:6px;display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:inherit;font:26px/1 sans-serif;cursor:pointer}
+.contactpanda-newsletter-bar{position:fixed;z-index:9999;inset:auto 0 0;padding:16px 40px 16px 18px;background:var(--content_bg_color,#fff);color:inherit;border-top:1px solid #cbd2da;box-shadow:0 -3px 15px #0002;max-height:65dvh;overflow:auto}
+.contactpanda-newsletter-bar[hidden]{display:none!important}.contactpanda-newsletter-bar-mobile{display:none}.contactpanda-newsletter-layout-bar .contactpanda-form-section{border:0;padding:0}.contactpanda-newsletter-layout-bar h3{display:none}
+@container(min-width:1050px){.contactpanda-newsletter-layout-bar .contactpanda-form-section{display:contents}.contactpanda-newsletter-layout-bar{display:flex;align-items:center;gap:12px}.contactpanda-newsletter-layout-bar .contactpanda-newsletter-fields{flex:3;grid-template-columns:repeat(4,minmax(0,1fr))}.contactpanda-newsletter-layout-bar .contactpanda-form-check{flex:1;font-size:12px}.contactpanda-newsletter-layout-bar .contactpanda-registration-submit{margin:0;flex:0 0 auto}}
+@media(max-width:767px){.contactpanda-newsletter-bar-desktop{display:none}.contactpanda-newsletter-bar-mobile{display:inline-flex;align-items:center;justify-content:center}.contactpanda-newsletter-bar{padding:10px 44px 10px 14px;text-align:center}}
+.contactpanda-newsletter-bar{container-type:inline-size}
+.contactpanda-newsletter-signup .contactpanda-registration-submit,.contactpanda-newsletter-bar-mobile{align-items:center;justify-content:center;gap:8px}.contactpanda-newsletter-signup .contactpanda-registration-submit{display:inline-flex}.contactpanda-newsletter-signup .contactpanda-registration-submit .dashicons,.contactpanda-newsletter-bar-mobile .dashicons{flex:0 0 20px;color:inherit}
+
+/* Keep Safari selects and text inputs aligned even when the theme supplies different native sizes. */
+.contactpanda-newsletter-signup .contactpanda-newsletter-fields input:not([type=checkbox]):not([type=radio]),
+.contactpanda-newsletter-signup .contactpanda-newsletter-fields select{box-sizing:border-box;height:48px;min-height:48px;max-height:48px;padding:8px 12px;line-height:normal;margin:0;width:100%}
