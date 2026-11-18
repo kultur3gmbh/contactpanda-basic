@@ -277,9 +277,9 @@ final class ContactPanda_My_Account {
 		$customer = new WC_Customer( $user_id );
 		$different = (bool) get_user_meta( $user_id, 'contactpanda_shipping_different', true );
 		$profile = self::profile_address( $user_id );
-		$company_id = ContactPanda_Store::company_by_name( (string) $customer->get_billing_company( 'edit' ) );
+		$company_id = self::billing_company_id( $user_id, (string) $customer->get_billing_company( 'edit' ) );
 		$company = $company_id ? ContactPanda_Store::company( $company_id ) : false;
-		$contact = $company ? false : ContactPanda_Store::contact_by_user_id( $user_id );
+		$contact = $company || ! ContactPanda_Store::standalone() ? false : ContactPanda_Store::contact_by_user_id( $user_id );
 		$vat = $company ? (string) ( $company['vat_id'] ?? '' ) : ( $contact ? (string) ( $contact['vat_id'] ?? '' ) : '' );
 		$vat = $vat ?: ( get_user_meta( $user_id, 'billing_vat', true ) ?: get_user_meta( $user_id, 'b2b_uid', true ) );
 		$vat_verified = $company ? 'valid' === (string) ( $company['vat_status'] ?? '' ) : ( $contact && 'valid' === (string) ( $contact['vat_status'] ?? '' ) );
@@ -417,7 +417,7 @@ final class ContactPanda_My_Account {
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error( array( 'message' => $result->get_error_message() ), 400 );
 		}
-		wp_send_json_success( array( 'message' => __( 'Your addresses have been saved.', 'contactpanda' ), 'vatVerified' => ! empty( $result['vat_verified'] ) ) );
+		wp_send_json_success( array( 'message' => __( 'Your addresses have been saved.', 'contactpanda' ), 'vatVerified' => ! empty( $result['vat_verified'] ), 'addresses' => array( 'billing' => $result['billing'], 'shipping' => $result['shipping'] ) ) );
 	}
 
 	private static function persist_addresses( $request ) {
@@ -485,17 +485,17 @@ final class ContactPanda_My_Account {
 		}
 		$billing_company = sanitize_text_field( $billing['company'] ?? '' );
 		if ( $billing_company ) self::sync_standalone_company( $user_id, $billing_company );
-		$company_id = $billing_company ? ContactPanda_Store::company_by_name( $billing_company ) : 0;
+		$company_id = self::billing_company_id( $user_id, $billing_company );
 		if ( $company_id ) {
 			ContactPanda_Store::update_company( $company_id, 'uid', $vat );
 			ContactPanda_Store::update_company( $company_id, 'vat_status', $vat_verified ? 'valid' : ( $vat ? 'unverified' : 'unchecked' ) );
 			ContactPanda_Store::update_company( $company_id, 'vat_verified_at', $vat_verified ? current_time( 'mysql' ) : '' );
 			do_action( 'contactpanda_vat_id_updated', 'company', $company_id, $vat, $vat_verified );
 		} else {
-			$contact = ContactPanda_Store::contact_by_user_id( $user_id );
-			if ( ! $contact ) $contact = ContactPanda_Store::contact_by_email( wp_get_current_user()->user_email );
+			$contact = ContactPanda_Store::standalone() ? ContactPanda_Store::contact_by_user_id( $user_id ) : false;
+			if ( ! $contact && ContactPanda_Store::standalone() ) $contact = ContactPanda_Store::contact_by_email( wp_get_current_user()->user_email );
 		}
-		if ( empty( $company_id ) && ! empty( $contact ) ) {
+		if ( ! $billing_company && empty( $company_id ) && ! empty( $contact ) ) {
 			ContactPanda_Store::update_contact(
 				absint( $contact['id'] ),
 				array(
@@ -541,6 +541,20 @@ final class ContactPanda_My_Account {
 	 * Mirrors a freely entered billing company into standalone ContactPanda without
 	 * changing WooCommerce, Groundhogg, or any historical source record.
 	 */
+	/** A billing label never grants authority over an existing CRM company. */
+	private static function billing_company_id( $user_id, $company_name ) {
+		if ( ! ContactPanda_Store::standalone() ) return 0;
+		$id = $company_name ? ContactPanda_Store::company_by_name( $company_name ) : 0;
+		if ( ! $id ) return 0;
+		if ( current_user_can( 'manage_options' ) ) return $id;
+		$contact = ContactPanda_Store::contact_by_user_id( $user_id );
+		if ( ! $contact ) return 0;
+		foreach ( ContactPanda_Store::contact_company_relations( $contact['id'] ) as $relation ) {
+			if ( (int) $relation['company_id'] === (int) $id && ! empty( $relation['is_primary'] ) ) return $id;
+		}
+		return 0;
+	}
+
 	private static function sync_standalone_company( $user_id, $company_name ) {
 		if ( ! ContactPanda_Store::standalone() ) {
 			return;
@@ -549,6 +563,9 @@ final class ContactPanda_My_Account {
 		if ( ! $user ) {
 			return;
 		}
+		// Customers may enter billing labels, but only administrators can create
+		// a new relationship to a company that already exists in the directory.
+		if ( ContactPanda_Store::company_by_name( $company_name ) && ! current_user_can( 'manage_options' ) ) return;
 		ContactPanda_Store::link_contact_company_name( $user->user_email, $company_name );
 	}
 

@@ -194,6 +194,7 @@
 					message.textContent = result.data.message;
 					message.classList.add('is-success');
 				}
+				if(result.data.addresses)form.querySelectorAll('.contactpanda-address-panel').forEach(function(panel){if(panel._syncAddress)panel._syncAddress(result.data.addresses[panel.dataset.addressPrefix],panel===activePanel||panel.dataset.editing!=='true');});
 				if(activePanel&&activePanel._finishAddress)activePanel._finishAddress(true);
 				var vatInput = form.querySelector('[name="vat_id"]');
 				var vatButton = form.querySelector('.contactpanda-vat-button');
@@ -282,9 +283,11 @@
   actions.className='contactpanda-address-actions';save.type='button';save.className='button contactpanda-address-save';save.innerHTML='<span class="dashicons dashicons-saved" aria-hidden="true"></span>';save.append(document.createTextNode(' '+copy.saveAddress));
   cancel.type='button';cancel.className='button';cancel.innerHTML='<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>';cancel.append(document.createTextNode(' '+copy.cancel));status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   function renderSummary(){var names=['first_name','last_name','company','address_1','address_2','postcode','city','country'];var values=names.map(function(key){var field=panel.querySelector('[name="'+prefix+'_'+key+'"]');return field&&field.value||'';}).filter(Boolean);var hasAddress=names.filter(function(key){return key!=='country';}).some(function(key){var f=panel.querySelector('[name="'+prefix+'_'+key+'"]');return f&&f.value.trim();});summary.textContent=hasAddress?values.join(', '):copy.noAddress;toggle.textContent=shipping?(hasAddress?copy.editShipping:copy.addShipping):copy.editBilling;}
-  panel._finishAddress=function(saved){if(saved){snapshot(panel);renderSummary();}else(panel._savedFields||[]).forEach(function(f){f.element.value=f.value;f.element.checked=f.checked;f.element.disabled=f.disabled;});editor.hidden=true;summary.hidden=false;toggle.hidden=false;panel.dataset.editing='false';toggle.setAttribute('aria-expanded','false');};
+  panel._syncAddress=function(values,apply){if(!values)return;(panel._savedFields||[]).forEach(function(f){var key=f.name.indexOf(prefix+'_')===0?f.name.slice(prefix.length+1):'';if(key&&Object.prototype.hasOwnProperty.call(values,key)){f.value=values[key];if(apply)f.element.value=values[key];}});if(apply)renderSummary();};
+  panel._finishAddress=function(saved){if(saved){snapshot(panel);renderSummary();}else(panel._savedFields||[]).forEach(function(f){f.element.value=f.value;f.element.checked=f.checked;f.element.disabled=f.disabled;});renderSummary();editor.hidden=true;summary.hidden=false;toggle.hidden=false;panel.dataset.editing='false';toggle.setAttribute('aria-expanded','false');};
   toggle.onclick=function(){status.textContent='';if(shipping)panel.querySelectorAll('input,select,textarea').forEach(function(f){f.disabled=false;});editor.hidden=false;summary.hidden=true;toggle.hidden=true;panel.dataset.editing='true';toggle.setAttribute('aria-expanded','true');editor.querySelector('input,select').focus();};
   cancel.onclick=function(){panel._finishAddress(false);toggle.focus();};save.onclick=function(){var invalid=Array.from(panel.querySelectorAll('input,select,textarea')).find(function(f){return !f.disabled&&!f.checkValidity();});if(invalid){invalid.reportValidity();return;}form.dataset.activeAddress=prefix;if(shipping){var different=form.querySelector('[name="shipping_different"]');if(different)different.checked=true;panel.querySelectorAll('input,select').forEach(function(f){f.disabled=false;});}form.requestSubmit();};
+  editor.addEventListener('keydown',function(event){if(event.key==='Enter'&&event.target.matches('input:not([type=checkbox]):not([type=radio])')){event.preventDefault();save.click();}});
   actions.append(save,cancel);editor.append(actions);panel.append(summary,toggle,editor,status);grid.append(panel);snapshot(panel);renderSummary();editor.hidden=true;
  });
  var oldSave=form.querySelector('.contactpanda-account-save');if(oldSave)oldSave.hidden=true;
