@@ -14,7 +14,7 @@ final class ContactPanda_Company_Profile {
 	}
 
 	public static function settings_section( $sections ) {
-		$sections['company'] = __( 'Website owner', 'contactpanda' );
+		$sections['company'] = __( 'Company and contact details', 'contactpanda' );
 		return $sections;
 	}
 
@@ -32,6 +32,7 @@ final class ContactPanda_Company_Profile {
 			'phone'              => '',
 			'website'            => home_url( '/' ),
 			'tax_number'         => '',
+			'account_holder'      => '',
 			'bank_name'          => '',
 			'iban'               => '',
 			'bic'                => '',
@@ -56,10 +57,10 @@ final class ContactPanda_Company_Profile {
 		}
 		$profile = self::get();
 		if ( isset( $_GET['company_profile_saved'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only flag.
-			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Website owner details saved.', 'contactpanda' ) . '</p></div>';
+			echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Company and contact details saved.', 'contactpanda' ) . '</p></div>';
 		}
 		if ( isset( $_GET['woocommerce_company_imported'] ) ) echo '<div class="notice notice-success is-dismissible"><p>' . esc_html__( 'Missing website owner details were adopted from WooCommerce.', 'contactpanda' ) . '</p></div>'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display-only flag.
-		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Responsible for this website', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Maintain the responsible person or organisation, address, contact, tax, and logo details once. ContactPanda extensions use this shared source for messages and customer-facing pages.', 'contactpanda' ) . '</p>';
+		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Company and contact details', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Maintain the organisation, address, contact, tax, bank, and logo details once. ContactPanda extensions use this shared source for messages, documents, and customer-facing pages.', 'contactpanda' ) . '</p>';
 		if ( class_exists( 'WooCommerce' ) ) {
 			echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-inline-action-form"><input type="hidden" name="action" value="contactpanda_import_woocommerce_company_profile">';
 			wp_nonce_field( 'contactpanda_import_woocommerce_company_profile' );
@@ -72,10 +73,12 @@ final class ContactPanda_Company_Profile {
 		self::address_row( $profile );
 		self::heading( __( 'Contact and tax details', 'contactpanda' ) );
 		self::row( $profile, array( 'email' => __( 'Email address', 'contactpanda' ), 'phone' => __( 'Telephone', 'contactpanda' ), 'website' => __( 'Website', 'contactpanda' ), 'tax_number' => __( 'Tax number or VAT ID', 'contactpanda' ) ), array( 'email' => 'email', 'website' => 'url' ) );
+		self::heading( __( 'Bank details', 'contactpanda' ) );
+		self::row( $profile, array( 'account_holder' => __( 'Account holder', 'contactpanda' ), 'bank_name' => __( 'Bank name', 'contactpanda' ), 'iban' => __( 'IBAN', 'contactpanda' ), 'bic' => __( 'BIC', 'contactpanda' ) ) );
 		self::heading( __( 'Branding', 'contactpanda' ) );
 		self::row( $profile, array( 'logo_url' => __( 'Logo', 'contactpanda' ) ), array(), true );
 		echo '<p class="description">' . esc_html__( 'Available WooCommerce store values are used only as initial suggestions. Saving here never changes WooCommerce settings.', 'contactpanda' ) . '</p>';
-		submit_button( __( 'Save website owner details', 'contactpanda' ) );
+		submit_button( __( 'Save company and contact details', 'contactpanda' ) );
 		echo '</form></section>';
 	}
 
@@ -211,13 +214,13 @@ final class ContactPanda_Company_Profile {
 			wp_die( esc_html__( 'You are not allowed to manage these settings.', 'contactpanda' ) );
 		}
 		check_admin_referer( 'contactpanda_save_company_profile' );
-		$text    = array( 'company_name', 'management', 'company_register', 'street', 'postcode', 'city', 'country', 'phone', 'tax_number' );
+		$text    = array( 'company_name', 'management', 'company_register', 'street', 'postcode', 'city', 'country', 'phone', 'tax_number', 'account_holder', 'bank_name', 'iban', 'bic' );
 		$profile = self::get();
 		foreach ( $text as $key ) {
 			$profile[ $key ] = sanitize_text_field( wp_unslash( $_POST[ $key ] ?? '' ) );
 		}
 		$profile['country']    = strtoupper( $profile['country'] );
-		$profile['legal_form'] = self::normalized_legal_form( wp_unslash( $_POST['legal_form'] ?? '' ) );
+		$profile['legal_form'] = self::normalized_legal_form( sanitize_text_field( wp_unslash( $_POST['legal_form'] ?? '' ) ) );
 		$profile['email'] = sanitize_email( wp_unslash( $_POST['email'] ?? '' ) );
 		foreach ( array( 'website', 'logo_url' ) as $key ) {
 			$profile[ $key ] = esc_url_raw( wp_unslash( $_POST[ $key ] ?? '' ) );

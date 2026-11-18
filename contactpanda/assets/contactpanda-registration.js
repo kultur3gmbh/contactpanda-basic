@@ -166,10 +166,12 @@
 		var form = event.target.closest ? event.target.closest('.contactpanda-account-ajax-form') : null;
 		if (!form || typeof CONTACTPANDA_ACCOUNT === 'undefined') return;
 		event.preventDefault();
-		var button = form.querySelector('[type="submit"]');
-		var message = form.querySelector('.contactpanda-account-message');
-		var original = button ? button.textContent : '';
+		var activePanel=form.dataset.activeAddress ? form.querySelector('.contactpanda-address-panel[data-address-prefix="'+form.dataset.activeAddress+'"]') : null;
+		var button = activePanel ? activePanel.querySelector('.contactpanda-address-save') : form.querySelector('[type="submit"]');
+		var message = activePanel ? activePanel.querySelector('[role="status"]') : form.querySelector('.contactpanda-account-message');
+		var original = button ? button.innerHTML : '';
 		var data = new FormData(form);
+		if(activePanel){form.querySelectorAll('.contactpanda-address-panel').forEach(function(panel){if(panel===activePanel)return;(panel._savedFields||[]).forEach(function(f){if(!f.name)return;if(f.type==='checkbox'){data.delete(f.name);if(f.checked)data.set(f.name,f.value);}else data.set(f.name,f.value);});});}
 		data.set('action', form.dataset.ajaxAction);
 		data.set('nonce', CONTACTPANDA_ACCOUNT.nonce);
 		if (button) {
@@ -192,6 +194,7 @@
 					message.textContent = result.data.message;
 					message.classList.add('is-success');
 				}
+				if(activePanel&&activePanel._finishAddress)activePanel._finishAddress(true);
 				var vatInput = form.querySelector('[name="vat_id"]');
 				var vatButton = form.querySelector('.contactpanda-vat-button');
 				if (vatInput && result.data.vatVerified) vatInput.dataset.verified = '1';
@@ -206,7 +209,7 @@
 			.finally(function () {
 				if (button) {
 					button.disabled = false;
-					button.textContent = original;
+					button.innerHTML = original;
 				}
 			});
 	}, true);
@@ -263,3 +266,27 @@
 		});
 	}
 }());
+
+(function(){
+ 'use strict';var form=document.querySelector('.contactpanda-address-account-form'),config=window.CONTACTPANDA_ACCOUNT;if(!form||!config)return;
+ form.noValidate=true;var copy=config.i18n,panels=Array.from(form.querySelectorAll('.contactpanda-address-panel'));
+ var grid=document.createElement('div');grid.className='contactpanda-address-columns';form.prepend(grid);
+ function snapshot(panel){panel._savedFields=Array.from(panel.querySelectorAll('input,select,textarea')).map(function(f){return {element:f,name:f.name,value:f.value,type:f.type,checked:f.checked,disabled:f.disabled};});}
+ panels.forEach(function(panel,index){
+  var shipping=index===1,heading=panel.querySelector('.contactpanda-account-subheading'),editor=document.createElement('div');editor.className='contactpanda-address-editor';
+  var prefix=shipping?'shipping':'billing';panel.dataset.addressPrefix=prefix;panel.hidden=false;panel.classList.remove('contactpanda-shipping-account-fields');
+  Array.from(panel.children).forEach(function(child){if(child!==heading)editor.appendChild(child);});
+  if(!shipping){var vat=form.querySelector('.contactpanda-vat-field');if(vat)editor.appendChild(vat);}
+  var summary=document.createElement('address'),toggle=document.createElement('button'),actions=document.createElement('div'),save=document.createElement('button'),cancel=document.createElement('button'),status=document.createElement('div');
+  toggle.type='button';toggle.className='button-link contactpanda-address-edit';toggle.setAttribute('aria-expanded','false');
+  actions.className='contactpanda-address-actions';save.type='button';save.className='button contactpanda-address-save';save.innerHTML='<span class="dashicons dashicons-saved" aria-hidden="true"></span>';save.append(document.createTextNode(' '+copy.saveAddress));
+  cancel.type='button';cancel.className='button';cancel.innerHTML='<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>';cancel.append(document.createTextNode(' '+copy.cancel));status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+  function renderSummary(){var names=['first_name','last_name','company','address_1','address_2','postcode','city','country'];var values=names.map(function(key){var field=panel.querySelector('[name="'+prefix+'_'+key+'"]');return field&&field.value||'';}).filter(Boolean);var hasAddress=names.filter(function(key){return key!=='country';}).some(function(key){var f=panel.querySelector('[name="'+prefix+'_'+key+'"]');return f&&f.value.trim();});summary.textContent=hasAddress?values.join(', '):copy.noAddress;toggle.textContent=shipping?(hasAddress?copy.editShipping:copy.addShipping):copy.editBilling;}
+  panel._finishAddress=function(saved){if(saved){snapshot(panel);renderSummary();}else(panel._savedFields||[]).forEach(function(f){f.element.value=f.value;f.element.checked=f.checked;f.element.disabled=f.disabled;});editor.hidden=true;summary.hidden=false;toggle.hidden=false;panel.dataset.editing='false';toggle.setAttribute('aria-expanded','false');};
+  toggle.onclick=function(){status.textContent='';if(shipping)panel.querySelectorAll('input,select,textarea').forEach(function(f){f.disabled=false;});editor.hidden=false;summary.hidden=true;toggle.hidden=true;panel.dataset.editing='true';toggle.setAttribute('aria-expanded','true');editor.querySelector('input,select').focus();};
+  cancel.onclick=function(){panel._finishAddress(false);toggle.focus();};save.onclick=function(){var invalid=Array.from(panel.querySelectorAll('input,select,textarea')).find(function(f){return !f.disabled&&!f.checkValidity();});if(invalid){invalid.reportValidity();return;}form.dataset.activeAddress=prefix;if(shipping){var different=form.querySelector('[name="shipping_different"]');if(different)different.checked=true;panel.querySelectorAll('input,select').forEach(function(f){f.disabled=false;});}form.requestSubmit();};
+  actions.append(save,cancel);editor.append(actions);panel.append(summary,toggle,editor,status);grid.append(panel);snapshot(panel);renderSummary();editor.hidden=true;
+ });
+ var oldSave=form.querySelector('.contactpanda-account-save');if(oldSave)oldSave.hidden=true;
+ var different=form.querySelector('.contactpanda-shipping-toggle');if(different)different.hidden=true;
+})();

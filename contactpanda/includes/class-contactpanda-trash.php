@@ -31,17 +31,17 @@ final class ContactPanda_Trash {
 		if ( ! self::available() || ! self::valid_entity( $entity ) ) return array( 'rows' => array(), 'total' => 0 );
 		$table = ContactPanda_Schema::table_names()[ $entity ];
 		$where = $trashed ? 'deleted_at IS NOT NULL' : 'deleted_at IS NULL';
-		$params = array();
+		$params = array( $table );
 		if ( $id ) { $where .= ' AND id = %d'; $params[] = absint( $id ); }
 		if ( '' !== $search ) {
 			$like = '%' . $wpdb->esc_like( $search ) . '%';
 			if ( 'contacts' === $entity ) { $where .= ' AND (first_name LIKE %s OR last_name LIKE %s OR email LIKE %s)'; $params = array_merge( $params, array( $like, $like, $like ) ); }
 			else { $where .= ' AND name LIKE %s'; $params[] = $like; }
 		}
-		$count = "SELECT COUNT(*) FROM `{$table}` WHERE {$where}";
-		$total = (int) $wpdb->get_var( $params ? $wpdb->prepare( $count, $params ) : $count ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- entity table is selected from a fixed allowlist; values are prepared when present.
-		$sql = "SELECT * FROM `{$table}` WHERE {$where} ORDER BY id DESC LIMIT %d OFFSET %d";
-		$rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( $params, array( 50, ( max( 1, absint( $page ) ) - 1 ) * 50 ) ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- entity table is selected from a fixed allowlist; all values are prepared.
+		$count = "SELECT COUNT(*) FROM %i WHERE {$where}";
+		$total = (int) $wpdb->get_var( $wpdb->prepare( $count, $params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.NotPrepared -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		$sql = "SELECT * FROM %i WHERE {$where} ORDER BY id DESC LIMIT %d OFFSET %d";
+		$rows = $wpdb->get_results( $wpdb->prepare( $sql, array_merge( $params, array( 50, ( max( 1, absint( $page ) ) - 1 ) * 50 ) ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.NotPrepared -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		return array( 'rows' => (array) $rows, 'total' => $total );
 	}
 
@@ -52,48 +52,48 @@ final class ContactPanda_Trash {
 		$id = absint( $id );
 		$tables = ContactPanda_Schema::table_names();
 		$table = $tables[ $entity ];
-		$state = 'trash' === $operation ? 'IS NULL' : 'IS NOT NULL';
 		if ( 'purge' !== $operation ) {
 			$now = current_time( 'mysql' );
 			$sql = 'restore' === $operation
-				? $wpdb->prepare( "UPDATE `{$table}` SET deleted_at = NULL, updated_at = %s WHERE id = %d AND deleted_at {$state}", $now, $id )
-				: $wpdb->prepare( "UPDATE `{$table}` SET deleted_at = %s, updated_at = %s WHERE id = %d AND deleted_at {$state}", $now, $now, $id );
-			return 1 === $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,PluginCheck.Security.DirectDB.UnescapedDBParameter -- query was prepared above; entity table is selected from a fixed allowlist.
+				? $wpdb->prepare( "UPDATE %i SET deleted_at = NULL, updated_at = %s WHERE id = %d AND deleted_at IS NOT NULL", $table, $now, $id )
+				: $wpdb->prepare( "UPDATE %i SET deleted_at = %s, updated_at = %s WHERE id = %d AND deleted_at IS NULL", $table, $now, $now, $id );
+			return 1 === $wpdb->query( $sql ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		}
 
 		$key = 'contacts' === $entity ? 'contact_id' : 'company_id';
 		$owned = 'contacts' === $entity ? array( 'contactmeta', 'contact_tags', 'consents', 'company_contacts' ) : array( 'companymeta', 'company_contacts' );
 		// Refuse partial cleanup on non-transactional installations.
 		foreach ( array_merge( array( $entity, 'activities' ), $owned ) as $name ) {
-			$engine = $wpdb->get_var( $wpdb->prepare( 'SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s', $tables[ $name ] ) );
+			$engine = $wpdb->get_var( $wpdb->prepare( 'SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = %s', $tables[ $name ] ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 			if ( 'INNODB' !== strtoupper( (string) $engine ) ) return false;
 		}
-		if ( false === $wpdb->query( 'START TRANSACTION' ) ) return false;
-		$record = $wpdb->get_row( $wpdb->prepare( "SELECT id FROM `{$table}` WHERE id = %d AND deleted_at IS NOT NULL FOR UPDATE", $id ), ARRAY_A );
-		if ( ! $record ) { $wpdb->query( 'ROLLBACK' ); return false; }
+		if ( false === $wpdb->query( 'START TRANSACTION' ) ) return false; // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		$record = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM %i WHERE id = %d AND deleted_at IS NOT NULL FOR UPDATE", $table, $id ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		if ( ! $record ) { $wpdb->query( 'ROLLBACK' ); return false; } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		foreach ( $owned as $name ) {
-			if ( false === $wpdb->delete( $tables[ $name ], array( $key => $id ) ) ) { $wpdb->query( 'ROLLBACK' ); return false; }
+			if ( false === $wpdb->delete( $tables[ $name ], array( $key => $id ) ) ) { $wpdb->query( 'ROLLBACK' ); return false; } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		}
 		// Keep activities (including imported order/event references); detach only this local link.
-		if ( false === $wpdb->update( $tables['activities'], array( $key => null ), array( $key => $id ) ) || 1 !== $wpdb->delete( $table, array( 'id' => $id ) ) ) {
+		if ( false === $wpdb->update( $tables['activities'], array( $key => null ), array( $key => $id ) ) || 1 !== $wpdb->delete( $table, array( 'id' => $id ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 			$wpdb->query( 'ROLLBACK' ); return false;
 		}
-		if ( false === $wpdb->query( 'COMMIT' ) ) { $wpdb->query( 'ROLLBACK' ); return false; }
+		if ( false === $wpdb->query( 'COMMIT' ) ) { $wpdb->query( 'ROLLBACK' ); return false; } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		ContactPanda_Store::block_reimport( $entity, 'contacts' === $entity ? ( $record['email'] ?? '' ) : ( $record['name'] ?? '' ) );
 		return true;
 	}
 
 	public static function handle() {
-		if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) || ! current_user_can( 'manage_options' ) || ! self::available() ) wp_die( esc_html__( 'This action requires an administrator and standalone ContactPanda mode.', 'contactpanda' ), '', array( 'response' => 403 ) );
+		if ( 'POST' !== strtoupper( sanitize_key( wp_unslash( $_SERVER['REQUEST_METHOD'] ?? '' ) ) ) || ! current_user_can( 'manage_options' ) || ! self::available() ) wp_die( esc_html__( 'This action requires an administrator and standalone ContactPanda mode.', 'contactpanda' ), '', array( 'response' => 403 ) );
 		check_admin_referer( 'contactpanda_record_action' );
 		$entity = isset( $_POST['entity'] ) && is_string( $_POST['entity'] ) ? sanitize_key( wp_unslash( $_POST['entity'] ) ) : '';
 		$operation = isset( $_POST['operation'] ) && is_string( $_POST['operation'] ) ? sanitize_key( wp_unslash( $_POST['operation'] ) ) : '';
-		$ids = isset( $_POST['ids'] ) && is_array( $_POST['ids'] ) ? array_values( array_unique( array_filter( array_map( static function ( $id ) { return is_scalar( $id ) && preg_match( '/^[1-9][0-9]*$/D', (string) $id ) ? absint( $id ) : 0; }, $_POST['ids'] ) ) ) ) : array();
-		if ( '1' === ( $_POST['direct_confirmed'] ?? '' ) && ! empty( $_POST['direct_id'] ) ) {
+		$ids = isset( $_POST['ids'] ) && is_array( $_POST['ids'] ) ? array_values( array_unique( array_filter( array_map( static function ( $id ) { return is_scalar( $id ) && preg_match( '/^[1-9][0-9]*$/D', (string) $id ) ? absint( $id ) : 0; }, wp_unslash( $_POST['ids'] ) ) ) ) ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- IDs are validated by the adjacent decimal-only scalar callback and converted with absint; nested arrays and malformed IDs are rejected before any change.
+		if ( '1' === sanitize_key( wp_unslash( $_POST['direct_confirmed'] ?? '' ) ) && ! empty( $_POST['direct_id'] ) ) {
 			$ids = array( absint( $_POST['direct_id'] ) );
 			$operation = sanitize_key( wp_unslash( $_POST['direct_operation'] ?? '' ) );
 			$_POST['confirmed'] = '1';
 		}
-		if ( ! self::valid_entity( $entity ) || ! in_array( $operation, array( 'trash', 'restore', 'purge' ), true ) || ! $ids || count( $ids ) > 50 || ( 'purge' === $operation && '1' !== ( $_POST['confirmed'] ?? '' ) ) ) wp_die( esc_html__( 'Select records and explicitly confirm permanent deletion.', 'contactpanda' ), '', array( 'response' => 400 ) );
+		if ( ! self::valid_entity( $entity ) || ! in_array( $operation, array( 'trash', 'restore', 'purge' ), true ) || ! $ids || count( $ids ) > 50 || ( 'purge' === $operation && '1' !== sanitize_key( wp_unslash( $_POST['confirmed'] ?? '' ) ) ) ) wp_die( esc_html__( 'Select records and explicitly confirm permanent deletion.', 'contactpanda' ), '', array( 'response' => 400 ) );
 		$changed = 0;
 		foreach ( $ids as $id ) if ( self::change( $entity, $id, $operation, true ) ) $changed++;
 		$redirect = self::url( $entity, 0, 'trash' !== $operation );
@@ -109,14 +109,14 @@ final class ContactPanda_Trash {
 		if ( ! current_user_can( 'manage_options' ) ) wp_die( esc_html__( 'This action requires an administrator and standalone ContactPanda mode.', 'contactpanda' ) );
 		echo '<div class="wrap"><h1>' . esc_html__( 'Trash', 'contactpanda' ) . '</h1>';
 		if ( ! self::available() ) { echo '<p>' . esc_html__( 'Trash is available only for standalone ContactPanda records. Groundhogg records cannot be deleted here.', 'contactpanda' ) . '</p></div>'; return; }
-		$entity = isset( $_GET['entity'] ) && 'companies' === $_GET['entity'] ? 'companies' : 'contacts';
+		$entity = isset( $_GET['entity'] ) && 'companies' === $_GET['entity'] ? 'companies' : 'contacts'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Administrator-only display of sanitized trash filters/notices; changes run in handle() with capability, nonce and explicit purge confirmation.
 		$trashed = true;
-		$page = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
-		$id = isset( $_GET['record'] ) ? absint( $_GET['record'] ) : 0;
-		$search = isset( $_GET['s'] ) && is_string( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : '';
+		$page = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Administrator-only display of sanitized trash filters/notices; changes run in handle() with capability, nonce and explicit purge confirmation.
+		$id = isset( $_GET['record'] ) ? absint( $_GET['record'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Administrator-only display of sanitized trash filters/notices; changes run in handle() with capability, nonce and explicit purge confirmation.
+		$search = isset( $_GET['s'] ) && is_string( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Administrator-only display of sanitized trash filters/notices; changes run in handle() with capability, nonce and explicit purge confirmation.
 		echo '<p>' . esc_html__( 'Only ContactPanda records are affected. WordPress users, orders, invoices, events, Groundhogg records and external source data are never deleted.', 'contactpanda' ) . '</p>';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		if ( isset( $_GET['changed'], $_GET['failed'] ) ) echo '<div class="notice notice-info"><p>' . esc_html( sprintf( __( 'Changed: %1$d. Failed or no longer in the required state: %2$d.', 'contactpanda' ), absint( $_GET['changed'] ), absint( $_GET['failed'] ) ) ) . '</p></div>';
+		if ( isset( $_GET['changed'], $_GET['failed'] ) ) echo '<div class="notice notice-info"><p>' . esc_html( sprintf( __( 'Changed: %1$d. Failed or no longer in the required state: %2$d.', 'contactpanda' ), absint( $_GET['changed'] ), absint( $_GET['failed'] ) ) ) . '</p></div>'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Administrator-only display of sanitized trash filters/notices; changes run in handle() with capability, nonce and explicit purge confirmation.
 		echo '<p class="description">' . esc_html__( 'Move records to Trash from the People or Companies list. This page only restores or permanently deletes records that are already in Trash.', 'contactpanda' ) . '</p>';
 		$result = self::records( $entity, $trashed, $page, $search, $id );
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_record_action"><input type="hidden" name="entity" value="' . esc_attr( $entity ) . '">';
@@ -125,7 +125,7 @@ final class ContactPanda_Trash {
 		foreach ( array( 'contacts' => __( 'People', 'contactpanda' ), 'companies' => __( 'Companies', 'contactpanda' ) ) as $key => $label ) echo '<a class="button' . ( $entity === $key ? ' is-active' : '' ) . '" href="' . esc_url( self::url( $key, 0, $trashed ) ) . '">' . esc_html( $label ) . '</a>';
 		echo '</span><label><span class="screen-reader-text">' . esc_html__( 'Bulk actions', 'contactpanda' ) . '</span><select name="operation">';
 		$operations = array( 'restore' => __( 'Restore', 'contactpanda' ), 'purge' => __( 'Delete permanently', 'contactpanda' ) );
-		$selected_operation = isset( $_GET['operation'] ) && is_string( $_GET['operation'] ) ? sanitize_key( wp_unslash( $_GET['operation'] ) ) : key( $operations );
+		$selected_operation = isset( $_GET['operation'] ) && is_string( $_GET['operation'] ) ? sanitize_key( wp_unslash( $_GET['operation'] ) ) : key( $operations ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Administrator-only display of sanitized trash filters/notices; changes run in handle() with capability, nonce and explicit purge confirmation.
 		foreach ( $operations as $key => $label ) echo '<option value="' . esc_attr( $key ) . '"' . ( $selected_operation === $key ? ' selected' : '' ) . '>' . esc_html( $label ) . '</option>';
 		echo '</select></label><button class="button" data-trash-apply>' . esc_html__( 'Apply', 'contactpanda' ) . '</button><span class="contactpanda-trash-search"><input type="search" value="' . esc_attr( $search ) . '" placeholder="' . esc_attr__( 'Search', 'contactpanda' ) . '" data-trash-search><button type="button" class="button" data-trash-search-submit>' . esc_html__( 'Search', 'contactpanda' ) . '</button></span></div><p class="contactpanda-trash-confirm"><label><input type="checkbox" name="confirmed" value="1" data-trash-confirm> ' . esc_html__( 'I explicitly confirm the selected action.', 'contactpanda' ) . '</label><span class="description"> ' . esc_html__( 'Required only for permanent deletion.', 'contactpanda' ) . '</span></p>';
 		echo '<table class="widefat striped"><thead><tr><th>' . '<label><input type="checkbox" class="contactpanda-trash-select-all"><span class="screen-reader-text">' . esc_html__( 'Select all records on this page', 'contactpanda' ) . '</span></label></th><th>' . esc_html__( 'Name', 'contactpanda' ) . '</th><th>' . esc_html__( 'Deleted at', 'contactpanda' ) . '</th><th>' . esc_html__( 'Actions', 'contactpanda' ) . '</th></tr></thead><tbody>';

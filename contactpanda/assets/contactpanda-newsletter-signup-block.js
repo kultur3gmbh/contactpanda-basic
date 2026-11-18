@@ -10,17 +10,17 @@
 		title: i18n.__( 'Panda – Newsletter signup', 'contactpanda' ),
 		icon: 'email-alt',
 		category: 'widgets',
-		attributes: { layout: { type: 'string', default: 'one-line' } },
+		attributes: { layout: { type: 'string', default: 'compact' } },
 		edit: function ( props ) {
 			return el(
 				'div',
 				{},
 				el( InspectorControls, {}, el( PanelBody, { title: i18n.__( 'Layout', 'contactpanda' ) }, el( SelectControl, {
-					label: i18n.__( 'Rows', 'contactpanda' ),
+					label: i18n.__( 'Layout', 'contactpanda' ),
 					value: props.attributes.layout,
 					options: [
-						{ label: i18n.__( 'One line', 'contactpanda' ), value: 'one-line' },
-						{ label: i18n.__( 'Two lines', 'contactpanda' ), value: 'two-line' }
+						{ label: i18n.__( 'Full width', 'contactpanda' ), value: 'wide' },
+						{ label: i18n.__( 'Compact and responsive', 'contactpanda' ), value: 'compact' }
 					],
 					onChange: function ( value ) { props.setAttributes( { layout: value } ); }
 				} ) ) ),

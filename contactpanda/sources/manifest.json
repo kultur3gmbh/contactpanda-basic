@@ -1,0 +1,47 @@
+{
+  "formatter": "Prettier 3.6.2; babel parser, singleQuote=true, useTabs=true, printWidth=100",
+  "files": [
+    {
+      "runtime": "assets/contactpanda-admin-ui.js",
+      "readable": "sources/contactpanda-admin-ui.js",
+      "sha256": "22bf3035a86f5a43c16854cf596e1f3cf1b8d4d36c413abd801232aba7623ff0",
+      "syntax_tree_matches": true
+    },
+    {
+      "runtime": "assets/contactpanda-admin.js",
+      "readable": "sources/contactpanda-admin.js",
+      "sha256": "0299ab71c05fc7f0813200102cfb741a2cffbf2b11241655604a659e8567f620",
+      "syntax_tree_matches": true
+    },
+    {
+      "runtime": "assets/contactpanda-campaigns.js",
+      "readable": "sources/contactpanda-campaigns.js",
+      "sha256": "1169f879f59751cb3cf2ac299bbcd6ebb6490bc95b9cb18e5d787d804ad96bbb",
+      "syntax_tree_matches": true
+    },
+    {
+      "runtime": "assets/contactpanda-inline-search.js",
+      "readable": "sources/contactpanda-inline-search.js",
+      "sha256": "e71f91875e9eaf5cf2f9f16609a085db2ab4f3c822eee106aab93cfe07626f8a",
+      "syntax_tree_matches": true
+    },
+    {
+      "runtime": "assets/contactpanda-newsletters.js",
+      "readable": "sources/contactpanda-newsletters.js",
+      "sha256": "32852297d7bb7aa6b60d851f1f51fe47970790386917aa6947b3e55c6be4b1ce",
+      "syntax_tree_matches": true
+    },
+    {
+      "runtime": "assets/contactpanda-selections.js",
+      "readable": "sources/contactpanda-selections.js",
+      "sha256": "e96ee721f9eed9db25ef2357e749c23e53e94cea9b3227e6d730c4d279df5b59",
+      "syntax_tree_matches": true
+    },
+    {
+      "runtime": "assets/panda-transfer-ui.js",
+      "readable": "sources/panda-transfer-ui.js",
+      "sha256": "ddbce6e5d3a87ac79c5014d0d6d9ff7b30d9e8e78068ffa80ee278f7d902af16",
+      "syntax_tree_matches": true
+    }
+  ]
+}

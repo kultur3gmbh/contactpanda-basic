@@ -114,3 +114,5 @@ body {
 		flex-direction: column;
 	}
 }
+
+.cp-unsubscribe-reason{display:grid;gap:6px;text-align:left;margin-bottom:16px}.cp-unsubscribe-reason textarea{width:100%;box-sizing:border-box;font:inherit}

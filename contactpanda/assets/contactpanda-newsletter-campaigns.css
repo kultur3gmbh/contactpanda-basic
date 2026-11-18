@@ -18,3 +18,9 @@
 	margin: 8px 0 2px;
 	font-size: 28px;
 }
+
+.contactpanda-interaction { display:inline-flex; align-items:center; padding:4px 9px; border-radius:999px; font-size:12px; font-weight:600; white-space:nowrap; }
+.contactpanda-interaction--clicked { background:#fff3d6; color:#8a5a00; }
+.contactpanda-interaction--opened { background:#e7f6eb; color:#176b32; }
+.contactpanda-interaction--delivered { background:#e8efff; color:#244a9b; }
+.contactpanda-interaction--prepared { background:#ececec; color:#4f4f4f; }
