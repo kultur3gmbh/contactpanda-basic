@@ -1168,8 +1168,8 @@ The link is valid for 24 hours.',
 		$sections = array( 'woocommerce' => 'WooCommerce', 'messaging' => __( 'SMS and WhatsApp gateways', 'contactpanda' ) );
 		if ( self::groundhogg_active() || file_exists( WP_PLUGIN_DIR . '/groundhogg/groundhogg.php' ) ) $sections['groundhogg'] = 'Groundhogg';
 		$sections = (array) apply_filters( 'contactpanda_integration_sections', $sections );
-		if ( 'email' === ( $_GET['integration_section'] ?? '' ) ) { ContactPanda_Newsletters::render_settings(); return; }
 		$current = isset( $_GET['integration_section'] ) ? sanitize_key( wp_unslash( $_GET['integration_section'] ) ) : 'woocommerce'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- navigation only.
+		if ( 'email' === $current ) { ContactPanda_Basic_Newsletters::render_settings(); return; }
 		if ( ! isset( $sections[ $current ] ) ) $current = 'woocommerce';
 		echo '<nav class="nav-tab-wrapper contactpanda-settings-subtabs">'; foreach ( $sections as $key => $label ) echo '<a class="nav-tab ' . ( $current === $key ? 'nav-tab-active' : '' ) . '" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-settings&tab=integrations&integration_section=' . sanitize_key( $key ) ) ) . '">' . esc_html( $label ) . '</a>'; echo '</nav>';
 		if ( 'woocommerce' === $current && class_exists( 'WooCommerce' ) ) {
