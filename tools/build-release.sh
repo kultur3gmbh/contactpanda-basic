@@ -29,10 +29,22 @@ if [[ -z "$basic_version" || -z "$basic_requires" || -z "$basic_requires_php" ||
   exit 1
 fi
 
-mkdir -p dist
-basic_zip="dist/contactpanda-basic-${basic_version}.zip"
-wporg_zip="dist/contactpanda-basic-${basic_version}-wordpress-org.zip"
+output_dir="${PANDA_OUTPUT_DIR:-/Users/matthias/Documents/Codex/Outputs}"
+mkdir -p "$output_dir"
+output_dir="$(cd "$output_dir" && pwd)"
+basic_zip="$output_dir/contactpanda-basic-${basic_version}.zip"
+wporg_zip="$output_dir/contactpanda-basic-${basic_version}-wordpress-org.zip"
 git archive --format=zip --prefix=contactpanda/ HEAD:contactpanda > "$wporg_zip"
+python3 - "$wporg_zip" <<'PYCODE'
+from pathlib import Path
+import io, sys, zipfile
+path = Path(sys.argv[1])
+with zipfile.ZipFile(io.BytesIO(path.read_bytes())) as source:
+    files = {name: source.read(name) for name in source.namelist() if Path(name).name != '.DS_Store'}
+with zipfile.ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as target:
+    for name, data in files.items():
+        target.writestr(name, data)
+PYCODE
 
 build_dir="$(mktemp -d)"
 trap 'rm -rf "$build_dir"' EXIT
@@ -40,8 +52,20 @@ unzip -q "$wporg_zip" -d "$build_dir"
 cp tools/github/class-contactpanda-github-updater.php "$build_dir/contactpanda/includes/"
 (
   cd "$build_dir"
-  zip -qr "$project_root/$basic_zip" contactpanda
+  zip -qr "$build_dir/contactpanda-built.zip" contactpanda
 )
+mv "$build_dir/contactpanda-built.zip" "$basic_zip"
+# WordPress.org language packs are distributed separately; keep catalogs in GitHub ZIPs.
+python3 - "$wporg_zip" <<'PYCODE'
+from pathlib import Path
+import io, sys, zipfile
+path = Path(sys.argv[1])
+with zipfile.ZipFile(io.BytesIO(path.read_bytes())) as source:
+    files = {name: source.read(name) for name in source.namelist() if not name.endswith((".po", ".mo"))}
+with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as target:
+    for name, data in files.items():
+        target.writestr(name, data)
+PYCODE
 unzip -tq "$basic_zip" >/dev/null
 archive_version="$(unzip -p "$basic_zip" contactpanda/contactpanda.php | awk -F': ' '/^ \* Version:/{print $2; exit}')"
 if [[ "$archive_version" != "$basic_version" ]]; then
@@ -60,7 +84,7 @@ fi
 
 printf '{\n  "slug": "contactpanda",\n  "version": "%s",\n  "requires": "%s",\n  "requires_php": "%s",\n  "tested": "%s",\n  "sha256": "%s"\n}\n' \
   "$basic_version" "$basic_requires" "$basic_requires_php" "$basic_tested" "$basic_sha256" \
-  > dist/contactpanda-update.json
+  > "$output_dir/contactpanda-update.json"
 
 echo "Created $basic_zip, $wporg_zip, and dist/contactpanda-update.json"
 

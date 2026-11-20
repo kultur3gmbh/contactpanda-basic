@@ -29,6 +29,7 @@ jobs:
           node-version: '24'
       - name: Build installable ZIP files
         env:
+          PANDA_OUTPUT_DIR: dist
           CONTACTPANDA_TESTED_WP: ${{ inputs.tested_wordpress }}
         run: ./tools/build-release.sh
       - uses: actions/upload-artifact@v4
