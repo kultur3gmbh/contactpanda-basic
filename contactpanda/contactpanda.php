@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
- * Version: 0.9.114
+ * Version: 0.9.115
  * Author: Kultur3 GmbH
  * License: GPLv3
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.9.114' );
+define( 'CONTACTPANDA_VERSION', '0.9.115' );
 // Keep browser caches independent from the public plugin version so that
 // corrected admin interactions are loaded even for same-version test builds.
 define( 'CONTACTPANDA_ASSET_VERSION', CONTACTPANDA_VERSION . '-20261112-2' );
@@ -288,9 +288,12 @@ function contactpanda_admin_ui_assets( $hook ) {
 		$theme_colors = ContactPanda_Basic_Newsletters::theme_colors();
 	}
 	wp_enqueue_style( 'contactpanda', CONTACTPANDA_URL . 'assets/contactpanda-admin.css', array(), CONTACTPANDA_ASSET_VERSION );
+	wp_enqueue_style( 'panda-action-buttons', CONTACTPANDA_URL . 'assets/panda-action-buttons.css', array( 'contactpanda' ), CONTACTPANDA_ASSET_VERSION );
+	wp_enqueue_style( 'panda-choice-controls', CONTACTPANDA_URL . 'assets/panda-choice-controls.css', array( 'contactpanda' ), CONTACTPANDA_ASSET_VERSION );
 	wp_enqueue_style( 'panda-editor-ui', CONTACTPANDA_URL . 'assets/panda-editor-ui.css', array( 'contactpanda' ), CONTACTPANDA_ASSET_VERSION );
 	wp_enqueue_media();
 	wp_enqueue_script( 'contactpanda-admin-ui', CONTACTPANDA_URL . 'assets/contactpanda-admin-ui.js', array( 'wp-api-fetch' ), CONTACTPANDA_ASSET_VERSION, true );
+	wp_enqueue_script( 'panda-theme-buttons', CONTACTPANDA_URL . 'assets/panda-theme-buttons.js', array(), CONTACTPANDA_ASSET_VERSION, true );
 	require_once __DIR__ . '/includes/class-panda-number-format.php';
 	wp_enqueue_script('panda-number-format',CONTACTPANDA_URL.'assets/panda-number-format.js',array(),CONTACTPANDA_ASSET_VERSION,true);
 	wp_localize_script('panda-number-format','PANDA_NUMBER_FORMAT',Panda_Number_Format::settings());

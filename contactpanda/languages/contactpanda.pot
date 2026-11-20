@@ -10586,3 +10586,55 @@ msgstr ""
 
 msgid "WordPress standard settings"
 msgstr ""
+
+
+msgid "Your areas"
+msgstr ""
+
+
+msgid "Edit contact address"
+msgstr ""
+
+
+msgid "Create and manage shop offers with PandaWoo Quick."
+msgstr ""
+
+
+msgid "Extend your WooCommerce shop with PandaWoo Pro."
+msgstr ""
+
+
+msgid "Create seasonal experiences with Panda Seasons Lite."
+msgstr ""
+
+
+msgid "Expand your seasonal campaigns with Panda Seasons Full."
+msgstr ""
+
+
+msgid "Manage website translations with Panda Translate."
+msgstr ""
+
+
+msgid "Publish multilingual content with Panda Translate Multilingual."
+msgstr ""
+
+
+msgid "Connect customer service with Panda Mercury Pro."
+msgstr ""
+
+
+msgid "Manage software licenses and updates with Panda License."
+msgstr ""
+
+
+msgid "Dashboard areas follow the available menu entries."
+msgstr ""
+
+
+msgid "Primary contact details are shown first; address edits can be cancelled."
+msgstr ""
+
+
+msgid "Consistent action buttons and centered selection controls."
+msgstr ""

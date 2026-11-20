@@ -1,7 +1,5 @@
 msgid ""
-msgstr ""
-"Content-Type: text/plain; charset=UTF-8\n"
-"Language: de_DE\n"
+msgstr "Project-Id-Version: contactpanda 0.9.115\nLanguage: de_DE\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\nContent-Transfer-Encoding: 8bit\nPlural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgid "Website owner"
 msgstr "Website-Verantwortliche"
@@ -9544,3 +9542,55 @@ msgstr "Es sind keine zusätzlichen Anbieter-Zugangsdaten erforderlich."
 
 msgid "WordPress standard settings"
 msgstr "Einstellungen für WordPress-Standard"
+
+
+msgid "Your areas"
+msgstr "Deine Bereiche"
+
+
+msgid "Edit contact address"
+msgstr "Kontaktadresse bearbeiten"
+
+
+msgid "Create and manage shop offers with PandaWoo Quick."
+msgstr "Shopangebote mit PandaWoo Quick erstellen und verwalten."
+
+
+msgid "Extend your WooCommerce shop with PandaWoo Pro."
+msgstr "Den WooCommerce-Shop mit PandaWoo Pro erweitern."
+
+
+msgid "Create seasonal experiences with Panda Seasons Lite."
+msgstr "Saisonale Erlebnisse mit Panda Seasons Lite gestalten."
+
+
+msgid "Expand your seasonal campaigns with Panda Seasons Full."
+msgstr "Saisonale Kampagnen mit Panda Seasons Full erweitern."
+
+
+msgid "Manage website translations with Panda Translate."
+msgstr "Website-Übersetzungen mit Panda Translate verwalten."
+
+
+msgid "Publish multilingual content with Panda Translate Multilingual."
+msgstr "Mehrsprachige Inhalte mit Panda Translate Multilingual veröffentlichen."
+
+
+msgid "Connect customer service with Panda Mercury Pro."
+msgstr "Kundenservice mit Panda Mercury Pro verbinden."
+
+
+msgid "Manage software licenses and updates with Panda License."
+msgstr "Softwarelizenzen und Updates mit Panda License verwalten."
+
+
+msgid "Dashboard areas follow the available menu entries."
+msgstr "Die Dashboard-Bereiche entsprechen den verfügbaren Menüeinträgen."
+
+
+msgid "Primary contact details are shown first; address edits can be cancelled."
+msgstr "Primäre Kontaktdaten stehen zuerst; Adressänderungen lassen sich abbrechen."
+
+
+msgid "Consistent action buttons and centered selection controls."
+msgstr "Einheitliche Aktionsbuttons und mittig ausgerichtete Auswahlfelder."

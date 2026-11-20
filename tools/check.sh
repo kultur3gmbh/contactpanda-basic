@@ -16,6 +16,7 @@ if command -v php >/dev/null 2>&1; then
   php tests/extension-meta.php || status=1
   php tests/search-groundhogg.php || status=1
   if [[ -n "${CONTACTPANDA_TEST_WP_ROOT:-}" ]]; then
+    if [[ "${PANDA_TEST_CORRECTIONS:-}" == "1" ]]; then php tests/current-corrections-integration.php || status=1; fi
     php tests/person-selections-integration.php || status=1
     php tests/account-address-authority.php || status=1
     php tests/person-profile-corrections.php || status=1

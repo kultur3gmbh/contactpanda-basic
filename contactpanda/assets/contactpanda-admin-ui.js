@@ -10,7 +10,7 @@
 	var actionDefinitions = {
 		doorClosed: {customIcon: 'door-closed'}, doorOpen: {customIcon: 'door-open'},
 		view: {icon: 'visibility'}, edit: {icon: 'edit'}, duplicate: {icon: 'admin-page'}, delete: {icon: 'trash', state: 'danger'},
-		confirm: {icon: 'yes-alt', state: 'success'}, cancel: {icon: 'dismiss', state: 'danger'}, email: {icon: 'email-alt'}, report: {icon: 'chart-bar'},
+		confirm: {icon: 'yes-alt', state: 'success'}, cancel: {icon: 'dismiss'}, email: {icon: 'email-alt'}, phone: {icon: 'phone'}, report: {icon: 'chart-bar'},
 		external: {icon: 'external'}, publish: {icon: 'megaphone', state: 'primary'}, archive: {icon: 'archive'}, deactivate: {customIcon: 'power', state: 'danger'},
 		remove: {icon: 'minus'}, refresh: {icon: 'update'}, website: {icon: 'admin-site-alt3'}, export: {customIcon: 'file-output'}, import: {customIcon: 'file-input'},
 		download: {icon: 'download'}, add: {icon: 'plus-alt2', state: 'primary'}, drag: {icon: 'move'}, moveUp: {icon: 'arrow-up-alt2'}, moveDown: {icon: 'arrow-down-alt2'},
@@ -464,6 +464,7 @@
 
 	function actionIcon(control) {
 		if (!control || control.dataset.contactpandaActionReady === '1') return;
+		control.classList.add('button', control.classList.contains('panda-button-compact') ? 'panda-button-compact' : 'panda-button-regular');
 		var label = (control.getAttribute('aria-label') || control.getAttribute('title') || control.textContent || '').trim().replace(/\s+/g, ' ');
 		var action = control.dataset.contactpandaAction || '';
 		if (!action) actionIcons.some(function (entry) { if (entry[0].test(label)) { action = entry[1]; return true; } return false; });
@@ -472,7 +473,7 @@
 		visible.querySelectorAll('.dashicons,.contactpanda-action-icon,.cpls-action-icon,.screen-reader-text').forEach(function (node) { node.remove(); });
 		var labelled = control.dataset.contactpandaActionMode === 'labelled' || control.classList.contains('contactpanda-action-labelled') || (control.dataset.contactpandaActionMode !== 'icon' && !control.matches('.contactpanda-list-action,.cpls-action') && visible.textContent.trim() !== '');
 		if (!definition) {
-			if (control.querySelector('.dashicons')) { control.dataset.contactpandaActionReady = '1'; control.classList.add(labelled ? 'contactpanda-action-labelled' : 'contactpanda-list-action'); if (label) control.setAttribute('aria-label', label); control.querySelectorAll('.dashicons').forEach(function (icon) { icon.setAttribute('aria-hidden', 'true'); }); }
+			if (control.querySelector('.dashicons')) { control.dataset.contactpandaActionReady = '1'; control.classList.add(labelled ? 'contactpanda-action-labelled' : 'contactpanda-list-action'); if (label) control.setAttribute('aria-label', label); control.title = label; control.querySelectorAll('.dashicons').forEach(function (icon) { icon.setAttribute('aria-hidden', 'true'); }); }
 			return;
 		}
 		if (!label) label = action.replace(/([A-Z])/g, ' $1').replace(/^./, function (letter) { return letter.toUpperCase(); });
@@ -509,8 +510,16 @@
 				actionColumns.forEach(function (index) { var cell = row.children[index]; if (cell) cell.querySelectorAll('a,button').forEach(actionIcon); });
 			});
 		});
+		findAll(root, '.contactpanda-mail-link,.contactpanda-channel-action,.contactpanda-copy-shortcode,.contactpanda-system-email-block-actions button,.contactpanda-email-block-actions button,.contactpanda-block-actions button').forEach(function (control) {
+			control.classList.add('button', 'panda-button-compact');
+			control.dataset.contactpandaActionMode = 'icon';
+			if (control.matches('.contactpanda-mail-link')) control.dataset.contactpandaAction = 'email';
+			if (control.matches('.contactpanda-channel-action')) control.dataset.contactpandaAction = control.href.indexOf('tel:') === 0 ? 'phone' : 'email';
+			if (control.matches('.contactpanda-copy-shortcode')) control.dataset.contactpandaAction = 'duplicate';
+			actionIcon(control);
+		});
 		findAll(root, [
-			'[data-contactpanda-action]', '.contactpanda-list-action', '.contactpanda-person-row-action', '.contactpanda-inline-row-action', '.contactpanda-eye-action', '.contactpanda-trash-row-action',
+			'[data-contactpanda-action]' , '.contactpanda-list-action', '.contactpanda-person-row-action', '.contactpanda-inline-row-action', '.contactpanda-eye-action', '.contactpanda-trash-row-action',
 			'.contactpanda-form-actions a', '.contactpanda-form-actions button', '.contactpanda-order-actions a', '.contactpanda-order-actions button',
 			'.contactpanda-template-actions a', '.contactpanda-template-actions button', '.contactpanda-gallery-row-actions a', '.contactpanda-gallery-row-actions button',
 			'.contactpanda-system-email-block-actions a', '.contactpanda-system-email-block-actions button', '.contactpanda-system-email-add a', '.contactpanda-system-email-add button',
@@ -524,7 +533,7 @@
 
 	function largeActionIcon(control) {
 		if (!control || control.dataset.contactpandaLargeActionReady === '1') return;
-		if (control.matches('.button-small,.button-link,.button-link-delete,[data-contactpanda-action-mode="icon"]') || control.closest(compactActionContainers + ',.wp-picker-container,.contactpanda-unified-color,.media-modal,.wp-editor-wrap,.mce-toolbar,.components-toolbar')) return;
+		if (control.matches('.panda-button-compact,.button-small,.button-link,.button-link-delete,[data-contactpanda-action-mode="icon"]') || control.closest(compactActionContainers + ',.wp-picker-container,.contactpanda-unified-color,.media-modal,.wp-editor-wrap,.mce-toolbar,.components-toolbar')) return;
 		var label = (control.value || control.textContent || control.getAttribute('aria-label') || control.getAttribute('title') || '').trim().replace(/\s+/g, ' ');
 		var action = control.dataset.contactpandaAction || '';
 		if (!action && /^(?:back(?: to)?|return(?: to)?|zurück|zurueck)(?:\s|$)/i.test(label)) action = 'back';
@@ -534,7 +543,7 @@
 		if (!label) return;
 		if (definition) control = proxyInputAction(control, label);
 		control.dataset.contactpandaLargeActionReady = '1';
-		control.classList.add('contactpanda-large-action');
+		control.classList.add('contactpanda-large-action', 'panda-button-regular');
 		if (action === 'delete' || action === 'deactivate') control.classList.add('is-danger');
 		if (control.classList.contains('button-primary') || action === 'publish') control.classList.add('is-primary');
 		if (control.disabled || control.getAttribute('aria-disabled') === 'true') control.classList.add('is-disabled');
@@ -586,8 +595,8 @@
 		findAll(root,'select[data-panda-searchable]').forEach(enhanceSearchableSelect);
 		findAll(root, '.contactpanda-wrap input[type="color"],.contactpanda-business-wrap input[type="color"],.pandawoo-pro-admin input[type="color"],.pandawoo-page input[type="color"],.pandawoo-page-shell input[type="color"],.panda-seasons-dashboard input[type="color"],.panda-seasons-free-dashboard input[type="color"],.panda-seasons-templates-page input[type="color"],.panda-seasons-preview-page input[type="color"],.cpls-wrap input[type="color"]').forEach(enhanceColorPicker);
 		findAll(root, '.contactpanda-image-picker-source,.contactpanda-newsletter-logo-setting').forEach(enhanceStaticImagePicker);
-		enhanceLargeActions(root || document);
 		enhanceListActions(root || document);
+		enhanceLargeActions(root || document);
 	}
 
 	window.ContactPandaAdminUI = Object.assign(window.ContactPandaAdminUI || {}, {enhance: enhance, enhanceColorPicker: enhanceColorPicker, createImagePicker: createImagePicker, createFilePicker: function(options) { return createImagePicker(Object.assign({},options,{fileMode:true})); }, enhanceListActions: enhanceListActions, enhanceLargeActions: enhanceLargeActions, actionDefinitions: actionDefinitions});

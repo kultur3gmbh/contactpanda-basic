@@ -1,0 +1,24 @@
+/* Panda action sizes: regular 42px, compact 32px. Shared, product-neutral tokens. */
+:root{--panda-button-height:42px;--panda-button-compact-height:32px;--panda-button-icon:18px;--panda-button-gap:6px;--panda-button-radius:5px;--panda-button-neutral:#5c5c5c}
+:root body .button.panda-button-compact,:root body .cpls-icon.panda-button-compact{box-sizing:border-box!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:var(--panda-button-gap)!important;width:auto!important;min-width:var(--panda-button-compact-height)!important;height:var(--panda-button-compact-height)!important;min-height:var(--panda-button-compact-height)!important;padding:4px 7px!important;margin:0!important;border:1px solid #c3c4c7!important;border-radius:var(--panda-button-radius)!important;background:#f6f7f7!important;color:#5c5c5c!important;font-size:13px!important;line-height:1.25!important;white-space:nowrap!important;box-shadow:none!important;vertical-align:middle!important}
+:root body .button.panda-button-compact:is(:hover,:focus){background:#e9e9e9!important;border-color:#5c5c5c!important;color:#333!important}
+:root body .button.panda-button-compact:focus-visible{outline:2px solid #5c5c5c!important;outline-offset:2px!important}
+:root body .button.panda-button-compact>.dashicons{display:inline-grid!important;place-items:center!important;flex:0 0 var(--panda-button-icon)!important;width:var(--panda-button-icon)!important;height:var(--panda-button-icon)!important;font-size:var(--panda-button-icon)!important;line-height:1!important;margin:0!important}
+:root body .button.panda-button-compact:is(:disabled,[aria-disabled=true]){opacity:.5!important;cursor:not-allowed!important}
+:root body .button.panda-button-compact[aria-busy=true]{cursor:progress!important}
+:root body .button.panda-button-compact:is(.is-delete,.is-danger){color:#b4232c!important}
+
+:root body .button.panda-button-compact[data-contactpanda-action-mode=icon]{width:var(--panda-button-compact-height)!important;min-width:var(--panda-button-compact-height)!important;padding:0!important}
+
+/* Both sizes share meaning, colors, alignment and feedback states. */
+:root body .button.panda-button-regular{box-sizing:border-box!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:var(--panda-button-gap)!important;width:auto!important;min-width:var(--panda-button-height)!important;height:var(--panda-button-height)!important;min-height:var(--panda-button-height)!important;padding:8px 14px!important;margin:0!important;border:1px solid #c3c4c7!important;border-radius:var(--panda-button-radius)!important;background:#f6f7f7!important;color:var(--panda-button-neutral)!important;font-size:13px!important;line-height:1.25!important;white-space:nowrap!important;box-shadow:none!important;vertical-align:middle!important}
+:root body .button.panda-button-regular:is(.contactpanda-list-action,[data-contactpanda-action-mode=icon]){width:var(--panda-button-height)!important;padding:0!important}
+:root body .button.panda-button-regular>.dashicons{display:inline-grid!important;place-items:center!important;flex:0 0 var(--panda-button-icon)!important;width:var(--panda-button-icon)!important;height:var(--panda-button-icon)!important;font-size:var(--panda-button-icon)!important;line-height:1!important;margin:0!important}
+:root body .button:is(.panda-button-regular,.panda-button-compact):is(.button-primary,.is-primary){background:var(--panda-button-neutral)!important;border-color:var(--panda-button-neutral)!important;color:#fff!important}
+:root body .button:is(.panda-button-regular,.panda-button-compact):is(.button-primary,.is-primary):hover{background:#474747!important;border-color:#474747!important}
+:root body .button.panda-button-regular:hover{background:#e9e9e9!important;border-color:var(--panda-button-neutral)!important}
+:root body .button:is(.panda-button-regular,.panda-button-compact):focus-visible{outline:2px solid var(--panda-button-neutral)!important;outline-offset:2px!important}
+:root body .button:is(.panda-button-regular,.panda-button-compact):is(:disabled,[aria-disabled=true],.is-disabled){opacity:.5!important;cursor:not-allowed!important}
+:root body .button:is(.panda-button-regular,.panda-button-compact)[aria-busy=true]{opacity:.7!important;cursor:progress!important}
+:root body .button:is(.panda-button-regular,.panda-button-compact):is(.is-delete,.is-danger):not(.button-primary){color:#b4232c!important;border-color:#e6b9bd!important}
+:root body .button:is(.panda-button-regular,.panda-button-compact):is(.is-delete,.is-danger):hover{background:#fff1f2!important;border-color:#b4232c!important}

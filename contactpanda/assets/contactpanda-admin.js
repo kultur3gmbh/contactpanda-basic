@@ -136,6 +136,8 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 		if (button.classList.contains('contactpanda-tags-summary')) return openTags(button.closest('.contactpanda-tags-card'));
 		if (button.classList.contains('contactpanda-close-tags')) return closeTags(button.closest('.contactpanda-tags-card'));
 		if (button.classList.contains('contactpanda-remove-tag')) return manageTag(button, 'remove');
+		if (button.classList.contains('contactpanda-cancel-address')) return cancelAddress(button.closest('.contactpanda-address-form'));
+		if (button.classList.contains('contactpanda-edit-address')) return editAddress(button.closest('.contactpanda-address-form'));
 		if (button.classList.contains('contactpanda-save-address')) return saveAddress(button.closest('.contactpanda-address-form'));
 		if (button.classList.contains('contactpanda-salutation-value')) return openSalutation(button.closest('.contactpanda-salutation-field'));
 		if (button.classList.contains('contactpanda-save-salutation')) return saveSalutation(button.closest('.contactpanda-salutation-field').querySelector('.contactpanda-salutation-select'));
@@ -349,9 +351,13 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 					var own = other === row;
 					other.dataset.primary = own ? '1' : '0';
 					var badge = other.querySelector('.contactpanda-primary-badge'); if (badge) badge.hidden = !own;
+					var remove = other.querySelector('.contactpanda-delete-channel'); if (remove) remove.hidden = own;
 					var primary = other.querySelector('.contactpanda-channel-primary-input'); if (primary) { primary.checked = own; primary.disabled = own; }
 				});
+				group.querySelector('.contactpanda-channel-list').prepend(row);
 			}
+			var action = row.querySelector('.contactpanda-channel-action');
+			if (action) action.href = type === 'email' ? 'mailto:' + result.data.value : 'tel:' + result.data.value.replace(/[^0-9+]/g, '');
 			var deleteButton = row.querySelector('.contactpanda-delete-channel');
 			if (deleteButton) deleteButton.hidden = !!result.data.is_primary;
 			button.disabled = false;
@@ -1233,6 +1239,36 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 		if (!document.querySelector('.contactpanda-consent-modal:not([hidden])')) document.body.classList.remove('contactpanda-modal-open');
 	}
 
+	var addressSnapshots = new WeakMap();
+	function rememberAddress(form) {
+		addressSnapshots.set(form, Array.from(form.querySelectorAll('[data-key]')).map(function (field) { return {field: field, value: field.value}; }));
+	}
+	function initializeAddresses() {
+		document.querySelectorAll('.contactpanda-contact-address-form').forEach(rememberAddress);
+	}
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeAddresses); else initializeAddresses();
+	function cancelAddress(form) {
+		if (!form || form.querySelector('.contactpanda-save-address:disabled')) return;
+		(addressSnapshots.get(form) || []).forEach(function (saved) { saved.field.value = saved.value; saved.field.dispatchEvent(new Event('change', {bubbles: true})); });
+		var sync = form.querySelector('.contactpanda-sync-to-woocommerce'); if (sync) sync.checked = false;
+		var message = form.querySelector('.contactpanda-address-message'); if (message) { message.textContent = ''; message.classList.remove('is-success'); }
+		form.querySelector('.contactpanda-address-fields').hidden = true;
+		form.querySelector('.contactpanda-address-saved').hidden = false;
+		form.querySelector('.contactpanda-edit-address').focus({preventScroll: true});
+	}
+	function editAddress(form) {
+		if (!form) return;
+		form.querySelector('.contactpanda-address-saved').hidden = true;
+		form.querySelector('.contactpanda-address-fields').hidden = false;
+		var first = form.querySelector('[data-key]'); if (first) first.focus({preventScroll: true});
+	}
+	function acceptSavedAddress(form, data) {
+		if (data.values) form.querySelectorAll('[data-key]').forEach(function (field) { if (Object.prototype.hasOwnProperty.call(data.values, field.dataset.key)) field.value = data.values[field.dataset.key]; });
+		rememberAddress(form);
+		var saved = form.querySelector('.contactpanda-address-saved-text'); if (saved && data.display) saved.textContent = data.display;
+		var summary = document.querySelector('.contactpanda-address-summary-value'); if (summary && data.display && form.dataset.addressType === 'contact') summary.textContent = data.display;
+		var sync = form.querySelector('.contactpanda-sync-to-woocommerce'); if (sync) sync.checked = false;
+	}
 	function saveAddress(form) {
 		var button = form.querySelector('.contactpanda-save-address');
 		var message = form.querySelector('.contactpanda-address-message');
@@ -1247,11 +1283,13 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 		var syncToWooCommerce = form.querySelector('.contactpanda-sync-to-woocommerce');
 		if (syncToWooCommerce && syncToWooCommerce.checked) data.set('sync_to_woocommerce', '1');
 		button.disabled = true;
+		var cancel = form.querySelector('.contactpanda-cancel-address'); if (cancel) cancel.disabled = true;
 		message.classList.remove('is-success');
 		message.textContent = tr('savingAddress', 'Saving address…');
 		fetch(CONTACTPANDA_CONFIG.ajaxUrl, requestOptions(data))
 			.then(parseResponse)
 			.then(function (result) {
+				if (result.success || (result.data && result.data.address_saved)) acceptSavedAddress(form, result.data);
 				if (!result.success) throw new Error(result.data && result.data.message ? result.data.message : tr('saveFailed', 'Saving failed.'));
 				message.textContent = result.data.message;
 				message.classList.add('is-success');
@@ -1259,11 +1297,11 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 					var summary = document.querySelector('.contactpanda-address-summary-value');
 					if (summary) summary.textContent = result.data.display;
 				}
-				button.disabled = false;
+				button.disabled = false; if (cancel) cancel.disabled = false;
 				window.setTimeout(function () { message.textContent = ''; message.classList.remove('is-success'); }, 3000);
 			})
 			.catch(function (error) {
-				button.disabled = false;
+				button.disabled = false; if (cancel) cancel.disabled = false;
 				message.textContent = error.message;
 			});
 	}

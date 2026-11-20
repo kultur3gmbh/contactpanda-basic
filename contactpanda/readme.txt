@@ -4,7 +4,7 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.9.114
+Stable tag: 0.9.115
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -42,6 +42,11 @@ To reproduce an expanded copy, use Prettier 3.6.2 with parser babel, singleQuote
 The WordPress.org distribution is prepared for community translations through translate.wordpress.org. Existing PO/MO catalogs remain maintained for separate distributions and are omitted only from the WordPress.org package. Before a WordPress language pack is available, untranslated strings fall back to English.
 
 == Changelog ==
+
+= 0.9.115 =
+* Reorganized dashboard: statistics and available menu areas first; product recommendations last and only for products not installed.
+* Aligned radio/checkbox indicators, regular and compact action buttons, readable theme button previews, primary contact details first, right-aligned record actions, and cancellable contact-address editing.
+
 
 = 0.9.114 =
 * Compact customer forms, independent address editing, company tabs and person popup, searchable company selection, ambiguous-name category and shared choice controls.

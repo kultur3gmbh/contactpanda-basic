@@ -1696,6 +1696,7 @@ The link is valid for 24 hours.',
 			$type = 'customer';
 		}
 		wp_enqueue_style( 'contactpanda-registration', CONTACTPANDA_URL . 'assets/contactpanda-registration.css', array(), CONTACTPANDA_ASSET_VERSION );
+		wp_enqueue_script( 'panda-theme-buttons', CONTACTPANDA_URL . 'assets/panda-theme-buttons.js', array(), CONTACTPANDA_ASSET_VERSION, true );
 		wp_enqueue_style( 'dashicons' );
 		wp_enqueue_script( 'contactpanda-registration', CONTACTPANDA_URL . 'assets/contactpanda-registration.js', array(), CONTACTPANDA_ASSET_VERSION, true );
 		wp_localize_script(
@@ -1781,6 +1782,7 @@ The link is valid for 24 hours.',
 			return current_user_can( 'manage_options' ) ? '<div class="contactpanda-registration-notice is-error">' . esc_html__( 'The separate ContactPanda newsletter signup is available only when the ContactPanda database is the active data source.', 'contactpanda' ) . '</div>' : '';
 		}
 		wp_enqueue_style( 'contactpanda-registration', CONTACTPANDA_URL . 'assets/contactpanda-registration.css', array(), CONTACTPANDA_ASSET_VERSION );
+		wp_enqueue_script( 'panda-theme-buttons', CONTACTPANDA_URL . 'assets/panda-theme-buttons.js', array(), CONTACTPANDA_ASSET_VERSION, true );
 		wp_enqueue_style( 'dashicons' );
 		$notice = self::consume_notice();
 		ob_start();
@@ -1815,6 +1817,7 @@ The link is valid for 24 hours.',
 		$settings = self::settings();
 		if ( empty( $settings['newsletter_enabled'] ) || 'none' === $settings['newsletter_display'] || ! ContactPanda_Store::standalone() ) return;
 		wp_enqueue_style( 'contactpanda-registration', CONTACTPANDA_URL . 'assets/contactpanda-registration.css', array(), CONTACTPANDA_ASSET_VERSION );
+		wp_enqueue_script( 'panda-theme-buttons', CONTACTPANDA_URL . 'assets/panda-theme-buttons.js', array(), CONTACTPANDA_ASSET_VERSION, true );
 		wp_enqueue_style( 'dashicons' );
 		// Footer-created forms still require their stylesheet when no embedded form enqueued it earlier.
 		wp_print_styles( 'contactpanda-registration' );
@@ -1947,6 +1950,7 @@ The link is valid for 24 hours.',
 			return $content;
 		}
 		wp_enqueue_style( 'contactpanda-registration', CONTACTPANDA_URL . 'assets/contactpanda-registration.css', array(), CONTACTPANDA_ASSET_VERSION );
+		wp_enqueue_script( 'panda-theme-buttons', CONTACTPANDA_URL . 'assets/panda-theme-buttons.js', array(), CONTACTPANDA_ASSET_VERSION, true );
 		wp_enqueue_style( 'dashicons' );
 		$html = self::render_front_notice( $notice );
 		return $html . $content;
