@@ -9594,3 +9594,9 @@ msgstr "Primäre Kontaktdaten stehen zuerst; Adressänderungen lassen sich abbre
 
 msgid "Consistent action buttons and centered selection controls."
 msgstr "Einheitliche Aktionsbuttons und mittig ausgerichtete Auswahlfelder."
+
+msgid "Form used for newsletter signup"
+msgstr "Formular für die Newsletter-Anmeldung"
+
+msgid "Compact"
+msgstr "Kompakt"

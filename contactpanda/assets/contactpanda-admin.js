@@ -1,5 +1,23 @@
 window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, values) { var words = String(query || '').trim().toLocaleLowerCase().split(/\s+/).filter(Boolean); return words.every(function (word) { return values.some(function (value) { return String(value || '').toLocaleLowerCase().indexOf(word) !== -1; }); }); }};
 (function () {
+	document.querySelectorAll('.contactpanda-registration-settings[data-registration-section="newsletter"]').forEach(function (form) {
+		var selectedForm = form.querySelector('[data-newsletter-form-selection] select');
+		var display = form.querySelector('#contactpanda-newsletter_display');
+		var layout = form.querySelector('#contactpanda-newsletter_layout');
+		var delay = form.querySelector('[data-newsletter-popup-delay]');
+		function updateNewsletterFields() {
+			var standard = !selectedForm || !selectedForm.value || selectedForm.value === '0';
+			form.querySelectorAll('[data-newsletter-standard]').forEach(function (group) {
+				group.hidden = !standard;
+			});
+			layout.disabled = !standard;
+			delay.hidden = display.value !== 'popup' && display.value !== 'both';
+			delay.querySelector('input').disabled = delay.hidden;
+		}
+		form.addEventListener('change', updateNewsletterFields);
+		updateNewsletterFields();
+	});
+
 	document.addEventListener('change', function (event) {
 		if (event.target.matches('.contactpanda-custom-field-form select[name="field_type"]')) {
 			var options = event.target.closest('form').querySelector('.contactpanda-custom-field-options');

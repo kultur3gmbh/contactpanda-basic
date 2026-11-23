@@ -10638,3 +10638,9 @@ msgstr ""
 
 msgid "Consistent action buttons and centered selection controls."
 msgstr ""
+
+msgid "Form used for newsletter signup"
+msgstr ""
+
+msgid "Compact"
+msgstr ""

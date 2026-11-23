@@ -128,9 +128,21 @@
 .contactpanda-newsletter-close{position:absolute;top:4px;right:6px;display:grid;place-items:center;width:32px;height:32px;padding:0;border:0;background:transparent;color:inherit;font:26px/1 sans-serif;cursor:pointer}
 .contactpanda-newsletter-bar{position:fixed;z-index:9999;inset:auto 0 0;padding:16px 40px 16px 18px;background:var(--content_bg_color,#fff);color:inherit;border-top:1px solid #cbd2da;box-shadow:0 -3px 15px #0002;max-height:65dvh;overflow:auto}
 .contactpanda-newsletter-bar[hidden]{display:none!important}.contactpanda-newsletter-bar-mobile{display:none}.contactpanda-newsletter-layout-bar .contactpanda-form-section{border:0;padding:0}.contactpanda-newsletter-layout-bar h3{display:none}
-@container(min-width:1050px){.contactpanda-newsletter-layout-bar .contactpanda-form-section{display:contents}.contactpanda-newsletter-layout-bar{display:flex;align-items:center;gap:12px}.contactpanda-newsletter-layout-bar .contactpanda-newsletter-fields{flex:3;grid-template-columns:repeat(4,minmax(0,1fr))}.contactpanda-newsletter-layout-bar .contactpanda-form-check{flex:1;font-size:12px}.contactpanda-newsletter-layout-bar .contactpanda-registration-submit{margin:0;flex:0 0 auto}}
 @media(max-width:767px){.contactpanda-newsletter-bar-desktop{display:none}.contactpanda-newsletter-bar-mobile{display:inline-flex;align-items:center;justify-content:center}.contactpanda-newsletter-bar{padding:10px 44px 10px 14px;text-align:center}}
-.contactpanda-newsletter-bar{container-type:inline-size}
+.contactpanda-newsletter-bar{container:panda-newsletter-bar / inline-size;box-sizing:border-box}
+.contactpanda-newsletter-layout-bar .contactpanda-form-check > span{overflow-wrap:break-word}
+@container panda-newsletter-bar (min-width:700px){
+	.contactpanda-newsletter-layout-bar{grid-template-columns:repeat(2,minmax(0,1fr)) fit-content(13rem);align-items:center;gap:12px}
+	.contactpanda-newsletter-layout-bar .contactpanda-form-section{display:contents}
+	.contactpanda-newsletter-layout-bar .contactpanda-newsletter-fields{grid-column:1/-1;grid-template-columns:repeat(4,minmax(0,1fr))}
+	.contactpanda-newsletter-layout-bar .contactpanda-form-check{min-width:0;font-size:13px}
+	.contactpanda-newsletter-layout-bar .contactpanda-registration-submit{margin:0;width:auto;min-width:0;max-width:13rem;white-space:normal}
+	.contactpanda-newsletter-layout-bar > .cf-turnstile{grid-column:1/-1}
+}
+@container panda-newsletter-bar (min-width:1150px){
+	.contactpanda-newsletter-layout-bar{grid-template-columns:minmax(0,3fr) repeat(2,minmax(155px,1fr)) fit-content(13rem)}
+	.contactpanda-newsletter-layout-bar .contactpanda-newsletter-fields{grid-column:auto}
+}
 .contactpanda-newsletter-signup .contactpanda-registration-submit,.contactpanda-newsletter-bar-mobile{align-items:center;justify-content:center;gap:8px}.contactpanda-newsletter-signup .contactpanda-registration-submit{display:inline-flex}.contactpanda-newsletter-signup .contactpanda-registration-submit .dashicons,.contactpanda-newsletter-bar-mobile .dashicons{flex:0 0 20px;color:inherit}
 
 /* Keep Safari selects and text inputs aligned even when the theme supplies different native sizes. */

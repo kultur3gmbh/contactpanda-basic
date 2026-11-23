@@ -483,3 +483,10 @@ body.contactpanda-modal-open{overflow:hidden}.contactpanda-mailing-modal{z-index
 /* Dashboard area navigation follows the installed menu and available width. */
 .contactpanda-dashboard-area-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}.contactpanda-dashboard-area{display:flex;align-items:center;gap:12px;min-width:0;padding:16px;border:1px solid #dfe5eb;border-radius:8px;color:#253342;text-decoration:none;background:#fff}.contactpanda-dashboard-area strong{flex:1;min-width:0}.contactpanda-dashboard-area:hover,.contactpanda-dashboard-area:focus-visible{background:#f6f7f7;border-color:#5c5c5c;color:#1d2327;outline:2px solid transparent}.contactpanda-dashboard-area:focus-visible{outline-color:#5c5c5c;outline-offset:2px}
 .contactpanda-people-table .column-actions{width:1%;text-align:right;padding-left:18px}.contactpanda-people-table .contactpanda-person-actions{justify-content:flex-end;flex-wrap:nowrap;gap:8px}.contactpanda-people-table .column-marketing{padding-right:8px}.contactpanda-address-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.contactpanda-address-fields[hidden],.contactpanda-address-saved[hidden]{display:none!important}.contactpanda-address-saved-text{overflow-wrap:anywhere}
+
+.contactpanda-registration-settings-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:20px}
+.contactpanda-registration-settings-grid > .contactpanda-settings-card{min-width:0;max-width:none;margin:0}
+.contactpanda-registration-settings .contactpanda-setting-row :is(select,input[type=email],input[type=text],textarea){box-sizing:border-box;max-width:100%}
+.contactpanda-registration-settings-grid [hidden]{display:none!important}
+.contactpanda-registration-settings-grid .wp-editor-wrap{min-width:0}
+@media(max-width:1050px){.contactpanda-registration-settings-grid{grid-template-columns:minmax(0,1fr)}}

@@ -103,8 +103,10 @@
 		'.contactpanda-wrap', '.contactpanda-business-wrap', '.contactpanda-dashboard',
 		'.contactpanda-newsletter-page', '.contactpanda-mailing-editor-page', '.contactpanda-mailing-details-page',
 		'.contactpanda-form-editor-page', '.contactpanda-flow-composer-page', '.contactpanda-helpdesk', '.contactpanda-tags-page',
+		'.contactpanda-detail-wrap', '.contactpanda-admin-modal', '.pm-wrap', '.panda-license-center', '.pwq-admin',
 		'.pandawoo-pro-admin', '.pandawoo-page', '.pandawoo-page-shell', '.panda-seasons-dashboard',
-		'.panda-seasons-free-dashboard', '.panda-seasons-templates-page', '.panda-seasons-preview-page', '.cpls-wrap', '.wrap'
+		'.panda-seasons-free-dashboard', '.panda-seasons-templates-page', '.panda-seasons-preview-page', '.cpls-wrap',
+		'.panda-editor', '.pandatranslate-admin', '.pandatranslate-text-admin', '.cpb-modal'
 	].join(',');
 	var compactActionContainers = [
 		'td', '.contactpanda-list-action', '.contactpanda-inline-row-action', '.contactpanda-template-actions',
@@ -562,6 +564,7 @@
 
 	function enhanceLargeActions(root) {
 		findAll(root, 'button.button,a.button,summary.button,input.button,input[type="submit"],input[type="button"],input[type="reset"],button[type="submit"],[data-contactpanda-action-mode="labelled"]').forEach(function (control) {
+			if (control.closest('#wpadminbar') || (!control.closest(largeActionRootSelector) && !control.hasAttribute('data-contactpanda-action'))) return;
 			largeActionIcon(control);
 		});
 	}

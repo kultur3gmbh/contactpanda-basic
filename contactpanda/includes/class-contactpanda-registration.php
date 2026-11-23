@@ -213,6 +213,29 @@ The link is valid for 24 hours.', 'contactpanda' ),
 		);
 	}
 
+	/** Capture only the active translation language, never recipient data. */
+	public static function translation_language_field() {
+		$language = is_callable( array( 'PandaTranslate_Frontend', 'current_language' ) ) ? PandaTranslate_Frontend::current_language() : '';
+		return $language ? '<input type="hidden" name="contactpanda_registration_language" value="' . esc_attr( $language ) . '">' : '';
+	}
+
+	private static function submitted_language() {
+		// The form handler independently checks its own nonce. This input only selects a published language.
+		return isset( $_POST['contactpanda_registration_language'] ) && is_string( $_POST['contactpanda_registration_language'] ) ? sanitize_key( wp_unslash( $_POST['contactpanda_registration_language'] ) ) : '';
+	}
+
+	private static function registration_language( $language ) {
+		return $language && is_callable( array( 'PandaTranslate_Edition', 'allows_language' ) ) && PandaTranslate_Edition::allows_language( $language ) ? $language : '';
+	}
+
+	private static function with_registration_language( $language, callable $callback ) {
+		$language = self::registration_language( $language );
+		if ( $language && is_callable( array( 'PandaTranslate_Stored_Templates', 'with_language' ) ) ) {
+			return PandaTranslate_Stored_Templates::with_language( $language, $callback );
+		}
+		return $callback();
+	}
+
 	private static function settings() {
 		$defaults = self::defaults();
 		$stored = (array) get_option( self::OPTION, array() );
@@ -298,6 +321,25 @@ The link is valid for 24 hours.',
 			'newsletter_dismiss_hours' => min( 8760, absint( $input['newsletter_dismiss_hours'] ?? 24 ) ),
 			'newsletter_error'     => isset( $input['newsletter_error'] ) ? sanitize_textarea_field( $input['newsletter_error'] ) : $defaults['newsletter_error'],
 		);
+		$scope = sanitize_key( $input['settings_section'] ?? '' );
+		$account_fields = array( 'privacy_page_id', 'admin_email', 'verified_page_id', 'verified_delay', 'confirmation_subject', 'confirmation_message' );
+		$sections = array(
+			'customers' => array_merge( $account_fields, array( 'enabled', 'require_email_verify', 'allow_marketing', 'replace_registration', 'registration_page_id', 'terms_page_id', 'success_page_id', 'customer_submission_message', 'customer_verified_message' ) ),
+			'business' => array_merge( $account_fields, array( 'business_enabled', 'require_vat', 'submission_message', 'verified_message' ) ),
+			'newsletter' => array_merge( array( 'privacy_page_id' ), array_filter( array_keys( $defaults ), static function ( $key ) { return 0 === strpos( $key, 'newsletter_' ); } ) ),
+		);
+		if ( isset( $sections[ $scope ] ) ) {
+			$current = wp_parse_args( (array) get_option( self::OPTION, array() ), $defaults );
+			if ( 'newsletter' !== $scope && ! self::customer_registration_enabled() ) {
+				return $current;
+			}
+			$allowed = array_flip( $sections[ $scope ] );
+			foreach ( array( 'newsletter_layout', 'newsletter_popup_delay' ) as $optional ) {
+				if ( ! array_key_exists( $optional, $input ) ) unset( $allowed[ $optional ] );
+			}
+			return array_replace( $current, array_intersect_key( $sanitized, $allowed ) );
+		}
+
 		if ( ! self::customer_registration_enabled() ) {
 			$current = wp_parse_args( (array) get_option( self::OPTION, array() ), $defaults );
 			foreach ( array( 'enabled', 'business_enabled', 'require_email_verify', 'require_approval', 'require_vat', 'allow_marketing', 'replace_registration', 'registration_page_id', 'privacy_page_id', 'terms_page_id', 'admin_email', 'success_page_id', 'submission_message', 'customer_submission_message', 'confirmation_subject', 'confirmation_message', 'verified_message', 'customer_verified_message', 'verified_page_id', 'verified_delay' ) as $key ) {
@@ -514,36 +556,34 @@ The link is valid for 24 hours.',
 		echo '<nav class="nav-tab-wrapper contactpanda-settings-subtabs">';
 		$registration_sections = array( 'customers' => __( 'General customer registration', 'contactpanda' ), 'business' => __( 'Business customers', 'contactpanda' ), 'newsletter' => __( 'Newsletter signup', 'contactpanda' ) );
 		foreach ( $registration_sections as $key => $label ) echo '<a class="nav-tab ' . ( $section === $key ? 'nav-tab-active' : '' ) . '" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-settings&tab=registration&registration_section=' . $key ) ) . '">' . esc_html( $label ) . '</a>';
-		echo '</nav><form method="post" action="options.php"><section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Customer account registration', 'contactpanda' ) . '</h2>';
-		settings_fields( 'contactpanda_registration' );
-		echo '<div class="contactpanda-registration-panel"' . ( 'customers' === $section ? '' : ' hidden' ) . '>';
-		self::checkbox_setting( 'enabled', __( 'Enable standard customer registration', 'contactpanda' ), __( 'Makes the standard customer account form available through [contactpanda_registration].', 'contactpanda' ), $settings );
-		self::checkbox_setting( 'require_email_verify', __( 'Require email confirmation', 'contactpanda' ), __( 'The account remains blocked until the email address has been confirmed.', 'contactpanda' ), $settings );
-		echo '<input type="hidden" name="' . esc_attr( self::OPTION ) . '[allow_marketing]" value="1"><p class="description">' . esc_html__( 'Every account registration offers an optional, unchecked marketing consent. Account registration never implies marketing consent.', 'contactpanda' ) . '</p>';
-		self::checkbox_setting( 'replace_registration', __( 'Replace the standard WordPress registration', 'contactpanda' ), __( 'Redirects the public WordPress registration to the selected ContactPanda registration page. Administrative login remains available.', 'contactpanda' ), $settings );
-		self::page_setting( 'registration_page_id', __( 'Registration page', 'contactpanda' ), $settings );
-		if ( ! $settings['registration_page_id'] ) echo '<div class="contactpanda-setting-row"><strong>' . esc_html__( 'Built-in registration page', 'contactpanda' ) . '</strong><p><a class="button" href="' . esc_url( self::virtual_registration_url() ) . '" target="_blank" rel="noopener">' . esc_html__( 'View registration page', 'contactpanda' ) . '</a></p><p class="description">' . esc_html__( 'ContactPanda uses a theme-compatible built-in page while no WordPress page is selected.', 'contactpanda' ) . '</p></div>';
-		self::page_setting( 'terms_page_id', __( 'Terms and conditions page', 'contactpanda' ), $settings );
-		self::page_setting( 'success_page_id', __( 'Page after successful submission', 'contactpanda' ), $settings );
-		self::textarea_setting( 'customer_submission_message', __( 'Text after standard customer registration', 'contactpanda' ), __( 'This text is displayed after a standard customer account registration.', 'contactpanda' ), $settings );
-		echo '</div><div class="contactpanda-registration-panel"' . ( 'business' === $section ? '' : ' hidden' ) . '>';
-		self::checkbox_setting( 'business_enabled', __( 'Offer business customer registration', 'contactpanda' ), __( 'Adds a separate business registration with company data and VAT ID validation.', 'contactpanda' ), $settings );
-		self::checkbox_setting( 'require_vat', __( 'Require VAT ID', 'contactpanda' ), __( 'A VAT ID is optional unless this setting is enabled. Every entered VAT ID must be successfully validated through EU VIES.', 'contactpanda' ), $settings );
-		self::textarea_setting( 'submission_message', __( 'Text after business customer registration', 'contactpanda' ), __( 'This text is displayed after a business customer registration.', 'contactpanda' ), $settings );
-		self::render_plus_promotion( 'registration-roles' );
-		echo '</div><div class="contactpanda-registration-panel"' . ( 'newsletter' === $section ? '' : ' hidden' ) . '>';
-		self::checkbox_setting( 'newsletter_enabled', __( 'Enable separate newsletter signup', 'contactpanda' ), __( 'Provides [contactpanda_newsletter_signup]. The form creates or updates a ContactPanda contact but never creates a WordPress user account.', 'contactpanda' ), $settings );
-		self::render_newsletter_form_settings( $settings );
-		self::text_setting( 'newsletter_subject', __( 'Newsletter confirmation subject', 'contactpanda' ), $settings );
-		echo '<div class="contactpanda-setting-row"><label for="contactpanda-newsletter-message"><strong>' . esc_html__( 'Newsletter confirmation email', 'contactpanda' ) . '</strong></label>';
-		wp_editor( $settings['newsletter_message'], 'contactpanda-newsletter-message', array( 'textarea_name' => self::OPTION . '[newsletter_message]', 'textarea_rows' => 8, 'media_buttons' => false, 'quicktags' => true ) );
-		echo '<p class="description">' . esc_html__( 'Available placeholders: {first_name}, {site_name}, {confirmation_link}.', 'contactpanda' ) . '</p></div>';
-		self::textarea_setting( 'newsletter_success', __( 'Text after newsletter signup', 'contactpanda' ), __( 'Shown after the form has been submitted.', 'contactpanda' ), $settings );
-		self::textarea_setting( 'newsletter_verified', __( 'Text after newsletter confirmation', 'contactpanda' ), __( 'Shown after the confirmation link has been opened.', 'contactpanda' ), $settings );
-		echo '</div>';
+		echo '</nav>';
+		if ( 'newsletter' === $section ) {
+			self::render_newsletter_registration_settings( $settings, false );
+			return;
+		}
+
+		self::registration_form_start( $section );
+		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html( $registration_sections[ $section ] ) . '</h2>';
+		if ( 'customers' === $section ) {
+			self::checkbox_setting( 'enabled', __( 'Enable standard customer registration', 'contactpanda' ), __( 'Makes the standard customer account form available through [contactpanda_registration].', 'contactpanda' ), $settings );
+			self::checkbox_setting( 'require_email_verify', __( 'Require email confirmation', 'contactpanda' ), __( 'The account remains blocked until the email address has been confirmed.', 'contactpanda' ), $settings );
+			echo '<input type="hidden" name="' . esc_attr( self::OPTION ) . '[allow_marketing]" value="1"><p class="description">' . esc_html__( 'Every account registration offers an optional, unchecked marketing consent. Account registration never implies marketing consent.', 'contactpanda' ) . '</p>';
+			self::checkbox_setting( 'replace_registration', __( 'Replace the standard WordPress registration', 'contactpanda' ), __( 'Redirects the public WordPress registration to the selected ContactPanda registration page. Administrative login remains available.', 'contactpanda' ), $settings );
+			self::page_setting( 'registration_page_id', __( 'Registration page', 'contactpanda' ), $settings );
+			if ( ! $settings['registration_page_id'] ) echo '<div class="contactpanda-setting-row"><strong>' . esc_html__( 'Built-in registration page', 'contactpanda' ) . '</strong><p><a class="button" href="' . esc_url( self::virtual_registration_url() ) . '" target="_blank" rel="noopener">' . esc_html__( 'View registration page', 'contactpanda' ) . '</a></p><p class="description">' . esc_html__( 'ContactPanda uses a theme-compatible built-in page while no WordPress page is selected.', 'contactpanda' ) . '</p></div>';
+			self::page_setting( 'terms_page_id', __( 'Terms and conditions page', 'contactpanda' ), $settings );
+			self::page_setting( 'success_page_id', __( 'Page after successful submission', 'contactpanda' ), $settings );
+		} else {
+			self::checkbox_setting( 'business_enabled', __( 'Offer business customer registration', 'contactpanda' ), __( 'Adds a separate business registration with company data and VAT ID validation.', 'contactpanda' ), $settings );
+			self::checkbox_setting( 'require_vat', __( 'Require VAT ID', 'contactpanda' ), __( 'A VAT ID is optional unless this setting is enabled. Every entered VAT ID must be successfully validated through EU VIES.', 'contactpanda' ), $settings );
+			self::render_plus_promotion( 'registration-roles' );
+		}
 		self::page_setting( 'privacy_page_id', __( 'Privacy policy page', 'contactpanda' ), $settings );
-		echo '<div class="contactpanda-registration-common"' . ( 'newsletter' === $section ? ' hidden' : '' ) . '>';
-		echo '<h3 class="contactpanda-settings-subheading">' . esc_html__( 'Double opt-in email', 'contactpanda' ) . '</h3>';
+		echo '<div class="contactpanda-setting-row"><label for="contactpanda-admin-email"><strong>' . esc_html__( 'Notification email address', 'contactpanda' ) . '</strong></label><input id="contactpanda-admin-email" class="regular-text" type="email" name="' . esc_attr( self::OPTION ) . '[admin_email]" value="' . esc_attr( $settings['admin_email'] ) . '"></div>';
+		self::page_setting( 'verified_page_id', __( 'Redirect page after confirmation', 'contactpanda' ), $settings );
+		echo '<div class="contactpanda-setting-row"><label for="contactpanda-verified-delay"><strong>' . esc_html__( 'Redirect delay in seconds', 'contactpanda' ) . '</strong></label><input id="contactpanda-verified-delay" class="small-text" type="number" min="0" max="30" name="' . esc_attr( self::OPTION ) . '[verified_delay]" value="' . esc_attr( $settings['verified_delay'] ) . '"><p class="description">' . esc_html__( 'Use 0 for an immediate redirect or up to 30 seconds.', 'contactpanda' ) . '</p></div>';
+		echo '</section><section class="contactpanda-card contactpanda-settings-card">';
+		echo '<h2>' . esc_html__( 'Double opt-in email', 'contactpanda' ) . '</h2>';
 		self::text_setting( 'confirmation_subject', __( 'Email subject', 'contactpanda' ), $settings );
 		echo '<div class="contactpanda-setting-row"><label for="contactpanda-confirmation-message"><strong>' . esc_html__( 'Email text', 'contactpanda' ) . '</strong></label>';
 		wp_editor(
@@ -558,53 +598,79 @@ The link is valid for 24 hours.',
 		);
 		echo '<p class="description">' . esc_html__( 'Available placeholders: {first_name}, {site_name}, {confirmation_link}. If the confirmation link is omitted, it is appended automatically.', 'contactpanda' ) . '</p></div>';
 		echo '<h3 class="contactpanda-settings-subheading">' . esc_html__( 'After double opt-in confirmation', 'contactpanda' ) . '</h3>';
-		self::textarea_setting( 'customer_verified_message', __( 'Confirmation text for standard customers', 'contactpanda' ), __( 'This text is displayed after a standard customer confirms the email address.', 'contactpanda' ), $settings );
-		self::textarea_setting( 'verified_message', __( 'Confirmation text for business customers', 'contactpanda' ), __( 'This text is displayed after a business customer confirms the email address.', 'contactpanda' ), $settings );
-		self::page_setting( 'verified_page_id', __( 'Redirect page after confirmation', 'contactpanda' ), $settings );
-		echo '<div class="contactpanda-setting-row"><label for="contactpanda-verified-delay"><strong>' . esc_html__( 'Redirect delay in seconds', 'contactpanda' ) . '</strong></label><input id="contactpanda-verified-delay" class="small-text" type="number" min="0" max="30" name="' . esc_attr( self::OPTION ) . '[verified_delay]" value="' . esc_attr( $settings['verified_delay'] ) . '"><p class="description">' . esc_html__( 'Use 0 for an immediate redirect or up to 30 seconds.', 'contactpanda' ) . '</p></div>';
-		echo '<div class="contactpanda-setting-row"><label for="contactpanda-admin-email"><strong>' . esc_html__( 'Notification email address', 'contactpanda' ) . '</strong></label><input id="contactpanda-admin-email" class="regular-text" type="email" name="' . esc_attr( self::OPTION ) . '[admin_email]" value="' . esc_attr( $settings['admin_email'] ) . '"></div>';
-		echo '</div>';
-		submit_button();
-		echo '</section></form>';
-
+		if ( 'customers' === $section ) {
+			self::textarea_setting( 'customer_submission_message', __( 'Text after standard customer registration', 'contactpanda' ), __( 'This text is displayed after a standard customer account registration.', 'contactpanda' ), $settings );
+			self::textarea_setting( 'customer_verified_message', __( 'Confirmation text for standard customers', 'contactpanda' ), __( 'This text is displayed after a standard customer confirms the email address.', 'contactpanda' ), $settings );
+		} else {
+			self::textarea_setting( 'submission_message', __( 'Text after business customer registration', 'contactpanda' ), __( 'This text is displayed after a business customer registration.', 'contactpanda' ), $settings );
+			self::textarea_setting( 'verified_message', __( 'Confirmation text for business customers', 'contactpanda' ), __( 'This text is displayed after a business customer confirms the email address.', 'contactpanda' ), $settings );
+		}
+		self::registration_form_end();
 		self::render_integration_status();
 		self::render_pending_registrations();
 	}
 
-	private static function render_newsletter_registration_settings( $settings ) {
-		echo '<nav class="nav-tab-wrapper contactpanda-settings-subtabs"><span class="nav-tab nav-tab-active">' . esc_html__( 'Newsletter signup', 'contactpanda' ) . '</span></nav>';
-		echo '<form method="post" action="options.php"><section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Newsletter signup', 'contactpanda' ) . '</h2>';
+	private static function registration_form_start( $section ) {
+		echo '<form method="post" action="options.php" class="contactpanda-registration-settings" data-registration-section="' . esc_attr( $section ) . '">';
 		settings_fields( 'contactpanda_registration' );
+		echo '<input type="hidden" name="' . esc_attr( self::OPTION ) . '[settings_section]" value="' . esc_attr( $section ) . '"><div class="contactpanda-registration-settings-grid">';
+	}
+
+	private static function registration_form_end() {
+		echo '</section></div>';
+		submit_button();
+		echo '</form>';
+	}
+
+	private static function render_newsletter_registration_settings( $settings, $show_tab = true ) {
+		if ( $show_tab ) echo '<nav class="nav-tab-wrapper contactpanda-settings-subtabs"><span class="nav-tab nav-tab-active">' . esc_html__( 'Newsletter signup', 'contactpanda' ) . '</span></nav>';
+		self::registration_form_start( 'newsletter' );
+		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Newsletter signup', 'contactpanda' ) . '</h2>';
+		if ( has_action( 'contactpanda_newsletter_signup_form_settings' ) ) {
+			echo '<div data-newsletter-form-selection>';
+			do_action( 'contactpanda_newsletter_signup_form_settings', $settings );
+			echo '</div>';
+		} else {
+			echo '<p><strong>' . esc_html__( 'Form used for newsletter signup', 'contactpanda' ) . '</strong><br>' . esc_html__( 'Standard newsletter form', 'contactpanda' ) . '</p>';
+		}
 		self::checkbox_setting( 'newsletter_enabled', __( 'Enable separate newsletter signup', 'contactpanda' ), __( 'Provides [contactpanda_newsletter_signup]. The form creates or updates a ContactPanda contact but never creates a WordPress user account.', 'contactpanda' ), $settings );
 		self::page_setting( 'privacy_page_id', __( 'Privacy policy page', 'contactpanda' ), $settings );
 		self::render_newsletter_form_settings( $settings );
+		echo '</section><section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Newsletter confirmation email', 'contactpanda' ) . '</h2>';
 		self::text_setting( 'newsletter_subject', __( 'Newsletter confirmation subject', 'contactpanda' ), $settings );
-		echo '<div class="contactpanda-setting-row"><label for="contactpanda-newsletter-message"><strong>' . esc_html__( 'Newsletter confirmation email', 'contactpanda' ) . '</strong></label>';
+		echo '<div class="contactpanda-setting-row"><label for="contactpanda-newsletter-message"><strong>' . esc_html__( 'Email text', 'contactpanda' ) . '</strong></label>';
 		wp_editor( $settings['newsletter_message'], 'contactpanda-newsletter-message', array( 'textarea_name' => self::OPTION . '[newsletter_message]', 'textarea_rows' => 8, 'media_buttons' => false, 'quicktags' => true ) );
 		echo '<p class="description">' . esc_html__( 'Available placeholders: {first_name}, {site_name}, {confirmation_link}.', 'contactpanda' ) . '</p></div>';
 		self::textarea_setting( 'newsletter_success', __( 'Text after newsletter signup', 'contactpanda' ), __( 'Shown after the form has been submitted.', 'contactpanda' ), $settings );
 		self::textarea_setting( 'newsletter_verified', __( 'Text after newsletter confirmation', 'contactpanda' ), __( 'Shown after the confirmation link has been opened.', 'contactpanda' ), $settings );
-		submit_button();
-		echo '</section></form>';
+		self::registration_form_end();
 		self::render_integration_status();
 	}
 
 	private static function render_newsletter_form_settings( $settings ) {
-		echo '<h3 class="contactpanda-settings-subheading">' . esc_html__( 'Standard newsletter form', 'contactpanda' ) . '</h3>';
-		echo '<p class="description">' . esc_html__( 'The compact form contains salutation, first name, last name, email address, privacy confirmation, and newsletter consent. ContactPanda Plus can replace it with a reusable full form.', 'contactpanda' ) . '</p>';
-		foreach ( array( 'newsletter_layout' => array( __( 'Form layout', 'contactpanda' ), array( 'wide' => __( 'Full width', 'contactpanda' ), 'compact' => __( 'Compact and responsive', 'contactpanda' ) ) ), 'newsletter_display' => array( __( 'Additional newsletter display', 'contactpanda' ), array( 'none' => __( 'Only embedded forms', 'contactpanda' ), 'popup' => __( 'Timed popup', 'contactpanda' ), 'bar' => __( 'Floating footer', 'contactpanda' ), 'both' => __( 'Popup and floating footer', 'contactpanda' ) ) ) ) as $key => $definition ) {
-			echo '<label class="contactpanda-setting-row"><strong>' . esc_html( $definition[0] ) . '</strong><select name="' . esc_attr( self::OPTION ) . '[' . esc_attr( $key ) . ']">';
-			foreach ( $definition[1] as $value => $label ) echo '<option value="' . esc_attr( $value ) . '"' . selected( $settings[ $key ], $value, false ) . '>' . esc_html( $label ) . '</option>';
-			echo '</select></label>';
-		}
+		echo '<div data-newsletter-standard><h3 class="contactpanda-settings-subheading">' . esc_html__( 'Standard newsletter form', 'contactpanda' ) . '</h3>';
+		self::newsletter_select_setting( 'newsletter_layout', __( 'Form layout', 'contactpanda' ), array( 'compact' => __( 'Compact', 'contactpanda' ), 'wide' => __( 'Full width', 'contactpanda' ) ), $settings );
+		echo '</div>';
+		self::newsletter_select_setting( 'newsletter_display', __( 'Additional newsletter display', 'contactpanda' ), array( 'none' => __( 'Only embedded forms', 'contactpanda' ), 'popup' => __( 'Timed popup', 'contactpanda' ), 'bar' => __( 'Floating footer', 'contactpanda' ), 'both' => __( 'Popup and floating footer', 'contactpanda' ) ), $settings );
+		echo '<div data-newsletter-popup-delay' . ( in_array( $settings['newsletter_display'], array( 'popup', 'both' ), true ) ? '' : ' hidden' ) . '>';
 		self::text_setting( 'newsletter_popup_delay', __( 'Show popup after seconds', 'contactpanda' ), $settings );
+		echo '</div>';
 		self::text_setting( 'newsletter_dismiss_hours', __( 'Hide after closing for hours (0: current tab session)', 'contactpanda' ), $settings );
+		echo '<div data-newsletter-standard>';
 		self::text_setting( 'newsletter_privacy_text', __( 'Privacy confirmation text', 'contactpanda' ), $settings );
 		self::textarea_setting( 'newsletter_consent_text', __( 'Newsletter consent text', 'contactpanda' ), __( 'This checkbox is mandatory and records the declared purpose of consent.', 'contactpanda' ), $settings );
 		self::text_setting( 'newsletter_submit_label', __( 'Submit button label', 'contactpanda' ), $settings );
 		self::textarea_setting( 'newsletter_error', __( 'Validation error text', 'contactpanda' ), __( 'Shown when required information or consent is missing.', 'contactpanda' ), $settings );
 		self::textarea_setting( 'newsletter_already_registered', __( 'Text for existing subscribers', 'contactpanda' ), __( 'Shown instead of sending another double opt-in email when valid newsletter consent already exists.', 'contactpanda' ), $settings );
-		do_action( 'contactpanda_newsletter_signup_form_settings', $settings );
+		echo '</div>';
+	}
+
+	private static function newsletter_select_setting( $key, $label, $choices, $settings ) {
+		echo '<div class="contactpanda-setting-row"><label for="contactpanda-' . esc_attr( $key ) . '"><strong>' . esc_html( $label ) . '</strong></label><select id="contactpanda-' . esc_attr( $key ) . '" name="' . esc_attr( self::OPTION ) . '[' . esc_attr( $key ) . ']">';
+		foreach ( $choices as $value => $caption ) {
+			echo '<option value="' . esc_attr( $value ) . '"' . selected( $settings[ $key ], $value, false ) . '>' . esc_html( $caption ) . '</option>';
+		}
+		echo '</select></div>';
 	}
 
 	private static function render_general_settings() {
@@ -1733,6 +1799,7 @@ The link is valid for 24 hours.',
 		}
 		echo '<form class="contactpanda-registration-form' . esc_attr( $theme_class ) . '" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_register"><input type="hidden" name="registration_type" value="' . esc_attr( $type ) . '"><input type="hidden" name="redirect_to" value="' . esc_url( self::current_url() ) . '">';
 		wp_nonce_field( 'contactpanda_register', 'contactpanda_registration_nonce' );
+		echo self::translation_language_field(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped by the field renderer.
 		echo ContactPanda_Spam_Protection::render_fields( 'registration' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- central helper returns escaped form markup.
 		self::form_section_account();
 		self::form_section_person();
@@ -1794,6 +1861,7 @@ The link is valid for 24 hours.',
 		$theme_class = ' contactpanda-use-theme-styles contactpanda-theme-' . sanitize_html_class( (string) ( $general['theme_stylesheet'] ?? '' ) );
 		echo '<form class="contactpanda-registration-form contactpanda-newsletter-signup contactpanda-newsletter-layout-' . esc_attr( $layout ) . esc_attr( $theme_class ) . '" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_newsletter_signup"><input type="hidden" name="redirect_to" value="' . esc_url( self::current_url() ) . '">';
 		wp_nonce_field( 'contactpanda_newsletter_signup', 'contactpanda_newsletter_nonce' );
+		echo self::translation_language_field(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped by the field renderer.
 		echo ContactPanda_Spam_Protection::render_fields( 'newsletter_signup' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- central helper returns escaped form markup.
 		echo '<section class="contactpanda-form-section"><h3>' . esc_html__( 'Newsletter signup', 'contactpanda' ) . '</h3><div class="contactpanda-form-grid contactpanda-newsletter-fields">';
 		self::input( 'first_name', __( 'First name', 'contactpanda' ), 'text', true, 'given-name' );
@@ -1838,7 +1906,8 @@ The link is valid for 24 hours.',
 	public static function handle_newsletter_signup() {
 		$redirect = isset( $_POST['redirect_to'] ) ? wp_validate_redirect( sanitize_url( wp_unslash( $_POST['redirect_to'] ) ), home_url( '/' ) ) : home_url( '/' );
 		if ( ! isset( $_POST['contactpanda_newsletter_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['contactpanda_newsletter_nonce'] ) ), 'contactpanda_newsletter_signup' ) ) self::redirect_notice( $redirect, 'error', __( 'The form session has expired. Please try again.', 'contactpanda' ) );
-		$settings = self::settings();
+		$language = self::registration_language( self::submitted_language() );
+		$settings = self::with_registration_language( $language, static function () { return self::settings(); } );
 		if ( empty( $settings['newsletter_enabled'] ) || ! ContactPanda_Store::standalone() ) self::redirect_notice( $redirect, 'error', __( 'The newsletter signup could not be processed.', 'contactpanda' ) );
 		$spam = ContactPanda_Spam_Protection::verify( 'newsletter_signup', $_POST );
 		if ( 'allow' !== $spam['status'] ) self::redirect_notice( $redirect, 'error', __( 'The newsletter signup could not be processed. Please try again later.', 'contactpanda' ) );
@@ -1857,6 +1926,7 @@ The link is valid for 24 hours.',
 		$management_token = self::create_pending_management(
 			array(
 				'kind'       => 'newsletter',
+				'language'   => $language,
 				'email'      => $email,
 				'first_name' => $first_name,
 				'last_name'  => $last_name,
@@ -1880,12 +1950,19 @@ The link is valid for 24 hours.',
 				'last_name'  => sanitize_text_field( $last_name ),
 				'redirect'   => wp_validate_redirect( $redirect, home_url( '/' ) ),
 				'source'     => sanitize_key( $source ),
+				'language'   => self::registration_language( self::submitted_language() ),
 			)
 		);
 		return is_wp_error( $result ) ? $result : true;
 	}
 
 	private static function send_newsletter_confirmation( $data, $management_key = '' ) {
+		return self::with_registration_language( $data['language'] ?? '', static function () use ( $data, $management_key ) {
+			return self::issue_newsletter_confirmation( $data, $management_key );
+		} );
+	}
+
+	private static function issue_newsletter_confirmation( $data, $management_key ) {
 		$settings = self::settings();
 		$token = bin2hex( random_bytes( 32 ) );
 		$verification_key = hash( 'sha256', $token );
@@ -1897,6 +1974,7 @@ The link is valid for 24 hours.',
 			'redirect'       => wp_validate_redirect( $data['redirect'] ?? '', home_url( '/' ) ),
 			'source'         => sanitize_key( $data['source'] ?? 'newsletter_signup' ),
 			'management_key' => sanitize_key( $management_key ),
+			'language'      => self::registration_language( $data['language'] ?? '' ),
 		);
 		$verification_ttl = max( HOUR_IN_SECONDS, absint( apply_filters( 'contactpanda_newsletter_confirmation_ttl', DAY_IN_SECONDS, $payload ) ) );
 		set_transient( 'contactpanda_newsletter_verify_' . $verification_key, $payload, $verification_ttl );
@@ -1933,7 +2011,8 @@ The link is valid for 24 hours.',
 		);
 		if ( is_wp_error( $contact_id ) || ! $contact_id ) self::redirect_notice( $redirect, 'error', is_wp_error( $contact_id ) ? $contact_id->get_error_message() : __( 'The newsletter subscription could not be saved.', 'contactpanda' ) );
 		if ( ! empty( $data['salutation'] ) && ContactPanda_Store::standalone() ) ContactPanda_Store::update_contact( absint( $contact_id ), array( 'meta' => array( 'anrede' => sanitize_key( $data['salutation'] ) ) ) );
-		self::redirect_notice( $redirect, 'success', self::settings()['newsletter_verified'] );
+		$settings = self::with_registration_language( $data['language'] ?? '', static function () { return self::settings(); } );
+		self::redirect_notice( $redirect, 'success', $settings['newsletter_verified'] );
 		return true;
 	}
 
@@ -2271,7 +2350,8 @@ The link is valid for 24 hours.',
 		if ( ! isset( $_POST['contactpanda_registration_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['contactpanda_registration_nonce'] ) ), 'contactpanda_register' ) ) {
 			self::redirect_notice( $redirect, 'error', __( 'The form session has expired. Please try again.', 'contactpanda' ) );
 		}
-		$settings = self::settings();
+		$language = self::registration_language( self::submitted_language() );
+		$settings = self::with_registration_language( $language, static function () { return self::settings(); } );
 		$type = isset( $_POST['registration_type'] ) && 'business' === sanitize_key( wp_unslash( $_POST['registration_type'] ) ) ? 'business' : 'customer';
 		if ( empty( $settings['enabled'] ) || ( 'business' === $type && empty( $settings['business_enabled'] ) ) ) {
 			self::redirect_notice( $redirect, 'error', __( 'The registration could not be processed.', 'contactpanda' ) );
@@ -2328,6 +2408,7 @@ The link is valid for 24 hours.',
 			update_user_meta( $user_id, 'contactpanda_vat_verified_hash', hash( 'sha256', $data['vat_id'] ) );
 			update_user_meta( $user_id, 'contactpanda_vat_verified_at', current_time( 'mysql' ) );
 		}
+		if ( $language ) update_user_meta( $user_id, 'contactpanda_registration_language', $language );
 		$needs_confirmation = ! empty( $settings['require_email_verify'] ) || ! empty( $data['marketing_consent'] );
 		$management_token = '';
 		$confirmation_sent = true;
@@ -2504,6 +2585,13 @@ The link is valid for 24 hours.',
 	}
 
 	private static function issue_confirmation( $user_id ) {
+		$language = get_user_meta( $user_id, 'contactpanda_registration_language', true );
+		return self::with_registration_language( $language, static function () use ( $user_id ) {
+			return self::send_registration_confirmation( $user_id );
+		} );
+	}
+
+	private static function send_registration_confirmation( $user_id ) {
 		$user = get_user_by( 'id', $user_id );
 		if ( ! $user ) {
 			return false;
@@ -2557,6 +2645,7 @@ The link is valid for 24 hours.',
 			update_user_meta( $user_id, 'contactpanda_marketing_confirmed_at', current_time( 'mysql', true ) );
 			if ( ContactPanda_Store::standalone() && ! empty( $contact ) ) ContactPanda_Store::record_consent( $contact['id'], 'granted', 'registration_double_opt_in', current_time( 'Y-m-d' ), __( 'Marketing consent confirmed through the registration double opt-in.', 'contactpanda' ) );
 		}
+		$settings = self::with_registration_language( get_user_meta( $user_id, 'contactpanda_registration_language', true ), static function () { return self::settings(); } );
 		$redirect_url = $settings['verified_page_id'] ? get_permalink( $settings['verified_page_id'] ) : '';
 		$registration_source = get_user_meta( $user_id, 'contactpanda_registration_source', true );
 		self::redirect_notice(
