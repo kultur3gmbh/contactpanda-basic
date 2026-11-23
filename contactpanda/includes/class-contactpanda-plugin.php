@@ -2791,7 +2791,7 @@ final class ContactPanda_Plugin {
 	}
 
 	public static function handle_contact_company() {
-		if ( 'company' === ( $_POST['relation_scope'] ?? '' ) ) {
+		if ( 'company' === sanitize_key( wp_unslash( $_POST['relation_scope'] ?? '' ) ) ) {
 			self::handle_company_people();
 			return;
 		}
@@ -4127,8 +4127,8 @@ final class ContactPanda_Plugin {
 		check_admin_referer( 'contactpanda_company_address_' . $id );
 		$company = ContactPanda_Store::company( $id );
 		if ( ! $company ) wp_die( esc_html__( 'Company assignment not found.', 'contactpanda' ), '', array( 'response' => 404 ) );
-		$section = 'billing' === ( $_POST['address_section'] ?? '' ) ? 'billing' : 'company';
-		$input = isset( $_POST['address'] ) && is_array( $_POST['address'] ) ? wp_unslash( $_POST['address'] ) : array();
+		$section = 'billing' === sanitize_key( wp_unslash( $_POST['address_section'] ?? '' ) ) ? 'billing' : 'company';
+		$input = isset( $_POST['address'] ) && is_array( $_POST['address'] ) ? map_deep( wp_unslash( $_POST['address'] ), 'sanitize_text_field' ) : array();
 		$result = ContactPanda_Store::save_company_address( $id, $section, $input );
 		if ( ! $result ) wp_die( esc_html__( 'The company changes could not be saved.', 'contactpanda' ), '', array( 'response' => 400 ) );
 		wp_safe_redirect( add_query_arg( array( 'page' => 'contactpanda-firmen', 'firma' => $id ), admin_url( 'admin.php' ) ) );
@@ -5875,6 +5875,7 @@ final class ContactPanda_Plugin {
 		$value = sanitize_key( $value );
 		$label = __( 'Salutation', 'contactpanda' );
 		$add = __( 'Add salutation', 'contactpanda' );
+		/* translators: %s: label of the salutation field. */
 		$edit = sprintf( __( 'Edit %s', 'contactpanda' ), $label );
 		$apply = __( 'Apply', 'contactpanda' );
 		$cancel = __( 'Cancel', 'contactpanda' );
@@ -5903,7 +5904,7 @@ final class ContactPanda_Plugin {
 	private static function editable_field( $label, $value, $field, $company_id, $multiline = false ) {
 		echo '<div class="contactpanda-field contactpanda-editable" data-entity="company" data-company="' . esc_attr( $company_id ) . '" data-field="' . esc_attr( $field ) . '" data-multiline="' . ( $multiline ? '1' : '0' ) . '">';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		echo '<span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row">' . self::inline_value( $label, $value, $value ) . '</div>';
+		echo '<span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row">' . self::inline_value( $label, $value, $value ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline_value escapes all dynamic values in the generated controls.
 		echo '<div class="contactpanda-field-message" aria-live="polite"></div></div>';
 	}
 
@@ -5911,13 +5912,13 @@ final class ContactPanda_Plugin {
 		$value = null === $raw_value ? $display : $raw_value;
 		echo '<div class="contactpanda-editable contactpanda-list-editable" data-entity="' . esc_attr( $entity ) . '" data-' . esc_attr( $entity ) . '="' . esc_attr( $id ) . '" data-field="' . esc_attr( $field ) . '"' . ( $type ? ' data-type="' . esc_attr( $type ) . '"' : '' ) . '>';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		echo '<div class="contactpanda-field-row">' . self::inline_value( $label, $value, $display ) . '</div><div class="contactpanda-field-message" aria-live="polite"></div></div>';
+		echo '<div class="contactpanda-field-row">' . self::inline_value( $label, $value, $display ) . '</div><div class="contactpanda-field-message" aria-live="polite"></div></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline_value escapes all dynamic values in the generated controls.
 	}
 
 	private static function contact_editable_field( $label, $value, $field, $contact_id, $multiline = false ) {
 		echo '<div class="contactpanda-field contactpanda-editable" data-entity="contact" data-contact="' . esc_attr( $contact_id ) . '" data-field="' . esc_attr( $field ) . '" data-multiline="' . ( $multiline ? '1' : '0' ) . '">';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		echo '<span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row">' . self::inline_value( $label, $value, $value ) . '';
+		echo '<span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row">' . self::inline_value( $label, $value, $value ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline_value escapes all dynamic values in the generated controls.
 		if ( 'email' === $field && is_email( $value ) ) {
 			echo '<a class="button-link contactpanda-mail-link" href="mailto:' . esc_attr( $value ) . '" aria-label="' . esc_attr__( 'Send email', 'contactpanda' ) . '" title="' . esc_attr__( 'Send email', 'contactpanda' ) . '"><span class="dashicons dashicons-email-alt"></span></a>';
 		}

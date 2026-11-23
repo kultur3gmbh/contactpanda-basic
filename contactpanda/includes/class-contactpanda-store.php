@@ -544,10 +544,10 @@ final class ContactPanda_Store {
 		$address['country'] = preg_match( '/^[A-Za-z]{2}$/D', $address['country'] ) ? strtoupper( $address['country'] ) : '';
 		if ( 'billing' === $section ) return self::set_company_meta( $id, 'contactpanda_billing_address', wp_json_encode( $address ) );
 		$columns = array( 'street' => $address['address_1'], 'updated_at' => current_time( 'mysql' ) ) + array_intersect_key( $address, array_flip( array( 'address_2','postcode','city','country' ) ) );
-		if ( false === $wpdb->query( 'START TRANSACTION' ) ) return false; // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Keep address and region consistent.
+		if ( false === $wpdb->query( 'START TRANSACTION' ) ) return false; // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Keep address and region consistent.
 		$ok = false !== $wpdb->update( ContactPanda_Schema::table_names()['companies'], $columns, array( 'id' => absint( $id ) ) ) && self::set_company_meta( $id, 'state', $address['state'] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned CRM address table.
-		if ( $ok && false !== $wpdb->query( 'COMMIT' ) ) return true; // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Complete the address update.
-		$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Discard an incomplete address update.
+		if ( $ok && false !== $wpdb->query( 'COMMIT' ) ) return true; // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Complete the address update.
+		$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Discard an incomplete address update.
 		return false;
 	}
 
