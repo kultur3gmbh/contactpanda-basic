@@ -132,7 +132,7 @@
 .contactpanda-newsletter-bar{container:panda-newsletter-bar / inline-size;box-sizing:border-box}
 .contactpanda-newsletter-layout-bar .contactpanda-form-check > span{overflow-wrap:break-word}
 @container panda-newsletter-bar (min-width:700px){
-	.contactpanda-newsletter-layout-bar{grid-template-columns:repeat(2,minmax(0,1fr)) fit-content(13rem);align-items:center;gap:12px}
+	.contactpanda-newsletter-layout-bar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) fit-content(13rem);align-items:center;gap:12px}
 	.contactpanda-newsletter-layout-bar .contactpanda-form-section{display:contents}
 	.contactpanda-newsletter-layout-bar .contactpanda-newsletter-fields{grid-column:1/-1;grid-template-columns:repeat(4,minmax(0,1fr))}
 	.contactpanda-newsletter-layout-bar .contactpanda-form-check{min-width:0;font-size:13px}
