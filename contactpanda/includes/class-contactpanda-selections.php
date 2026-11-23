@@ -29,12 +29,12 @@ final class ContactPanda_Selections {
   wp_enqueue_script( 'contactpanda-selections', CONTACTPANDA_URL . 'assets/contactpanda-selections.js', array(), CONTACTPANDA_ASSET_VERSION, true );
   wp_localize_script( 'contactpanda-selections', 'CP_SELECTIONS', array( 'ajax' => admin_url( 'admin-ajax.php' ), 'nonce' => wp_create_nonce( 'contactpanda_selection' ), 'mergeNonce' => wp_create_nonce( 'contactpanda_merge_preview' ), 'post' => admin_url( 'admin-post.php' ), 'source' => self::source(), 'user' => get_current_user_id(), 'rows' => self::all(), 'current' => self::get( absint( $_GET['selection'] ?? 0 ) ) ? absint( $_GET['selection'] ) : 0, 'i18n' => array( 'name' => __( 'Name of selection', 'contactpanda' ), 'save' => __( 'Save selection', 'contactpanda' ), 'cancel' => __( 'Cancel', 'contactpanda' ), 'load' => __( 'Load saved selection', 'contactpanda' ), 'delete' => __( 'Delete this saved selection? Contacts are retained.', 'contactpanda' ), 'error' => __( 'The selection could not be saved.', 'contactpanda' ), 'count' => // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view/filter routing; no mutation or permission grant. Writes use separate capability and nonce checks.
   /* translators: %d: number of selected people. */
-  __( '%d selected people', 'contactpanda' ), 'empty' => __( 'No person selected', 'contactpanda' ) ) ) );
+  __( '%d selected people', 'contactpanda' ), 'empty' => __( 'No person selected', 'contactpanda' ), 'added' => __( 'People added to the selection: %d.', 'contactpanda' ), 'capacity' => __( 'The selection can hold up to 10,000 people.', 'contactpanda' ) ) ) );
  }
- public static function add_button() {
+ public static function add_button( $list_state = '' ) {
   if ( ! current_user_can( 'manage_options' ) ) return;
   $label = __( 'Add to existing selection', 'contactpanda' );
-  echo '<button type="button" class="button contactpanda-icon-button cp-selection-add" data-contactpanda-action="searchAdd" data-contactpanda-action-mode="icon" aria-pressed="false" aria-label="' . esc_attr( $label ) . '" title="' . esc_attr( $label ) . '"><span class="contactpanda-action-icon contactpanda-action-icon-search-add" aria-hidden="true"></span></button>';
+  echo '<button type="button" class="button contactpanda-icon-button cp-selection-add" data-contactpanda-action="searchAdd" data-contactpanda-action-mode="icon" data-list-token="' . esc_attr( $list_state ) . '" aria-label="' . esc_attr( $label ) . '" title="' . esc_attr( $label ) . '"><span class="contactpanda-action-icon contactpanda-action-icon-search-add" aria-hidden="true"></span></button><span class="cp-selection-result" role="status"></span>';
  }
  public static function ajax() {
   if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'You do not have permission.', 'contactpanda' ) ), 403 );
@@ -42,6 +42,12 @@ final class ContactPanda_Selections {
   $op = sanitize_key( wp_unslash( $_POST['cp_selection_operation'] ?? $_POST['operation'] ?? '' ) ); $id = absint( $_POST['id'] ?? 0 );
   $row = $id ? self::get( $id ) : null;
   if ( $id && ! $row ) wp_send_json_error( array( 'message' => __( 'The selection no longer exists in this data source.', 'contactpanda' ) ), 404 );
+  if ( 'search_results' === $op ) {
+   $token = sanitize_key( wp_unslash( $_POST['list_token'] ?? '' ) );
+   $state = preg_match( '/^[a-z0-9]{12}$/D', $token ) ? get_transient( 'contactpanda_people_state_' . get_current_user_id() . '_' . $token ) : false;
+   if ( ! is_array( $state ) || ( $state['source'] ?? '' ) !== self::source() ) wp_send_json_error( array( 'message' => __( 'The search has expired. Run the search again.', 'contactpanda' ) ), 404 );
+   wp_send_json_success( array( 'ids' => self::clean_ids( $state['ids'] ), 'total' => count( $state['ids'] ) ) );
+  }
   if ( 'load' === $op ) {
    if ( ! $row ) wp_send_json_error( array( 'message' => __( 'The selection no longer exists in this data source.', 'contactpanda' ) ), 404 );
    wp_send_json_success( $row );

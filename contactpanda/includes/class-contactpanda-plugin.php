@@ -43,6 +43,9 @@ final class ContactPanda_Plugin {
 		add_action( 'admin_post_contactpanda_assign_missing_salutations', array( __CLASS__, 'assign_missing_salutations' ) );
 		add_action( 'admin_post_contactpanda_add_contact_note', array( __CLASS__, 'handle_add_contact_note' ) );
 		add_action( 'admin_post_contactpanda_contact_company', array( __CLASS__, 'handle_contact_company' ) );
+		add_action( 'admin_post_contactpanda_company_address', array( __CLASS__, 'save_company_address' ) );
+		add_action( 'wp_ajax_contactpanda_company_people_search', array( __CLASS__, 'company_people_search' ) );
+
 		add_filter( 'contactpanda_misc_settings_sections', array( __CLASS__, 'misc_settings_sections' ) );
 		add_action( 'contactpanda_render_misc_settings_section_tags', array( __CLASS__, 'render_tags_settings' ) );
 		add_action( 'panda_seasons_contact_registered', array( __CLASS__, 'handle_extension_contact_registered' ), 10, 3 );
@@ -139,13 +142,14 @@ final class ContactPanda_Plugin {
 
 	public static function people_screen_columns( $columns ) {
 		$columns = array(
+			'salutation' => __( 'Salutation', 'contactpanda' ),
 			'email'     => __( 'Email', 'contactpanda' ),
 			'phone'     => __( 'Phone', 'contactpanda' ),
 		);
 		if ( self::companies_available() ) {
 			$columns['company'] = __( 'Company', 'contactpanda' );
 		}
-		$columns['orders'] = __( 'Orders', 'contactpanda' );
+		if ( function_exists( 'wc_get_orders' ) ) $columns['orders'] = __( 'Orders', 'contactpanda' );
 		if ( self::events_available() ) {
 			$columns['events'] = __( 'Events', 'contactpanda' );
 		}
@@ -418,6 +422,7 @@ final class ContactPanda_Plugin {
 					'invalidServerResponse'    => __( 'The server returned an invalid response.', 'contactpanda' ),
 					'checkingVat'              => __( 'Checking EU VIES…', 'contactpanda' ),
 					'saving'                   => __( 'Saving…', 'contactpanda' ),
+					'noPeopleFound'            => __( 'No people found', 'contactpanda' ),
 					'saved'                    => __( 'Saved.', 'contactpanda' ),
 					/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 					'marketingStatus'          => '%s',
@@ -2316,12 +2321,13 @@ final class ContactPanda_Plugin {
 	}
 
 	private static function render_people_index() {
+		$orders_enabled = function_exists( 'wc_get_orders' );
 		$companies_enabled = self::companies_available();
 		$events_enabled = self::events_available();
 		$search = isset( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only search.
 		$page = isset( $_GET['contactpanda_page'] ) ? max( 1, absint( $_GET['contactpanda_page'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only pagination.
 		$customer_filter = isset( $_GET['kunden'] ) ? sanitize_key( wp_unslash( $_GET['kunden'] ) ) : 'alle'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filter.
-		$allowed_filters = array( 'alle', 'besteller' );
+		$allowed_filters = $orders_enabled ? array( 'alle', 'besteller' ) : array( 'alle' );
 		if ( $events_enabled ) {
 			$allowed_filters[] = 'event-besucher';
 		}
@@ -2333,7 +2339,8 @@ final class ContactPanda_Plugin {
 		$segment_id = isset( $_GET['segment'] ) ? absint( $_GET['segment'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only filter.
 		$advanced_filter = isset( $_GET['contactpanda_filter'] ) ? substr( preg_replace( '/[^A-Za-z0-9_-]/', '', sanitize_text_field( wp_unslash( $_GET['contactpanda_filter'] ) ) ), 0, 12000 ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- signed-in read-only filter state.
 		$import_run = isset( $_GET['import_run'] ) ? absint( $_GET['import_run'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only import-history filter.
-		$sortable = array( 'first_name', 'last_name', 'order_total' );
+		$sortable = array( 'first_name', 'last_name' );
+		if ( $orders_enabled ) $sortable = array_merge( $sortable, array( 'order_count', 'order_total' ) );
 		if ( $companies_enabled ) {
 			$sortable[] = 'company';
 		}
@@ -2357,7 +2364,7 @@ final class ContactPanda_Plugin {
 			// Groundhogg contact (including tags and meta) can exhaust memory on real
 			// sites before the first filtered page is rendered.
 			$uses_relationship_filter = in_array( $customer_filter, array( 'besteller', 'event-besucher' ), true )
-				|| in_array( $orderby, array( 'order_total', 'event_count' ), true );
+				|| in_array( $orderby, array( 'order_count', 'order_total', 'event_count' ), true );
 			$contacts = $uses_relationship_filter && ! $segment_id && ! $advanced_filter && ! $import_run
 				? self::all_contact_identities( $search )
 				: self::all_contacts( $search );
@@ -2365,7 +2372,7 @@ final class ContactPanda_Plugin {
 				$membership = array_fill_keys( $saved_selection, true );
 				$contacts = array_values( array_filter( $contacts, static function ( $contact ) use ( $membership ) { return isset( $membership[ absint( self::value( $contact, array( 'id', 'ID' ) ) ) ] ); } ) );
 			}
-			if ( 'besteller' === $customer_filter || 'order_total' === $orderby ) {
+			if ( 'besteller' === $customer_filter || in_array( $orderby, array( 'order_count', 'order_total' ), true ) ) {
 				$order_summaries = self::contact_order_summaries( $contacts );
 			}
 			if ( 'event-besucher' === $customer_filter || 'event_count' === $orderby ) {
@@ -2410,7 +2417,7 @@ final class ContactPanda_Plugin {
 			$total = isset( $result['total_items'] ) ? absint( $result['total_items'] ) : count( $contacts );
 			$navigation_contacts = $total > count( $contacts ) ? self::all_contacts( $search ) : $contacts;
 		}
-		if ( ! $order_summaries && $contacts ) {
+		if ( $orders_enabled && ! $order_summaries && $contacts ) {
 			$order_summaries = self::contact_order_summaries( $contacts );
 		}
 		if ( $events_enabled && ! $event_summaries ) {
@@ -2422,11 +2429,11 @@ final class ContactPanda_Plugin {
 				'contactpanda_filter' => $advanced_filter,
 			) );
 
-		$heading_text = ContactPanda_Store::standalone()
+		$heading_text = ! $orders_enabled ? __( 'People and their contact details, company relationships, and marketing status.', 'contactpanda' ) : ( ContactPanda_Store::standalone()
 			? __( 'ContactPanda contacts, company relationships, orders, events, and marketing status in one view.', 'contactpanda' )
 			: ( $companies_enabled
 			? __( 'Groundhogg contacts, company relationships, and marketing status in one view.', 'contactpanda' )
-			: __( 'Groundhogg contacts, orders, and marketing status in one view.', 'contactpanda' ) );
+			: __( 'Groundhogg contacts, orders, and marketing status in one view.', 'contactpanda' ) ) );
 		echo '<div class="contactpanda-heading"><div><p class="contactpanda-eyebrow">CRM</p><h1>' . esc_html__( 'People', 'contactpanda' ) . '</h1><p>' . esc_html( $heading_text ) . '</p></div><div class="contactpanda-heading-actions">';
 		if ( current_user_can( 'manage_options' ) ) {
 			if ( ContactPanda_Store::standalone() ) {
@@ -2450,9 +2457,10 @@ final class ContactPanda_Plugin {
 		echo '<div class="contactpanda-people-search-row">';
 		do_action( 'contactpanda_people_filter_controls', $segment_id );
 		echo '<span class="contactpanda-search-primary"><label class="screen-reader-text" for="contactpanda-person-search">' . esc_html__( 'Quick search', 'contactpanda' ) . '</label><input id="contactpanda-person-search" type="search" name="s" value="' . esc_attr( $search ) . '" placeholder="' . esc_attr__( 'Quick search by name, email, phone, or company', 'contactpanda' ) . '"><button class="button contactpanda-icon-button" aria-label="' . esc_attr__( 'Search', 'contactpanda' ) . '" title="' . esc_attr__( 'Search', 'contactpanda' ) . '"><span class="dashicons dashicons-search" aria-hidden="true"></span></button></span>';
-		ContactPanda_Selections::add_button();
+		ContactPanda_Selections::add_button( $list_state );
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
-		echo '<span class="contactpanda-filter-buttons">' . self::people_filter_link( __( 'All', 'contactpanda' ), 'alle', $customer_filter, $search, $orderby, $order ) . self::people_filter_link( __( 'Customers', 'contactpanda' ), 'besteller', $customer_filter, $search, $orderby, $order );
+		echo '<span class="contactpanda-filter-buttons">' . self::people_filter_link( __( 'All', 'contactpanda' ), 'alle', $customer_filter, $search, $orderby, $order );
+		if ( $orders_enabled ) echo self::people_filter_link( __( 'Customers', 'contactpanda' ), 'besteller', $customer_filter, $search, $orderby, $order ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Link helper escapes markup.
 		if ( $events_enabled ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
 			echo self::people_filter_link( __( 'Event attendees', 'contactpanda' ), 'event-besucher', $customer_filter, $search, $orderby, $order );
@@ -2475,24 +2483,26 @@ final class ContactPanda_Plugin {
 		echo '</select><button type="button" class="button contactpanda-open-bulk" disabled><span class="dashicons dashicons-controls-play" aria-hidden="true"></span> ' . esc_html__( 'Execute', 'contactpanda' ) . '</button><span class="contactpanda-bulk-selection" aria-live="polite">' . esc_html__( 'No person selected', 'contactpanda' ) . '</span><span class="contactpanda-list-output-actions"><button type="button" class="button contactpanda-open-export"><span class="dashicons dashicons-download" aria-hidden="true"></span> ' . esc_html__( 'Export', 'contactpanda' ) . '</button><button type="button" class="button contactpanda-open-print"><span class="dashicons dashicons-printer" aria-hidden="true"></span> ' . esc_html__( 'Print list', 'contactpanda' ) . '</button></span></div>';
 		echo '<div class="contactpanda-table-scroll"><table class="widefat striped contactpanda-table contactpanda-people-table"><thead><tr class="contactpanda-group-headings">';
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
-			echo '<th class="check-column" scope="col" rowspan="2">' . '<input type="checkbox" class="contactpanda-select-all" aria-label="Select all people on this page">' . '</th>';
+			echo '<th class="check-column" scope="col" rowspan="' . ( $orders_enabled ? 2 : 1 ) . '">' . '<input type="checkbox" class="contactpanda-select-all" aria-label="Select all people on this page">' . '</th>';
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
-			echo self::rowspan_heading( self::sortable_heading( __( 'First name', 'contactpanda' ), 'first_name', $orderby, $order, $customer_filter, $search, 'first_name' ) );
+			echo self::rowspan_heading( self::sortable_heading( __( 'First name', 'contactpanda' ), 'first_name', $orderby, $order, $customer_filter, $search, 'first_name' ), $orders_enabled ? 2 : 1 );
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
-			echo self::rowspan_heading( self::sortable_heading( __( 'Last name', 'contactpanda' ), 'last_name', $orderby, $order, $customer_filter, $search, 'last_name' ) );
-			echo '<th rowspan="2" class="' . esc_attr( self::column_class( 'email', 'contactpanda-email-column' ) ) . '">' . esc_html__( 'Email', 'contactpanda' ) . '</th><th rowspan="2" class="' . esc_attr( self::column_class( 'phone' ) ) . '">' . esc_html__( 'Phone', 'contactpanda' ) . '</th>';
+			echo self::rowspan_heading( self::sortable_heading( __( 'Last name', 'contactpanda' ), 'last_name', $orderby, $order, $customer_filter, $search, 'last_name' ), $orders_enabled ? 2 : 1 );
+			echo '<th rowspan="' . ( $orders_enabled ? 2 : 1 ) . '" class="' . esc_attr( self::column_class( 'salutation' ) ) . '">' . esc_html__( 'Salutation', 'contactpanda' ) . '</th>';
+			echo '<th rowspan="' . ( $orders_enabled ? 2 : 1 ) . '" class="' . esc_attr( self::column_class( 'email', 'contactpanda-email-column' ) ) . '">' . esc_html__( 'Email', 'contactpanda' ) . '</th><th rowspan="' . ( $orders_enabled ? 2 : 1 ) . '" class="' . esc_attr( self::column_class( 'phone' ) ) . '">' . esc_html__( 'Phone', 'contactpanda' ) . '</th>';
 		if ( $companies_enabled ) {
 				// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
-				echo self::rowspan_heading( self::sortable_heading( __( 'Company', 'contactpanda' ), 'company', $orderby, $order, $customer_filter, $search, 'company' ) );
+				echo self::rowspan_heading( self::sortable_heading( __( 'Company', 'contactpanda' ), 'company', $orderby, $order, $customer_filter, $search, 'company' ), $orders_enabled ? 2 : 1 );
 		}
-			echo '<th class="' . esc_attr( self::column_class( 'orders', 'contactpanda-orders-group' ) ) . '" colspan="2" scope="colgroup">' . esc_html__( 'Orders', 'contactpanda' ) . '</th>';
+			if ( $orders_enabled ) echo '<th class="' . esc_attr( self::column_class( 'orders', 'contactpanda-orders-group' ) ) . '" colspan="2" scope="colgroup">' . esc_html__( 'Orders', 'contactpanda' ) . '</th>';
 		if ( $events_enabled ) {
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
-			echo self::rowspan_heading( self::sortable_heading( __( 'Events', 'contactpanda' ), 'event_count', $orderby, $order, $customer_filter, $search, 'events' ) );
+			echo self::rowspan_heading( self::sortable_heading( __( 'Events', 'contactpanda' ), 'event_count', $orderby, $order, $customer_filter, $search, 'events' ), $orders_enabled ? 2 : 1 );
 		}
-			echo '<th rowspan="2" class="' . esc_attr( self::column_class( 'marketing' ) ) . '"><span class="screen-reader-text">' . esc_html__( 'Email confirmation and marketing status', 'contactpanda' ) . '</span></th><th class="column-actions" rowspan="2"><span class="screen-reader-text">' . esc_html__( 'Actions', 'contactpanda' ) . '</span></th></tr><tr class="contactpanda-order-subheadings">';
-			echo self::sortable_heading( __( 'Number', 'contactpanda' ), 'order_count', $orderby, $order, $customer_filter, $search, 'orders' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes dynamic values.
-			echo self::sortable_heading( __( 'Total', 'contactpanda' ), 'order_total', $orderby, $order, $customer_filter, $search, 'orders' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes dynamic values.
+			echo '<th rowspan="' . ( $orders_enabled ? 2 : 1 ) . '" class="' . esc_attr( self::column_class( 'marketing' ) ) . '"><span class="screen-reader-text">' . esc_html__( 'Email confirmation and marketing status', 'contactpanda' ) . '</span></th><th class="column-actions" rowspan="' . ( $orders_enabled ? 2 : 1 ) . '"><span class="screen-reader-text">' . esc_html__( 'Actions', 'contactpanda' ) . '</span></th>';
+		if ( $orders_enabled ) echo '</tr><tr class="contactpanda-order-subheadings">';
+			if ( $orders_enabled ) echo self::sortable_heading( __( 'Number', 'contactpanda' ), 'order_count', $orderby, $order, $customer_filter, $search, 'orders' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes dynamic values.
+			if ( $orders_enabled ) echo self::sortable_heading( __( 'Total', 'contactpanda' ), 'order_total', $orderby, $order, $customer_filter, $search, 'orders' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- helper escapes dynamic values.
 			echo '</tr></thead><tbody>';
 		foreach ( $contacts as $contact ) {
 			$id = absint( self::value( $contact, array( 'id', 'ID' ) ) );
@@ -2509,6 +2519,12 @@ final class ContactPanda_Plugin {
 			self::list_editable_field( __( 'First name', 'contactpanda' ), $first_name, 'first_name', 'contact', $id );
 				echo '</td><td class="column-last_name contactpanda-last-name" title="' . esc_attr( $last_name ) . '">';
 			self::list_editable_field( __( 'Last name', 'contactpanda' ), $last_name, 'last_name', 'contact', $id );
+			echo '</td>';
+
+			echo '<td class="' . esc_attr( self::column_class( 'salutation' ) ) . '">';
+			$salutation = self::meta( $contact, array( 'anrede', 'salutation' ) );
+			if ( current_user_can( ContactPanda_Capabilities::for_area( 'contacts' ) ) ) self::salutation_field( $salutation, '', $id, true );
+			else echo esc_html( $salutation ? self::salutation_label( $salutation ) : '–––' );
 			echo '</td>';
 
 			$email = self::value( $contact, array( 'email' ) );
@@ -2532,8 +2548,8 @@ final class ContactPanda_Plugin {
 				self::list_editable_field( __( 'Company', 'contactpanda' ), $company ? $company_name : '', 'company', 'contact', $id );
 				echo '</td>';
 			}
-			echo '<td class="' . esc_attr( self::column_class( 'orders', 'contactpanda-order-count' ) ) . '">' . esc_html( $order_summary['count'] ) . '</td>';
-			echo '<td class="' . esc_attr( self::column_class( 'orders', 'contactpanda-order-total' ) ) . '">' . wp_kses_post( $order_summary['formatted_total'] ) . '</td>';
+			if ( $orders_enabled ) echo '<td class="' . esc_attr( self::column_class( 'orders', 'contactpanda-order-count' ) ) . '">' . esc_html( $order_summary['count'] ) . '</td>';
+			if ( $orders_enabled ) echo '<td class="' . esc_attr( self::column_class( 'orders', 'contactpanda-order-total' ) ) . '">' . wp_kses_post( $order_summary['formatted_total'] ) . '</td>';
 			if ( $events_enabled ) {
 				echo '<td class="' . esc_attr( self::column_class( 'events', 'contactpanda-event-count' ) ) . '">' . esc_html( $event_summary['count'] ?? $event_summary['visited'] ) . '</td>';
 			}
@@ -2567,7 +2583,7 @@ final class ContactPanda_Plugin {
 			foreach ( (array) $args as $key => $value ) {
 				if ( '' !== (string) $value && 0 !== $value && 'alle' !== $value && 'asc' !== $value ) $return_args[ sanitize_key( $key ) ] = $value;
 			}
-			set_transient( 'contactpanda_people_state_' . $user_id . '_' . $token, array( 'ids' => $ids, 'total' => count( $ids ), 'return_url' => add_query_arg( $return_args, admin_url( 'admin.php' ) ) ), 2 * HOUR_IN_SECONDS );
+			set_transient( 'contactpanda_people_state_' . $user_id . '_' . $token, array( 'ids' => $ids, 'total' => count( $ids ), 'source' => ContactPanda_Selections::source(), 'return_url' => add_query_arg( $return_args, admin_url( 'admin.php' ) ) ), 2 * HOUR_IN_SECONDS );
 			return $token;
 		}
 
@@ -2695,7 +2711,7 @@ final class ContactPanda_Plugin {
 			}
 			echo '</div><div class="contactpanda-channel-list">';
 			$type_channels = array_values( array_filter( $channels, static function ( $channel ) use ( $type ) { return $type === $channel['type']; } ) );
-			if ( ! $type_channels ) echo '<span class="contactpanda-muted contactpanda-channel-empty">' . esc_html( 'email' === $type ? __( 'No email address saved.', 'contactpanda' ) : __( 'No phone number saved.', 'contactpanda' ) ) . '</span>';
+			if ( ! $type_channels ) echo '<span class="contactpanda-muted contactpanda-channel-empty">' . esc_html( 'email' === $type ? __( 'No email address saved.', 'contactpanda' ) : '–––' ) . '</span>';
 			foreach ( $type_channels as $channel ) self::render_contact_channel_row( $contact_id, $channel, $editable );
 			echo '</div>';
 			if ( $editable ) {
@@ -2775,6 +2791,10 @@ final class ContactPanda_Plugin {
 	}
 
 	public static function handle_contact_company() {
+		if ( 'company' === ( $_POST['relation_scope'] ?? '' ) ) {
+			self::handle_company_people();
+			return;
+		}
 		if ( class_exists( 'ContactPanda_Store' ) && 'groundhogg' === ContactPanda_Store::source() ) wp_die( esc_html__( 'Groundhogg data is read-only. Migrate to ContactPanda before editing.', 'contactpanda' ), '', array( 'response' => 403 ) );
 		if ( ! current_user_can( class_exists( 'ContactPanda_Capabilities' ) ? ContactPanda_Capabilities::for_area( 'contacts' ) : self::access_capability() ) || ! ContactPanda_Store::standalone() ) wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ), '', array( 'response' => 403 ) );
 		$contact_id = absint( $_POST['contact_id'] ?? 0 );
@@ -4000,14 +4020,17 @@ final class ContactPanda_Plugin {
 		return '<th class="' . esc_attr( $class ) . ( $active ? ' is-sorted' : '' ) . '"><a href="' . esc_url( add_query_arg( $args, admin_url( 'admin.php' ) ) ) . '" aria-label="' . esc_attr( $aria ) . '"><span>' . esc_html( $label ) . '</span><span class="contactpanda-sort-indicator" aria-hidden="true">' . esc_html( $indicator ) . '</span></a></th>';
 	}
 
-	private static function rowspan_heading( $heading ) {
+	private static function rowspan_heading( $heading, $rows = 2 ) {
+		if ( 1 === $rows ) return $heading;
 		return preg_replace( '/^<th /', '<th rowspan="2" ', (string) $heading, 1 );
 	}
 
 	private static function compare_contacts( $left, $right, $orderby, $company_map, $order_summaries, $event_summaries = array() ) {
 		$left_id = absint( self::value( $left, array( 'id', 'ID' ) ) );
 		$right_id = absint( self::value( $right, array( 'id', 'ID' ) ) );
-		if ( 'order_total' === $orderby ) {
+		if ( 'order_count' === $orderby ) {
+			$comparison = (int) ( $order_summaries[ $left_id ]['count'] ?? 0 ) <=> (int) ( $order_summaries[ $right_id ]['count'] ?? 0 );
+		} elseif ( 'order_total' === $orderby ) {
 			$left_value = isset( $order_summaries[ $left_id ]['total'] ) ? (float) $order_summaries[ $left_id ]['total'] : 0.0;
 			$right_value = isset( $order_summaries[ $right_id ]['total'] ) ? (float) $order_summaries[ $right_id ]['total'] : 0.0;
 			$comparison = $left_value <=> $right_value;
@@ -4049,6 +4072,110 @@ final class ContactPanda_Plugin {
 		echo '</div></div>';
 	}
 
+	public static function company_people_search() {
+		if ( ! ContactPanda_Store::standalone() || ! current_user_can( ContactPanda_Capabilities::for_area( 'contacts' ) ) ) wp_send_json_error( null, 403 );
+		check_ajax_referer( 'contactpanda_update_company', 'nonce' );
+		$term = sanitize_text_field( wp_unslash( $_POST['search'] ?? '' ) );
+		$result = ContactPanda_Store::search_contacts( $term, 20 );
+		$people = array();
+		foreach ( $result['contacts'] as $person ) {
+			$name = trim( $person['first_name'] . ' ' . $person['last_name'] );
+			$people[] = array( 'id' => absint( $person['id'] ), 'label' => implode( ' · ', array_filter( array( $name, $person['email'] ) ) ) ?: __( 'Unnamed person', 'contactpanda' ) );
+		}
+		wp_send_json_success( $people );
+	}
+
+	private static function handle_company_people() {
+		if ( ! ContactPanda_Store::standalone() || ! current_user_can( ContactPanda_Capabilities::for_area( 'contacts' ) ) ) wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ), '', array( 'response' => 403 ) );
+		$company_id = absint( $_POST['company_id'] ?? 0 );
+		$contact_id = absint( $_POST['contact_id'] ?? 0 );
+		check_admin_referer( 'contactpanda_company_people_' . $company_id );
+		if ( ! ContactPanda_Store::company( $company_id ) || ! ContactPanda_Store::contact( $contact_id ) ) wp_die( esc_html__( 'Company assignment not found.', 'contactpanda' ), '', array( 'response' => 404 ) );
+		$operation = sanitize_key( wp_unslash( $_POST['operation'] ?? '' ) );
+		$position = sanitize_text_field( wp_unslash( $_POST['position'] ?? '' ) );
+		$relations = array_column( ContactPanda_Store::contact_company_relations( $contact_id ), null, 'company_id' );
+		$saved = false;
+		if ( isset( $relations[ $company_id ] ) ) {
+			$saved = ContactPanda_Store::update_contact_company_relation( $company_id, $contact_id, $position, null );
+		} elseif ( 'add' === $operation ) {
+			$saved = ContactPanda_Store::link_company_contact( $company_id, $contact_id, $position, false, false, true );
+		}
+		if ( ! $saved ) wp_die( esc_html__( 'The company changes could not be saved.', 'contactpanda' ), '', array( 'response' => 400 ) );
+		wp_safe_redirect( add_query_arg( array( 'page' => 'contactpanda-firmen', 'firma' => $company_id ), admin_url( 'admin.php' ) ) );
+		exit;
+	}
+
+	private static function company_address_values( $company ) {
+		$address = array();
+		foreach ( array( 'address_1' => array( 'street', 'address_1', 'street_address_1' ), 'address_2' => array( 'address_2', 'street_address_2' ), 'postcode' => array( 'postcode', 'postal_code' ), 'city' => array( 'city' ), 'state' => array( 'state', 'region' ), 'country' => array( 'country' ) ) as $field => $aliases ) {
+			$address[ $field ] = self::value( $company, $aliases, self::meta( $company, $aliases ) );
+		}
+		return $address;
+	}
+
+	public static function extension_company_billing_address( $company_id ) {
+		$company = self::company( absint( $company_id ) );
+		if ( ! $company ) return array();
+		$address = self::company_address_values( $company );
+		$override = json_decode( self::meta( $company, array( 'contactpanda_billing_address' ) ), true );
+		return array( 'company' => self::value( $company, array( 'get_name', 'name', 'company_name' ) ) ) + ( is_array( $override ) && array_filter( $override ) ? array_intersect_key( $override, $address ) + array_fill_keys( array_keys( $address ), '' ) : $address );
+	}
+
+	public static function save_company_address() {
+		if ( ! ContactPanda_Store::standalone() || ! current_user_can( self::access_capability() ) ) wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ), '', array( 'response' => 403 ) );
+		$id = absint( $_POST['company_id'] ?? 0 );
+		check_admin_referer( 'contactpanda_company_address_' . $id );
+		$company = ContactPanda_Store::company( $id );
+		if ( ! $company ) wp_die( esc_html__( 'Company assignment not found.', 'contactpanda' ), '', array( 'response' => 404 ) );
+		$section = 'billing' === ( $_POST['address_section'] ?? '' ) ? 'billing' : 'company';
+		$input = isset( $_POST['address'] ) && is_array( $_POST['address'] ) ? wp_unslash( $_POST['address'] ) : array();
+		$result = ContactPanda_Store::save_company_address( $id, $section, $input );
+		if ( ! $result ) wp_die( esc_html__( 'The company changes could not be saved.', 'contactpanda' ), '', array( 'response' => 400 ) );
+		wp_safe_redirect( add_query_arg( array( 'page' => 'contactpanda-firmen', 'firma' => $id ), admin_url( 'admin.php' ) ) );
+		exit;
+	}
+
+	private static function company_address_panel( $id, $section, $address, $readonly, $legacy = '', $override = array() ) {
+		$heading = 'billing' === $section ? __( 'Billing address', 'contactpanda' ) : __( 'Company address', 'contactpanda' );
+		$summary = self::format_address( $address );
+		if ( $readonly ) {
+			self::field( $heading, $summary ?: $legacy );
+			return;
+		}
+		echo '<details class="contactpanda-form-section contactpanda-company-address"><summary>' . esc_html( $heading ) . '</summary>';
+		if ( $summary || $legacy ) echo '<p>' . nl2br( esc_html( $summary ?: $legacy ) ) . '</p>';
+		if ( $summary && $legacy ) echo '<p class="description">' . esc_html( $legacy ) . '</p>';
+		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_company_address"><input type="hidden" name="company_id" value="' . esc_attr( $id ) . '"><input type="hidden" name="address_section" value="' . esc_attr( $section ) . '">';
+		wp_nonce_field( 'contactpanda_company_address_' . $id );
+		if ( 'billing' === $section ) echo '<p>' . esc_html__( 'Leave the billing address blank to use the company address.', 'contactpanda' ) . '</p>';
+		$labels = array( 'address_1' => __( 'Street and house number', 'contactpanda' ), 'address_2' => __( 'Address line 2', 'contactpanda' ), 'postcode' => __( 'Postcode', 'contactpanda' ), 'city' => __( 'City', 'contactpanda' ), 'state' => __( 'State / region', 'contactpanda' ), 'country' => __( 'Country', 'contactpanda' ) );
+		echo '<div class="contactpanda-form-grid">';
+		foreach ( $labels as $key => $label ) {
+			$value = ( 'billing' === $section ? $override : $address )[ $key ] ?? '';
+			echo '<label><span>' . esc_html( $label ) . '</span>';
+			if ( 'country' === $key ) {
+				$countries = class_exists( 'WC_Countries' ) ? ( new WC_Countries() )->get_countries() : self::contact_countries();
+				if ( $value && ! isset( $countries[ $value ] ) ) $countries[ $value ] = $value;
+				echo '<select name="address[country]"><option value="">' . esc_html__( 'Please select', 'contactpanda' ) . '</option>';
+				foreach ( $countries as $code => $country ) echo '<option value="' . esc_attr( $code ) . '"' . selected( $value, $code, false ) . '>' . esc_html( $country ) . '</option>';
+				echo '</select>';
+			} else echo '<input name="address[' . esc_attr( $key ) . ']" value="' . esc_attr( $value ) . '">';
+			echo '</label>';
+		}
+		echo '</div><p><button type="submit" class="button button-primary panda-button-regular"><span class="dashicons dashicons-yes" aria-hidden="true"></span>' . esc_html__( 'Save address', 'contactpanda' ) . '</button></p></form></details>';
+	}
+
+	private static function company_person_form( $company_id, $contact_id = 0, $position = '' ) {
+		$modal = 'contactpanda-company-person-' . $company_id . '-' . $contact_id;
+		$title = $contact_id ? __( 'Position / role', 'contactpanda' ) : __( 'Link person', 'contactpanda' );
+		$icon = $contact_id ? 'dashicons-edit' : 'dashicons-plus-alt2';
+		echo '<button type="button" class="button ' . ( $contact_id ? 'panda-button-compact' : 'panda-button-regular' ) . ' contactpanda-open-company-relation" data-modal="' . esc_attr( $modal ) . '" aria-haspopup="dialog" aria-label="' . esc_attr( $title ) . '" title="' . esc_attr( $title ) . '"><span class="dashicons ' . esc_attr( $icon ) . '" aria-hidden="true"></span>' . ( $contact_id ? '' : esc_html( $title ) ) . '</button>';
+		echo '<div id="' . esc_attr( $modal ) . '" class="contactpanda-consent-modal contactpanda-company-relation-modal" role="dialog" aria-modal="true" aria-labelledby="' . esc_attr( $modal . '-title' ) . '" hidden><div class="contactpanda-modal-panel"><h2 id="' . esc_attr( $modal . '-title' ) . '">' . esc_html( $title ) . '</h2><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_contact_company"><input type="hidden" name="relation_scope" value="company"><input type="hidden" name="company_id" value="' . esc_attr( $company_id ) . '"><input type="hidden" name="contact_id" value="' . esc_attr( $contact_id ) . '"><input type="hidden" name="operation" value="' . ( $contact_id ? 'update' : 'add' ) . '">';
+		wp_nonce_field( 'contactpanda_company_people_' . $company_id );
+		if ( ! $contact_id ) echo '<label><span>' . esc_html__( 'Search people', 'contactpanda' ) . '</span><input type="search" class="contactpanda-company-link-search" autocomplete="off" required></label><div class="contactpanda-company-link-results" aria-live="polite"></div>';
+		echo '<label><span>' . esc_html__( 'Position / role', 'contactpanda' ) . '</span><input name="position" maxlength="190" value="' . esc_attr( $position ) . '"></label><p class="contactpanda-row-actions"><button type="button" class="button contactpanda-close-company-relation"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span>' . esc_html__( 'Cancel', 'contactpanda' ) . '</button><button type="submit" class="button button-primary"' . disabled( ! $contact_id, true, false ) . '><span class="dashicons dashicons-yes" aria-hidden="true"></span>' . esc_html__( 'Save', 'contactpanda' ) . '</button></p></form></div></div>';
+	}
+
 	private static function render_company( $id ) {
 		$company = self::company( $id );
 		if ( ! $company ) {
@@ -4060,7 +4187,10 @@ final class ContactPanda_Plugin {
 		$name = self::value( $company, array( 'get_name', 'name', 'company_name' ), __( 'Company #', 'contactpanda' ) . $id );
 		$contacts = self::contacts( $company );
 		$orders = self::orders( $contacts );
-		$billing = $orders ? self::billing( $orders[0] ) : array();
+		$company_address = self::company_address_values( $company );
+		$billing = self::extension_company_billing_address( $id );
+		$legacy_address = ContactPanda_Store::standalone() ? self::meta( $company, array( 'address' ) ) : self::value( $company, array( 'address', 'get_address' ) );
+		$can_link = ! $readonly && current_user_can( ContactPanda_Capabilities::for_area( 'contacts' ) );
 		$uid = self::normalize_vat( self::value( $company, array( 'vat_id', 'uid' ), self::meta( $company, array( 'vat_id', 'uid' ) ) ) );
 		$uid_verified = '' !== $uid && 'valid' === sanitize_key( self::value( $company, array( 'vat_status' ), self::meta( $company, array( 'vat_status' ) ) ) );
 
@@ -4080,39 +4210,40 @@ final class ContactPanda_Plugin {
 			self::field( __( 'Website', 'contactpanda' ), self::value( $company, array( 'domain', 'website', 'get_website' ) ) );
 			self::field( __( 'Phone', 'contactpanda' ), self::format_phone( self::value( $company, array( 'phone', 'get_phone' ) ) ) );
 			self::field( __( 'Industry', 'contactpanda' ), self::value( $company, array( 'industry', 'get_industry' ) ) );
-			self::field( __( 'Company address', 'contactpanda' ), self::value( $company, array( 'address', 'get_address' ) ) );
-			self::field( __( 'Description', 'contactpanda' ), self::value( $company, array( 'description', 'get_description' ) ) );
 			self::readonly_uid_field( __( 'VAT ID', 'contactpanda' ), $uid, $uid_verified );
 		} else {
 			self::editable_field( __( 'Company name', 'contactpanda' ), $name, 'name', $id );
 			self::editable_field( __( 'Website', 'contactpanda' ), self::value( $company, array( 'domain', 'website', 'get_website' ) ), 'domain', $id );
 			self::phone_field( __( 'Phone', 'contactpanda' ), self::value( $company, array( 'phone', 'get_phone' ) ), 'phone', $id, 'company' );
 			self::editable_field( __( 'Industry', 'contactpanda' ), self::value( $company, array( 'industry', 'get_industry' ) ), 'industry', $id );
-			self::editable_field( __( 'Company address', 'contactpanda' ), self::value( $company, array( 'address', 'get_address' ) ), 'address', $id, true );
-			self::editable_field( __( 'Description', 'contactpanda' ), self::value( $company, array( 'description', 'get_description' ) ), 'description', $id, true );
 			self::uid_field( __( 'VAT ID', 'contactpanda' ), $uid, $id, 'company', $uid_verified );
 		}
+		self::company_address_panel( $id, 'company', $company_address, $readonly, $legacy_address );
 		echo '<p class="description contactpanda-uid-help">' . esc_html__( 'This VAT ID belongs to the company itself. It is not stored on or derived from a contact person. EU validation only runs when requested.', 'contactpanda' ) . '</p>';
 		echo '</section>';
 		do_action( 'contactpanda_render_company_custom_fields', $id, $company, $readonly, 'sidebar' );
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
-		echo '<section class="contactpanda-card">' . '<h2>' . esc_html__( 'Billing address', 'contactpanda' ) . '</h2>';
-		foreach ( array( __( 'Company', 'contactpanda' ) => 'company', __( 'First name', 'contactpanda' ) => 'first_name', __( 'Last name', 'contactpanda' ) => 'last_name', __( 'Street', 'contactpanda' ) => 'address_1', __( 'Address line 2', 'contactpanda' ) => 'address_2', __( 'Postcode', 'contactpanda' ) => 'postcode', __( 'Location', 'contactpanda' ) => 'city', __( 'Country', 'contactpanda' ) => 'country' ) as $label => $key ) {
-			self::field( $label, isset( $billing[ $key ] ) ? $billing[ $key ] : '' );
-		}
+		echo '<section class="contactpanda-card">';
+		self::company_address_panel( $id, 'billing', $billing, $readonly, empty( $billing['address_1'] ) ? $legacy_address : '', (array) json_decode( self::meta( $company, array( 'contactpanda_billing_address' ) ), true ) );
 		echo '</section></aside>';
 
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
 		echo '<main><section class="contactpanda-card contactpanda-tabs-card" data-tabs><div class="contactpanda-tabs" role="tablist" aria-label="' . esc_attr__( 'Company data', 'contactpanda' ) . '">';
-		foreach ( array( 'contacts' => __( 'Contacts', 'contactpanda' ), 'orders' => __( 'Orders & invoices', 'contactpanda' ), 'notes' => __( 'Notes', 'contactpanda' ), 'activities' => __( 'Activities', 'contactpanda' ) ) as $key => $label ) echo '<button type="button" class="contactpanda-tab' . ( 'contacts' === $key ? ' is-active' : '' ) . '" id="cp-company-' . absint( $id ) . '-' . esc_attr( $key ) . '-tab" role="tab" aria-selected="' . ( 'contacts' === $key ? 'true' : 'false' ) . '" aria-controls="cp-company-' . absint( $id ) . '-' . esc_attr( $key ) . '" tabindex="' . ( 'contacts' === $key ? '0' : '-1' ) . '">' . esc_html( $label ) . '</button>';
-		echo '</div><div class="contactpanda-tab-panel" role="tabpanel" id="cp-company-' . absint( $id ) . '-contacts" aria-labelledby="cp-company-' . absint( $id ) . '-contacts-tab"><section><h2>' . esc_html__( 'Contacts', 'contactpanda' ) . ' <span class="contactpanda-count">' . esc_html( count( $contacts ) ) . '</span></h2>';
+		foreach ( array( 'contacts' => __( 'People', 'contactpanda' ), 'orders' => __( 'Orders & invoices', 'contactpanda' ), 'notes' => __( 'Notes', 'contactpanda' ), 'activities' => __( 'Activities', 'contactpanda' ), 'description' => __( 'Description', 'contactpanda' ) ) as $key => $label ) echo '<button type="button" class="contactpanda-tab' . ( 'contacts' === $key ? ' is-active' : '' ) . '" id="cp-company-' . absint( $id ) . '-' . esc_attr( $key ) . '-tab" role="tab" aria-selected="' . ( 'contacts' === $key ? 'true' : 'false' ) . '" aria-controls="cp-company-' . absint( $id ) . '-' . esc_attr( $key ) . '" tabindex="' . ( 'contacts' === $key ? '0' : '-1' ) . '">' . esc_html( $label ) . '</button>';
+		echo '</div><div class="contactpanda-tab-panel" role="tabpanel" id="cp-company-' . absint( $id ) . '-contacts" aria-labelledby="cp-company-' . absint( $id ) . '-contacts-tab"><section><h2>' . esc_html__( 'People', 'contactpanda' ) . ' <span class="contactpanda-count">' . esc_html( count( $contacts ) ) . '</span></h2>';
 		if ( ! $readonly ) echo '<p><button type="button" class="button contactpanda-open-new-person" data-company-id="' . absint( $id ) . '" data-company-name="' . esc_attr( $name ) . '"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span> ' . esc_html__( 'Add person', 'contactpanda' ) . '</button></p>';
+		if ( $can_link ) self::company_person_form( $id );
 		if ( $contacts ) {
 			echo '<div class="contactpanda-people">';
 			foreach ( $contacts as $contact ) {
 				$full = trim( self::value( $contact, array( 'first_name', 'get_first_name' ) ) . ' ' . self::value( $contact, array( 'last_name', 'get_last_name' ) ) );
 				$contact_id = absint( self::value( $contact, array( 'id', 'ID' ) ) );
-				echo '<div class="contactpanda-person"><span class="dashicons dashicons-admin-users"></span><div><a href="' . esc_url( admin_url( 'admin.php?page=' . self::people_page_slug() . '&person=' . $contact_id ) ) . '"><strong>' . esc_html( $full ?: __( 'Contact', 'contactpanda' ) ) . '</strong></a><br><span>' . esc_html( self::value( $contact, array( 'email', 'get_email' ), '—' ) ) . '</span></div></div>';
+				echo '<div class="contactpanda-person"><span class="dashicons dashicons-admin-users"></span><div><a href="' . esc_url( admin_url( 'admin.php?page=' . self::people_page_slug() . '&person=' . $contact_id ) ) . '"><strong>' . esc_html( $full ?: __( 'Contact', 'contactpanda' ) ) . '</strong></a><br><span>' . esc_html( self::value( $contact, array( 'email', 'get_email' ), '—' ) ) . '</span></div>';
+				$relations = ContactPanda_Store::standalone() ? array_column( ContactPanda_Store::contact_company_relations( $contact_id ), null, 'company_id' ) : array();
+				$position = $relations[ $id ]['position'] ?? self::value( $contact, array( 'position', 'company_position' ) );
+				if ( $position ) echo '<small>' . esc_html( $position ) . '</small>';
+				if ( $can_link ) self::company_person_form( $id, $contact_id, $position );
+				echo '</div>';
 			}
 			echo '</div>';
 		} else {
@@ -4136,11 +4267,16 @@ final class ContactPanda_Plugin {
 		self::render_company_notes( $id );
 		echo '</div><div class="contactpanda-tab-panel" role="tabpanel" id="cp-company-' . absint( $id ) . '-activities" aria-labelledby="cp-company-' . absint( $id ) . '-activities-tab" hidden>';
 		self::render_company_activity_history( $id );
+		echo '</div><div class="contactpanda-tab-panel" role="tabpanel" id="cp-company-' . absint( $id ) . '-description" aria-labelledby="cp-company-' . absint( $id ) . '-description-tab" hidden>';
+		$description = self::value( $company, array( 'description', 'get_description' ) );
+		if ( $readonly ) self::field( __( 'Description', 'contactpanda' ), $description );
+		else self::editable_field( __( 'Description', 'contactpanda' ), $description, 'description', $id, true );
 		echo '</div></section></main></div>';
 		if ( ! $readonly ) self::render_new_person_modal();
 	}
 
 	private static function render_person_tabs( $contact_id, $customer, $contact, $orders, $events, $events_enabled, $broadcasts, $editable ) {
+		$orders_enabled = function_exists( 'wc_get_orders' );
 		$tabs_id = 'contactpanda-person-tabs-' . absint( $contact_id );
 		$extension_tabs = (array) apply_filters( 'contactpanda_person_detail_tabs', array(), $contact_id, $contact, $editable );
 		$normalized_extension_tabs = array();
@@ -4170,7 +4306,7 @@ final class ContactPanda_Plugin {
 		}
 		echo '<button type="button" class="contactpanda-tab' . ( $show_notes ? ' is-active' : '' ) . '" id="' . esc_attr( $tabs_id . '-notes-tab' ) . '" role="tab" aria-selected="' . ( $show_notes ? 'true' : 'false' ) . '" aria-controls="' . esc_attr( $tabs_id . '-notes' ) . '" tabindex="' . ( $show_notes ? '0' : '-1' ) . '">' . esc_html__( 'Notes', 'contactpanda' ) . ' <span class="contactpanda-count">' . esc_html( count( $notes ) ) . '</span></button>';
 		echo '<button type="button" class="contactpanda-tab" id="' . esc_attr( $tabs_id . '-activities-tab' ) . '" role="tab" aria-selected="false" aria-controls="' . esc_attr( $tabs_id . '-activities' ) . '" tabindex="-1">' . esc_html__( 'Activities', 'contactpanda' ) . ' <span class="contactpanda-count">' . esc_html( count( $activities ) ) . '</span></button>';
-		echo '<button type="button" class="contactpanda-tab" id="' . esc_attr( $tabs_id . '-orders-tab' ) . '" role="tab" aria-selected="false" aria-controls="' . esc_attr( $tabs_id . '-orders' ) . '" tabindex="-1">' . esc_html__( 'Orders', 'contactpanda' ) . ' <span class="contactpanda-count">' . esc_html( count( $orders ) ) . '</span></button>';
+		if ( $orders_enabled ) echo '<button type="button" class="contactpanda-tab" id="' . esc_attr( $tabs_id . '-orders-tab' ) . '" role="tab" aria-selected="false" aria-controls="' . esc_attr( $tabs_id . '-orders' ) . '" tabindex="-1">' . esc_html__( 'Orders', 'contactpanda' ) . ' <span class="contactpanda-count">' . esc_html( count( $orders ) ) . '</span></button>';
 		echo '<button type="button" class="contactpanda-tab" id="' . esc_attr( $tabs_id . '-addresses-tab' ) . '" role="tab" aria-selected="false" aria-controls="' . esc_attr( $tabs_id . '-addresses' ) . '" tabindex="-1">' . esc_html__( 'Addresses', 'contactpanda' ) . '</button>';
 		foreach ( $normalized_extension_tabs as $key => $tab ) {
 			if ( 'before_notes' === $tab['position'] ) continue;
@@ -4194,9 +4330,13 @@ final class ContactPanda_Plugin {
 		self::render_contact_notes( $contact_id, $notes, false, $editable );
 		echo '</div><div class="contactpanda-tab-panel" id="' . esc_attr( $tabs_id . '-activities' ) . '" role="tabpanel" aria-labelledby="' . esc_attr( $tabs_id . '-activities-tab' ) . '" hidden>';
 		self::render_activity_timeline( $activities, false );
-		echo '</div><div class="contactpanda-tab-panel" id="' . esc_attr( $tabs_id . '-orders' ) . '" role="tabpanel" aria-labelledby="' . esc_attr( $tabs_id . '-orders-tab' ) . '" hidden>';
-		self::render_person_orders( $orders, false );
-		echo '</div><div class="contactpanda-tab-panel" id="' . esc_attr( $tabs_id . '-addresses' ) . '" role="tabpanel" aria-labelledby="' . esc_attr( $tabs_id . '-addresses-tab' ) . '" hidden>';
+		echo '</div>';
+		if ( $orders_enabled ) {
+			echo '<div class="contactpanda-tab-panel" id="' . esc_attr( $tabs_id . '-orders' ) . '" role="tabpanel" aria-labelledby="' . esc_attr( $tabs_id . '-orders-tab' ) . '" hidden>';
+			self::render_person_orders( $orders, false );
+			echo '</div>';
+		}
+		echo '<div class="contactpanda-tab-panel" id="' . esc_attr( $tabs_id . '-addresses' ) . '" role="tabpanel" aria-labelledby="' . esc_attr( $tabs_id . '-addresses-tab' ) . '" hidden>';
 		self::render_customer_addresses( $contact_id, $customer, $contact, false, $editable );
 		echo '</div>';
 		foreach ( $normalized_extension_tabs as $key => $tab ) {
@@ -5722,28 +5862,48 @@ final class ContactPanda_Plugin {
 		echo '<div class="contactpanda-field"><span>' . esc_html( $label ) . '</span><strong>' . wp_kses( $display, array( 'br' => array() ) ) . '</strong></div>';
 	}
 
-	private static function salutation_label( $value ) {
-		$labels = array( 'mr' => __( 'Mr', 'contactpanda' ), 'ms' => __( 'Ms', 'contactpanda' ), 'family' => __( 'Family', 'contactpanda' ), 'neutral' => __( 'Neutral', 'contactpanda' ) );
-		return $labels[ sanitize_key( $value ) ] ?? '—';
+	public static function salutation_options() {
+		return array( 'neutral' => __( 'Neutral', 'contactpanda' ), 'mr' => __( 'Mr', 'contactpanda' ), 'ms' => __( 'Ms', 'contactpanda' ), 'family' => __( 'Family', 'contactpanda' ) );
 	}
 
-	private static function salutation_field( $value, $first_name, $contact_id ) {
-		$suggested = ContactPanda_Store::suggested_salutation( $first_name );
+	private static function salutation_label( $value ) {
+		return self::salutation_options()[ sanitize_key( $value ) ] ?? '—';
+	}
+
+	private static function salutation_field( $value, $first_name, $contact_id, $compact = false ) {
+		$suggested = $first_name ? ContactPanda_Store::suggested_salutation( $first_name ) : '';
 		$value = sanitize_key( $value );
-		$display = $value ? self::salutation_label( $value ) : __( 'Add salutation', 'contactpanda' );
-		echo '<div class="contactpanda-field contactpanda-salutation-field" data-contact="' . esc_attr( $contact_id ) . '"><span>' . esc_html__( 'Salutation', 'contactpanda' ) . '</span><button type="button" class="button-link contactpanda-salutation-value' . ( $value ? '' : ' is-empty' ) . '" data-value="' . esc_attr( $value ) . '">' . esc_html( $display ) . '</button><div class="contactpanda-salutation-editor" hidden><select class="contactpanda-salutation-select">';
-		echo '<option value=""' . selected( $value, '', false ) . '>' . esc_html__( '--- Please select ---', 'contactpanda' ) . '</option>';
-		foreach ( array( 'neutral', 'mr', 'ms', 'family' ) as $option ) echo '<option value="' . esc_attr( $option ) . '"' . selected( $value, $option, false ) . '>' . esc_html( self::salutation_label( $option ) ) . '</option>';
-		echo '</select><button type="button" class="button button-primary contactpanda-save-salutation"><span class="dashicons dashicons-saved" aria-hidden="true"></span> ' . esc_html__( 'Apply', 'contactpanda' ) . '</button><button type="button" class="button contactpanda-cancel-salutation">' . esc_html__( 'Cancel', 'contactpanda' ) . '</button></div>';
-		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
+		$label = __( 'Salutation', 'contactpanda' );
+		$add = __( 'Add salutation', 'contactpanda' );
+		$edit = sprintf( __( 'Edit %s', 'contactpanda' ), $label );
+		$apply = __( 'Apply', 'contactpanda' );
+		$cancel = __( 'Cancel', 'contactpanda' );
+		echo '<div class="contactpanda-field contactpanda-salutation-field" data-contact="' . esc_attr( $contact_id ) . '"><span' . ( $compact ? ' class="screen-reader-text"' : '' ) . '>' . esc_html( $label ) . '</span>';
+		echo '<div class="contactpanda-field-row"><span data-salutation-empty' . ( $value ? ' hidden' : '' ) . '>–––</span><button type="button" class="contactpanda-salutation-value ' . ( $value ? 'button-link' : 'button panda-button-compact' ) . '" data-value="' . esc_attr( $value ) . '" data-add-label="' . esc_attr( $add ) . '" data-edit-label="' . esc_attr( $edit ) . '" title="' . esc_attr( $value ? $edit : $add ) . '" aria-label="' . esc_attr( $value ? $edit : $add ) . '"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"' . ( $value ? ' hidden' : '' ) . '></span><span data-salutation-text' . ( $value ? '' : ' hidden' ) . '>' . esc_html( self::salutation_label( $value ) ) . '</span></button></div>';
+		echo '<div class="contactpanda-salutation-editor" hidden><select class="contactpanda-salutation-select" aria-label="' . esc_attr( $label ) . '"><option value="">' . esc_html__( '--- Please select ---', 'contactpanda' ) . '</option>';
+		foreach ( self::salutation_options() as $option => $option_label ) echo '<option value="' . esc_attr( $option ) . '"' . selected( $value, $option, false ) . '>' . esc_html( $option_label ) . '</option>';
+		echo '</select><button type="button" class="button button-primary panda-button-compact contactpanda-save-salutation" aria-label="' . esc_attr( $apply ) . '" title="' . esc_attr( $apply ) . '"><span class="dashicons dashicons-saved" aria-hidden="true"></span></button><button type="button" class="button panda-button-compact contactpanda-cancel-salutation" aria-label="' . esc_attr( $cancel ) . '" title="' . esc_attr( $cancel ) . '"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button></div>';
+		/* translators: %s: suggested salutation. */
 		if ( $suggested && $suggested !== $value ) echo '<button type="button" class="button-link contactpanda-salutation-suggestion" data-value="' . esc_attr( $suggested ) . '">' . esc_html( sprintf( __( 'Suggestion: %s', 'contactpanda' ), self::salutation_label( $suggested ) ) ) . '</button>';
 		echo '<div class="contactpanda-field-message" aria-live="polite"></div></div>';
+	}
+
+	private static function inline_value( $label, $value, $display ) {
+		$empty = '' === (string) $value;
+		/* translators: %s: field label. */
+		$edit = sprintf( __( 'Edit %s', 'contactpanda' ), $label );
+		/* translators: %s: field label. */
+		$add = sprintf( __( 'Add %s', 'contactpanda' ), $label );
+		$class = $empty ? 'button panda-button-compact' : 'button-link';
+		$html = '<span class="contactpanda-empty-field-value"' . ( $empty ? '' : ' hidden' ) . '>–––</span>';
+		$html .= '<button type="button" class="' . $class . ' contactpanda-edit contactpanda-field-value" data-value="' . esc_attr( $value ) . '" data-edit-label="' . esc_attr( $edit ) . '" data-add-label="' . esc_attr( $add ) . '" aria-label="' . esc_attr( $empty ? $add : $edit ) . '" title="' . esc_attr( $empty ? $add : $edit ) . '">';
+		return $html . '<span class="dashicons dashicons-plus-alt2" aria-hidden="true"' . ( $empty ? '' : ' hidden' ) . '></span><span data-inline-text' . ( $empty ? ' hidden' : '' ) . '>' . esc_html( $display ) . '</span></button>';
 	}
 
 	private static function editable_field( $label, $value, $field, $company_id, $multiline = false ) {
 		echo '<div class="contactpanda-field contactpanda-editable" data-entity="company" data-company="' . esc_attr( $company_id ) . '" data-field="' . esc_attr( $field ) . '" data-multiline="' . ( $multiline ? '1' : '0' ) . '">';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		echo '<span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row"><button type="button" class="button-link contactpanda-edit contactpanda-field-value" data-value="' . esc_attr( $value ) . '" aria-label="' . esc_attr( sprintf( __( 'Edit %s', 'contactpanda' ), $label ) ) . '">' . esc_html( '' !== (string) $value ? $value : __( 'Add', 'contactpanda' ) ) . '</button></div>';
+		echo '<span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row">' . self::inline_value( $label, $value, $value ) . '</div>';
 		echo '<div class="contactpanda-field-message" aria-live="polite"></div></div>';
 	}
 
@@ -5751,13 +5911,13 @@ final class ContactPanda_Plugin {
 		$value = null === $raw_value ? $display : $raw_value;
 		echo '<div class="contactpanda-editable contactpanda-list-editable" data-entity="' . esc_attr( $entity ) . '" data-' . esc_attr( $entity ) . '="' . esc_attr( $id ) . '" data-field="' . esc_attr( $field ) . '"' . ( $type ? ' data-type="' . esc_attr( $type ) . '"' : '' ) . '>';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		echo '<div class="contactpanda-field-row"><button type="button" class="button-link contactpanda-edit contactpanda-field-value" data-value="' . esc_attr( $value ) . '" aria-label="' . esc_attr( sprintf( __( 'Edit %s', 'contactpanda' ), $label ) ) . '">' . esc_html( '' !== (string) $display ? $display : __( 'Add', 'contactpanda' ) ) . '</button></div><div class="contactpanda-field-message" aria-live="polite"></div></div>';
+		echo '<div class="contactpanda-field-row">' . self::inline_value( $label, $value, $display ) . '</div><div class="contactpanda-field-message" aria-live="polite"></div></div>';
 	}
 
 	private static function contact_editable_field( $label, $value, $field, $contact_id, $multiline = false ) {
 		echo '<div class="contactpanda-field contactpanda-editable" data-entity="contact" data-contact="' . esc_attr( $contact_id ) . '" data-field="' . esc_attr( $field ) . '" data-multiline="' . ( $multiline ? '1' : '0' ) . '">';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		echo '<span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row"><button type="button" class="button-link contactpanda-edit contactpanda-field-value" data-value="' . esc_attr( $value ) . '" aria-label="' . esc_attr( sprintf( __( 'Edit %s', 'contactpanda' ), $label ) ) . '">' . esc_html( '' !== (string) $value ? $value : __( 'Add', 'contactpanda' ) ) . '</button>';
+		echo '<span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row">' . self::inline_value( $label, $value, $value ) . '';
 		if ( 'email' === $field && is_email( $value ) ) {
 			echo '<a class="button-link contactpanda-mail-link" href="mailto:' . esc_attr( $value ) . '" aria-label="' . esc_attr__( 'Send email', 'contactpanda' ) . '" title="' . esc_attr__( 'Send email', 'contactpanda' ) . '"><span class="dashicons dashicons-email-alt"></span></a>';
 		}

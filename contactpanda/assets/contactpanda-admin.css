@@ -490,3 +490,14 @@ body.contactpanda-modal-open{overflow:hidden}.contactpanda-mailing-modal{z-index
 .contactpanda-registration-settings-grid [hidden]{display:none!important}
 .contactpanda-registration-settings-grid .wp-editor-wrap{min-width:0}
 @media(max-width:1050px){.contactpanda-registration-settings-grid{grid-template-columns:minmax(0,1fr)}}
+
+.contactpanda-field-row [hidden],
+.contactpanda-salutation-field [hidden] { display: none !important; }
+.contactpanda-company-address .contactpanda-form-grid {
+	display: grid;
+	gap: 10px;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+}
+.contactpanda-company-address .contactpanda-form-grid :is(input, select) { width: 100%; }
+.contactpanda-company-relation-modal .contactpanda-modal-panel > form { display: grid; gap: 10px; }
+.contactpanda-company-link-results:not(:empty) { display: grid; gap: 4px; max-height: 12em; overflow: auto; }

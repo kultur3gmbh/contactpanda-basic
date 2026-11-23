@@ -89,7 +89,7 @@ final class ContactPanda_Basic_Newsletter_Campaigns {
 	}
 
 	public static function menu() {
-		add_submenu_page( 'contactpanda', __( 'Newsletters', 'contactpanda' ), __( 'Newsletter', 'contactpanda' ), self::capability(), 'contactpanda-campaigns', array( __CLASS__, 'render' ) );
+		add_submenu_page( 'contactpanda', __( 'Newsletters', 'contactpanda' ), __( 'Broadcasts', 'contactpanda' ), self::capability(), 'contactpanda-campaigns', array( __CLASS__, 'render' ) );
 	}
 
 	public static function render() {

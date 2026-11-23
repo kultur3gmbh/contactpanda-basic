@@ -3,9 +3,9 @@
  var c = window.CP_SELECTIONS; if (!c) return;
  // wp_localize_script serializes top-level scalars as strings: '0' is truthy.
  var current = Number(c.current);
- var labels = c.i18n, key = 'cp-selection:' + c.user + ':' + c.source, basket = [], additive = false;
- function store() { try { sessionStorage.setItem(key, JSON.stringify({ids:basket,add:additive,query:query()})); } catch (_) {} }
- function query() { var u = new URL(location.href); ['contactpanda_page','orderby','order','list_state'].forEach(function (k) { u.searchParams.delete(k); }); return u.search; }
+ var labels = c.i18n, key = 'cp-selection:' + c.user + ':' + c.source, basket = [], pending = false, savedId = 0;
+ function store() { try { sessionStorage.setItem(key, JSON.stringify({ids:basket,pending:pending,savedId:savedId,query:query()})); } catch (_) {} }
+ function query() { var u = new URL(location.href); ['contactpanda_page','orderby','order','list_state','cp_add_results'].forEach(function (k) { u.searchParams.delete(k); }); return u.search; }
  function ids(values) { return Array.from(new Set(values.map(String).filter(function (v) { return /^[1-9][0-9]*$/.test(v); }))).slice(0,10000); }
  function boxes() { return Array.from(document.querySelectorAll('.contactpanda-person-select')); }
  function collect() { boxes().forEach(function (box) { basket = basket.filter(function (id) { return id !== box.value; }); if (box.checked) basket.push(box.value); }); basket=ids(basket); store(); }
@@ -25,18 +25,94 @@
  window.ContactPandaSelections={ids:function(){return basket.slice();},run:function(action){
   collect();
   if(action==='selection_remove') { var removed=boxes().filter(function(b){return b.checked;}).map(function(b){return b.value;});basket=basket.filter(function(id){return removed.indexOf(id)===-1;});boxes().forEach(function(b){if(removed.indexOf(b.value)!==-1)b.checked=false;});store();refresh();return; }
-  if(action==='selection_save') return nameDialog('',function(name){return request('save',{name:name,ids:basket}).then(function(){location.reload();});});
+  if (action === 'selection_save') {
+   var saved = c.rows.find(function (row) { return Number(row.id) === savedId; });
+   return nameDialog(saved ? saved.name : '', function (name) {
+    return request('save', {id:savedId, name:name, ids:basket}).then(function (row) {
+     var destination = new URL(location.href);
+     destination.search = '';
+     destination.searchParams.set('page', 'contactpanda-people');
+     destination.searchParams.set('selection', row.id);
+     location.href = destination.href;
+    });
+   });
+  }
   if(action==='merge') { var form=document.createElement('form');form.method='post';form.action=c.post;var values={action:'contactpanda_merge_preview',_wpnonce:c.mergeNonce,entity:'contacts'};Object.keys(values).forEach(function(k){var f=document.createElement('input');f.type='hidden';f.name=k;f.value=values[k];form.appendChild(f);});basket.forEach(function(id){var f=document.createElement('input');f.type='hidden';f.name='ids[]';f.value=id;form.appendChild(f);});document.body.appendChild(form);form.submit(); }
  }};
- var toolbar=document.querySelector('.contactpanda-bulk-toolbar');
- if(toolbar || document.querySelector('.cp-selection-add')){
-  try{var previous=JSON.parse(sessionStorage.getItem(key)||'{}');additive=!!previous.add;if(previous.query===query() || additive)basket=ids(previous.ids||[]);}catch(_){}
-  if(Number.isSafeInteger(current) && current > 0 && !additive)request('load',{id:current}).then(function(row){basket=ids(row.ids);boxes().forEach(function(b){b.checked=basket.indexOf(b.value)!==-1;});store();refresh();}).catch(function(e){window.alert(e.message);});
-  boxes().forEach(function(b){if(additive && new URL(location.href).searchParams.get('s'))basket.push(b.value);b.checked=basket.indexOf(b.value)!==-1;});basket=ids(basket);
-  var add=document.querySelector('.cp-selection-add');if(add){add.setAttribute('aria-pressed',String(additive));add.classList.toggle('button-primary',additive);add.onclick=function(){additive=!additive;add.setAttribute('aria-pressed',String(additive));add.classList.toggle('button-primary',additive);store();};}
+ var add = document.querySelector('.cp-selection-add');
+ if (document.querySelector('.contactpanda-bulk-toolbar') || add) {
+  var url = new URL(location.href);
+  var replay = false;
+  try {
+   var previous = JSON.parse(sessionStorage.getItem(key) || '{}');
+   replay = !!previous.pending && url.searchParams.has('cp_add_results');
+   if (replay || previous.query === query()) {
+    basket = ids(previous.ids || []);
+    savedId = Number(previous.savedId) || 0;
+   }
+  } catch (_) {}
+  function applyBasket() {
+   boxes().forEach(function (box) { box.checked = basket.indexOf(box.value) !== -1; });
+   store();
+   refresh();
+  }
+  var status = document.querySelector('.cp-selection-result');
+  function appendResults() {
+   add.disabled = true;
+   request('search_results', {list_token:add.dataset.listToken}).then(function (row) {
+    var before = basket.length;
+    var membership = new Set(basket);
+    var incoming = row.ids.map(String).filter(function (id) { return !membership.has(id); });
+    basket = ids(basket.concat(incoming));
+    status.textContent = labels.added.replace('%d', basket.length - before);
+    if (basket.length - before < incoming.length || row.total > row.ids.length) status.textContent += ' ' + labels.capacity;
+    applyBasket();
+   }).catch(function (error) { status.textContent = error.message; })
+    .finally(function () { add.disabled = false; });
+  }
+  if (current > 0 && !replay) {
+   if (add) add.disabled = true;
+   request('load', {id:current}).then(function (row) {
+    basket = ids(row.ids);
+    savedId = current;
+    applyBasket();
+   }).catch(function (error) { if (status) status.textContent = error.message; })
+    .finally(function () { if (add) add.disabled = false; });
+  }
+  if (add) {
+   add.onclick = function () {
+    collect();
+    var form = add.closest('form');
+    var input = form.querySelector('[name="s"]');
+    if (!form.querySelector('[name="selection"]') && input.value.trim() === (url.searchParams.get('s') || '').trim()) {
+     appendResults();
+     return;
+    }
+    var reference = form.querySelector('[name="selection"]');
+    if (reference && !input.value.trim()) { input.focus(); return; }
+    if (reference) reference.remove();
+    var marker = document.createElement('input');
+    marker.type = 'hidden';
+    marker.name = 'cp_add_results';
+    marker.value = '1';
+    form.appendChild(marker);
+    pending = true;
+    store();
+    form.requestSubmit();
+   };
+   if (replay) {
+    url.searchParams.delete('cp_add_results');
+    history.replaceState(history.state, '', url);
+    appendResults();
+   }
+  }
   document.addEventListener('change',function(e){if(e.target.matches('.contactpanda-person-select,.contactpanda-select-all')){collect();refresh();}});
-  document.querySelectorAll('form.contactpanda-search').forEach(function(f){f.addEventListener('submit',function(){collect();if(additive){var reference=f.querySelector('[name="selection"]');if(reference)reference.remove();}else{basket=[];store();}});});
-  store();refresh();
+  document.querySelectorAll('form.contactpanda-search').forEach(function (form) {
+   form.addEventListener('submit', function () {
+    if (!pending) { basket = []; savedId = 0; store(); }
+   });
+  });
+  applyBasket();
  }
  function chooser(target, newsletter){
   if(!target || !c.rows.length)return;var select=document.createElement('select');select.setAttribute('aria-label',labels.load);var empty=document.createElement('option');empty.value='';empty.textContent=labels.load;select.appendChild(empty);c.rows.forEach(function(row){var o=document.createElement('option');o.value=row.id;o.textContent=row.name+' ('+row.count+')';select.appendChild(o);});select.onchange=function(){if(!select.value)return;if(newsletter){request('load',{id:select.value}).then(function(row){var form=document.getElementById('contactpanda-campaign-form'),radio=form.querySelector('[name="audience_source"][value="manual"]'),input=form.querySelector('[name="manual_contact_ids"]');input.value=row.ids.join(',');radio.closest('label').hidden=false;form.querySelector('.cp-manual-selection-label').textContent=row.name+' ('+row.ids.length+')';var results=form.querySelector('.contactpanda-customer-search-results');if(results)results.dataset.manualCount=String(row.ids.length);radio.checked=true;radio.dispatchEvent(new Event('change',{bubbles:true}));}).catch(function(e){window.alert(e.message);});return;}var u=new URL(location.href);u.searchParams.set('selection',select.value);['s','segment','contactpanda_filter','contactpanda_page','campaign'].forEach(function(k){u.searchParams.delete(k);});if(newsletter){u.searchParams.set('new','1');u.searchParams.delete('contact_ids');u.searchParams.delete('people_selection');}location.href=u.toString();};target.appendChild(select);

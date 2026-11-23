@@ -723,7 +723,7 @@ final class ContactPanda_Basic_Newsletters {
 			delete_transient( 'contactpanda_newsletter_notice_' . get_current_user_id() );
 		}
 
-		echo '<div class="wrap contactpanda-wrap contactpanda-newsletter-page"><header class="contactpanda-heading"><div class="contactpanda-avatar"><span class="dashicons dashicons-email-alt"></span></div><div><p class="contactpanda-eyebrow">ContactPanda</p><h1>' . esc_html__( 'Email templates', 'contactpanda' ) . '</h1><p>' . esc_html__( 'Create reusable, responsive email templates independently of Groundhogg.', 'contactpanda' ) . '</p></div><a class="button button-primary contactpanda-heading-action" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters&action=new' ) ) . '">' . esc_html__( 'Create template', 'contactpanda' ) . '</a></header>';
+		echo '<div class="wrap contactpanda-wrap contactpanda-newsletter-page"><header class="contactpanda-heading"><div><p class="contactpanda-eyebrow">ContactPanda</p><h1>' . esc_html__( 'Email templates', 'contactpanda' ) . '</h1><p>' . esc_html__( 'Create reusable, responsive email templates independently of Groundhogg.', 'contactpanda' ) . '</p></div><a class="button button-primary contactpanda-heading-action" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters&action=new' ) ) . '"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>' . esc_html__( 'Create template', 'contactpanda' ) . '</a></header>';
 		if ( is_array( $notice ) ) {
 			echo '<div class="notice notice-' . ( ! empty( $notice['success'] ) ? 'success' : 'error' ) . ' is-dismissible"><p>' . esc_html( $notice['message'] ) . '</p></div>';
 		}

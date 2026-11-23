@@ -248,6 +248,50 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 
 	document.querySelectorAll('.contactpanda-central-library-form').forEach(updateCentralLibraryForm);
 
+	var companySearchTimer;
+	var companySearchRequest = 0;
+	document.addEventListener('input', function (event) {
+		var input = event.target;
+		if (!input.classList.contains('contactpanda-company-link-search')) return;
+		var form = input.form;
+		var results = form.querySelector('.contactpanda-company-link-results');
+		var submit = form.querySelector('[type="submit"]');
+		form.elements.contact_id.value = '';
+		submit.disabled = true;
+		results.replaceChildren();
+		clearTimeout(companySearchTimer);
+		var request = ++companySearchRequest;
+		var search = input.value.trim();
+		if (!search) return;
+		companySearchTimer = window.setTimeout(function () {
+			var data = new URLSearchParams({action:'contactpanda_company_people_search', nonce:CONTACTPANDA_CONFIG.nonce, search:search});
+			fetch(CONTACTPANDA_CONFIG.ajaxUrl, requestOptions(data)).then(parseResponse).then(function (response) {
+				if (request !== companySearchRequest) return;
+				if (!response.success) throw new Error(tr('noUsableResponse', 'No usable response was received.'));
+				if (!response.data.length) results.textContent = tr('noPeopleFound', 'No people found');
+				response.data.forEach(function (person) {
+					var button = document.createElement('button');
+					button.className = 'button panda-button-regular';
+					button.type = 'button';
+					var icon = document.createElement('span');
+					icon.className = 'dashicons dashicons-admin-links';
+					icon.setAttribute('aria-hidden', 'true');
+					button.append(icon, document.createTextNode(person.label));
+					button.addEventListener('click', function () {
+						form.elements.contact_id.value = person.id;
+						input.value = person.label;
+						submit.disabled = false;
+						results.replaceChildren();
+						form.elements.position.focus();
+					});
+					results.appendChild(button);
+				});
+			}).catch(function (error) {
+				if (request === companySearchRequest) results.textContent = error.message;
+			});
+		}, 200);
+	});
+
 	document.addEventListener('input', function (event) {
 		if (!event.target.classList.contains('contactpanda-new-first-name')) return;
 		updateNewPersonSalutationSuggestion(event.target.closest('.contactpanda-new-person-modal'));
@@ -273,7 +317,19 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 			if (!result.success) throw new Error(result.data && result.data.message ? result.data.message : tr('saveFailed', 'Saving failed.'));
 			message.textContent = tr('saved', 'Saved.'); message.classList.add('is-success');
 			var value = field.querySelector('.contactpanda-salutation-value');
-			if (value) { value.dataset.value = select.value; value.textContent = result.data.display; value.classList.toggle('is-empty', !select.value); }
+			if (value) {
+				var empty = !select.value;
+				value.dataset.value = select.value;
+				value.classList.toggle('button-link', !empty);
+				value.classList.toggle('button', empty);
+				value.classList.toggle('panda-button-compact', empty);
+				value.title = empty ? value.dataset.addLabel : value.dataset.editLabel;
+				value.setAttribute('aria-label', value.title);
+				value.querySelector('.dashicons').hidden = !empty;
+				var label = value.querySelector('[data-salutation-text]');
+				label.textContent = result.data.display;
+				label.hidden = empty;
+			}
 			var suggestion = field.querySelector('.contactpanda-salutation-suggestion'); if (suggestion) suggestion.remove();
 			closeSalutation(field, true);
 		}).catch(function (error) { message.textContent = error.message; }).finally(function () { select.disabled = false; });
@@ -285,6 +341,7 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 		var value = field.querySelector('.contactpanda-salutation-value');
 		if (editor) editor.hidden = false;
 		if (value) value.hidden = true;
+		field.querySelector('[data-salutation-empty]').hidden = true;
 		var select = editor && editor.querySelector('select');
 		if (select) select.focus();
 	}
@@ -297,6 +354,8 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 		if (editor) editor.hidden = true;
 		if (value) value.hidden = false;
 		if (!keepValue && select && value) select.value = value.dataset.value || '';
+		field.querySelector('[data-salutation-empty]').hidden = !!(value && value.dataset.value);
+		if (value) value.focus();
 	}
 
 	function openContactChannel(row) {
@@ -480,12 +539,13 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 		if (isPhone) editor.appendChild(buildPhoneGroup(valueNode.dataset.value || ''));
 		else editor.appendChild(input);
 		var validateButton = field.dataset.field === 'uid' ? '<button type="button" class="button contactpanda-validate-vat">' + tr('validateVat', 'Validate VAT ID') + '</button>' : '';
-		var compactActions = field.classList.contains('contactpanda-list-editable');
+		var compactActions = !multiline && (field.dataset.entity === 'contact' || field.classList.contains('contactpanda-list-editable'));
 		var saveLabel = tr('save', 'Save');
 		var cancelLabel = tr('cancel', 'Cancel');
 		var saveContent = compactActions ? '<span class="dashicons dashicons-yes" aria-hidden="true"></span><span class="screen-reader-text">' + saveLabel + '</span>' : saveLabel;
+		var actionSize = compactActions ? ' panda-button-compact' : '';
 		var cancelContent = compactActions ? '<span class="dashicons dashicons-no-alt" aria-hidden="true"></span><span class="screen-reader-text">' + cancelLabel + '</span>' : cancelLabel;
-		editor.insertAdjacentHTML('beforeend', '<div class="contactpanda-editor-actions"><button type="button" class="button button-primary contactpanda-save" aria-label="' + saveLabel + '">' + saveContent + '</button>' + validateButton + '<button type="button" class="button contactpanda-cancel" aria-label="' + cancelLabel + '">' + cancelContent + '</button></div>');
+		editor.insertAdjacentHTML('beforeend', '<div class="contactpanda-editor-actions"><button type="button" class="button button-primary contactpanda-save' + actionSize + '" aria-label="' + saveLabel + '" title="' + saveLabel + '">' + saveContent + '</button>' + validateButton + '<button type="button" class="button contactpanda-cancel' + actionSize + '" aria-label="' + cancelLabel + '" title="' + cancelLabel + '">' + cancelContent + '</button></div>');
 		field.querySelector('.contactpanda-field-message').before(editor);
 		(isPhone ? editor.querySelector('.contactpanda-phone-national') : input).focus();
 	}
@@ -546,7 +606,21 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 				if (!result.success) throw new Error(result.data && result.data.message ? result.data.message : tr('saveFailed', 'Saving failed.'));
 				var valueNode = field.querySelector('.contactpanda-field-value');
 				valueNode.dataset.value = result.data.value;
-				valueNode.textContent = result.data.display;
+				var inlineText = valueNode.querySelector('[data-inline-text]');
+				if (inlineText) {
+					var empty = !String(result.data.value || '');
+					inlineText.textContent = result.data.display;
+					inlineText.hidden = empty;
+					valueNode.querySelector('.dashicons').hidden = !empty;
+					field.querySelector('.contactpanda-empty-field-value').hidden = !empty;
+					valueNode.classList.toggle('button', empty);
+					valueNode.classList.toggle('panda-button-compact', empty);
+					valueNode.classList.toggle('button-link', !empty);
+					valueNode.title = empty ? valueNode.dataset.addLabel : valueNode.dataset.editLabel;
+					valueNode.setAttribute('aria-label', valueNode.title);
+				} else {
+					valueNode.textContent = result.data.display;
+				}
 				if (field.dataset.field === 'email') {
 					var mailLink = field.querySelector('.contactpanda-mail-link');
 					if (mailLink) mailLink.href = 'mailto:' + result.data.value;

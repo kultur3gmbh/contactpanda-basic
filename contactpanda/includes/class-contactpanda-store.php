@@ -436,7 +436,7 @@ final class ContactPanda_Store {
 		return $company_id ? self::link_company_contact( $company_id, $contact['id'] ) : false;
 	}
 
-	public static function link_company_contact( $company_id, $contact_id, $position = '', $primary = false, $primary_company = false ) {
+	public static function link_company_contact( $company_id, $contact_id, $position = '', $primary = false, $primary_company = false, $preserve_existing = false ) {
 		global $wpdb;
 		$table = ContactPanda_Schema::table_names()['company_contacts'];
 		if ( $primary && $wpdb->get_var( $wpdb->prepare( "SELECT id FROM %i WHERE company_id = %d AND contact_id <> %d AND is_primary = 1 LIMIT 1", $table, absint( $company_id ), absint( $contact_id ) ) ) ) { // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
@@ -445,7 +445,8 @@ final class ContactPanda_Store {
 		if ( $primary_company ) {
 			$wpdb->update( $table, array( 'is_primary_company' => 0, 'updated_at' => current_time( 'mysql' ) ), array( 'contact_id' => absint( $contact_id ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		}
-		$saved = false !== $wpdb->replace( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		$writer = $preserve_existing ? 'insert' : 'replace';
+		$saved = false !== $wpdb->$writer( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 			$table,
 			array(
 				'company_id'        => absint( $company_id ),
@@ -486,9 +487,11 @@ final class ContactPanda_Store {
 		if ( $primary_company ) {
 			$wpdb->update( $table, array( 'is_primary_company' => 0, 'updated_at' => current_time( 'mysql' ) ), array( 'contact_id' => $contact_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		}
+		$data = array( 'position' => sanitize_text_field( $position ), 'updated_at' => current_time( 'mysql' ) );
+		if ( null !== $primary_company ) $data['is_primary_company'] = $primary_company ? 1 : 0;
 		$updated = false !== $wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 			$table,
-			array( 'position' => sanitize_text_field( $position ), 'is_primary_company' => $primary_company ? 1 : 0, 'updated_at' => current_time( 'mysql' ) ),
+			$data,
 			array( 'company_id' => $company_id, 'contact_id' => $contact_id )
 		);
 		if ( $updated ) self::ensure_primary_company( $contact_id );
@@ -530,6 +533,22 @@ final class ContactPanda_Store {
 			return false !== $wpdb->update( $tables['companies'], array( $map[ $field ] => $stored_value, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => absint( $id ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		}
 		return self::set_company_meta( $id, $field, $value );
+	}
+
+	public static function save_company_address( $id, $section, array $input ) {
+		global $wpdb;
+		$address = array();
+		foreach ( array( 'address_1' => 190, 'address_2' => 190, 'postcode' => 30, 'city' => 120, 'state' => 120, 'country' => 2 ) as $key => $length ) {
+			$address[ $key ] = wp_html_excerpt( sanitize_text_field( $input[ $key ] ?? '' ), $length );
+		}
+		$address['country'] = preg_match( '/^[A-Za-z]{2}$/D', $address['country'] ) ? strtoupper( $address['country'] ) : '';
+		if ( 'billing' === $section ) return self::set_company_meta( $id, 'contactpanda_billing_address', wp_json_encode( $address ) );
+		$columns = array( 'street' => $address['address_1'], 'updated_at' => current_time( 'mysql' ) ) + array_intersect_key( $address, array_flip( array( 'address_2','postcode','city','country' ) ) );
+		if ( false === $wpdb->query( 'START TRANSACTION' ) ) return false; // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Keep address and region consistent.
+		$ok = false !== $wpdb->update( ContactPanda_Schema::table_names()['companies'], $columns, array( 'id' => absint( $id ) ) ) && self::set_company_meta( $id, 'state', $address['state'] ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned CRM address table.
+		if ( $ok && false !== $wpdb->query( 'COMMIT' ) ) return true; // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Complete the address update.
+		$wpdb->query( 'ROLLBACK' ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Discard an incomplete address update.
+		return false;
 	}
 
 	public static function update_company_profile( $id, $data ) {
