@@ -38,6 +38,50 @@ document.querySelector('.contactpanda-open-print').click();document.querySelecto
 assert.equal(await run('__prints'),1);
 assert.equal(await run('document.querySelector(".contactpanda-output-form").target'),'_self');
 assert.equal(await run('document.getElementById("contactpanda-print-frame").contentDocument.querySelector("td").textContent'),'Fixture tags');
+await run(`const inlineField=(kind,field,value,options='') =>
+	'<div class="contactpanda-editable contactpanda-list-editable" data-entity="'+kind+'" data-contact="31" data-company="41" data-field="'+field+'">'+
+	'<div class="contactpanda-field-row"><button class="contactpanda-edit contactpanda-field-value" type="button" data-value="'+value+'">'+(value||'–––')+'</button></div>'+
+	options+'<div class="contactpanda-field-message" aria-live="polite"></div></div>';
+const salutationOptions='<template class="contactpanda-inline-options"><select><option value="">Select</option><option value="ms">Ms</option></select></template>';
+document.body.insertAdjacentHTML('beforeend','<table id="inline-fixture" class="contactpanda-table"><tbody>'+
+	'<tr><td>'+inlineField('contact','first_name','')+'</td><td hidden>'+inlineField('contact','last_name','Hidden')+'</td></tr>'+
+	'<tr><td>'+inlineField('company','city','')+'</td></tr>'+
+	'<tr data-salutation-entry="en:fixture"><td>'+inlineField('dictionary','salutation','',salutationOptions)+'</td><td data-salutation-source>Import</td><td><a data-salutation-delete href="/delete">Delete</a></td></tr>'+
+	'</tbody></table><button id="after-inline-fixture">Next settings area</button>');
+window.inlineRequests=[];
+window.fetch=(url,opts)=>{
+	const body=new URLSearchParams(opts.body);
+	const field=body.get('field'), value=body.get('value'), action=body.get('action');
+	inlineRequests.push({field, value, action, entry:body.get('entry_id')});
+	const response=value==='rejected' ? {success:false,data:{message:'Value rejected'}} : {
+		success:true,data:{value,display:value==='ms'?'Ms':value,entry_id:'en:fixture',delete_url:'/delete',source:'Manual'}
+	};
+	return Promise.resolve({ok:true,json:()=>Promise.resolve(response)});
+};
+window.inlineKey=(key)=>{document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true}));};
+document.querySelector('#inline-fixture button').click();
+document.activeElement.value='Fixture';
+inlineKey('Tab');
+new Promise(r=>setTimeout(r,40));`);
+assert.equal(await run('inlineRequests[0].action'),'contactpanda_update_contact_field');
+assert.equal(await run('document.activeElement.closest("[data-field]").dataset.field'),'city');
+assert.equal(await run('document.querySelector("#inline-fixture tr .contactpanda-field-value").textContent'),'Fixture');
+await run(`document.activeElement.value='rejected';inlineKey('Tab');new Promise(r=>setTimeout(r,40));`);
+assert.equal(await run('document.activeElement.closest("[data-field]").dataset.field'),'city');
+assert.equal(await run('document.activeElement.closest("[data-field]").querySelector(".contactpanda-field-message").textContent'),'Value rejected');
+await run(`document.activeElement.value='Vienna';inlineKey('Tab');new Promise(r=>setTimeout(r,40));`);
+assert.equal(await run('document.activeElement.tagName'),'SELECT');
+assert.equal(await run('inlineRequests[2].action'),'contactpanda_update_company_field');
+await run(`document.activeElement.value='ms';inlineKey('Escape');`);
+assert.equal(await run('document.activeElement.textContent'),'–––');
+assert.equal(await run('inlineRequests.length'),3);
+await run(`document.activeElement.click();document.activeElement.value='ms';inlineKey('Tab');new Promise(r=>setTimeout(r,40));`);
+assert.equal(await run('document.activeElement.matches("[data-salutation-delete]")'),true);
+assert.equal(await run('inlineRequests[3].action'),'contactpanda_update_salutation_entry');
+assert.equal(await run('inlineRequests[3].entry'),'en:fixture');
+assert.equal(await run('document.querySelector("[data-salutation-entry] .contactpanda-field-value").textContent'),'Ms');
+assert.deepEqual(await run('__errors'),[]);
+console.log('PASS keyboard inline editing across rows, hidden fields, server errors, Escape and next focus');
 console.log('PASS print content prepared in iframe without opening an empty tab');
 console.log('PASS additive selection across searches, visible header selection, removal without deletion, saved-list chooser and newsletter draft retention');
 })().catch(e=>{console.error(e);process.exitCode=1}).finally(()=>{browser.kill();server.close()});

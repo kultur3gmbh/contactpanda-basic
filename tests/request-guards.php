@@ -16,7 +16,7 @@ foreach ( array( 'plugin', 'registration', 'data-tools', 'newsletters', 'newslet
 $handlers = array(
  'ContactPanda_Person_Profile' => array( 'save_biography' ),
  'ContactPanda_Plugin' => array( 'update_contact_field', 'save_contact_channel', 'delete_contact_channel', 'update_marketing_consent', 'bulk_marketing_consent', 'export_contacts', 'print_contacts', 'create_contact', 'create_company', 'manage_contact_tag', 'bulk_manage_contact_tags', 'preview_broadcast', 'preview_order', 'create_user_account', 'update_customer_address', 'validate_vat' ),
- 'ContactPanda_Registration' => array( 'handle_migrate_wordpress_users', 'handle_migrate_newsletter_plugin', 'handle_migrate_fluentcrm', 'handle_import_woocommerce', 'handle_setup_standalone', 'handle_migrate_groundhogg', 'handle_reset_standalone' ),
+ 'ContactPanda_Registration' => array( 'update_salutation_entry', 'handle_migrate_wordpress_users', 'handle_migrate_newsletter_plugin', 'handle_migrate_fluentcrm', 'handle_import_woocommerce', 'handle_setup_standalone', 'handle_migrate_groundhogg', 'handle_reset_standalone' ),
  'ContactPanda_Data_Tools' => array( 'handle_csv_preview', 'handle_csv_import', 'handle_merge_preview', 'handle_merge_group', 'handle_merge_commit', 'handle_central_settings', 'handle_notice_settings' ),
  'ContactPanda_Basic_Newsletters' => array( 'save_template', 'template_action', 'preview_ajax', 'test_ajax', 'products_ajax' ),
  'ContactPanda_Basic_Newsletter_Campaigns' => array( 'save', 'campaign_action', 'campaign_group_create_ajax', 'statuses_ajax', 'customer_search_ajax', 'preview_ajax', 'test_ajax' ),

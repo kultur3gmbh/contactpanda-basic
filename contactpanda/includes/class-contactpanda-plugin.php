@@ -377,6 +377,7 @@ final class ContactPanda_Plugin {
 				'screenId'       => ( function_exists( 'get_current_screen' ) && get_current_screen() ) ? get_current_screen()->id : '',
 				'phoneCountries' => self::phone_countries(),
 				'salutationSuggestions' => $salutation_suggestions,
+				'salutationDictionaryNonce' => wp_create_nonce( 'contactpanda_salutation_dictionary' ),
 				'salutationLabels' => array(
 					'mr'      => __( 'Mr', 'contactpanda' ),
 					'ms'      => __( 'Ms', 'contactpanda' ),
@@ -2523,7 +2524,7 @@ final class ContactPanda_Plugin {
 
 			echo '<td class="' . esc_attr( self::column_class( 'salutation' ) ) . '">';
 			$salutation = self::meta( $contact, array( 'anrede', 'salutation' ) );
-			if ( current_user_can( ContactPanda_Capabilities::for_area( 'contacts' ) ) ) self::salutation_field( $salutation, '', $id, true );
+			if ( ContactPanda_Store::standalone() && current_user_can( ContactPanda_Capabilities::for_area( 'contacts' ) ) ) self::salutation_field( $salutation, '', $id, true );
 			else echo esc_html( $salutation ? self::salutation_label( $salutation ) : '–––' );
 			echo '</td>';
 
@@ -2704,14 +2705,18 @@ final class ContactPanda_Plugin {
 	private static function render_contact_channels( $contact_id, $contact, $editable ) {
 		$channels = self::contact_channels( $contact );
 		foreach ( array( 'email' => __( 'Email addresses', 'contactpanda' ), 'phone' => __( 'Phone numbers', 'contactpanda' ) ) as $type => $heading ) {
+			$type_channels = array_values( array_filter( $channels, static function ( $channel ) use ( $type ) { return $type === $channel['type']; } ) );
 			echo '<div class="contactpanda-channel-group" data-contact="' . esc_attr( $contact_id ) . '" data-channel-type="' . esc_attr( $type ) . '"><div class="contactpanda-channel-heading"><span>' . esc_html( $heading ) . '</span>';
 			if ( $editable ) {
 				$add_label = 'email' === $type ? __( 'Add email address', 'contactpanda' ) : __( 'Add phone number', 'contactpanda' );
-				echo '<button type="button" class="button panda-button-compact contactpanda-add-channel" aria-label="' . esc_attr( $add_label ) . '" title="' . esc_attr( $add_label ) . '"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span><span class="screen-reader-text">' . esc_html( $add_label ) . '</span></button>';
+				echo '<button type="button" class="button panda-button-compact contactpanda-add-channel contactpanda-add-extra-channel"' . ( $type_channels ? '' : ' hidden' ) . ' aria-label="' . esc_attr( $add_label ) . '" title="' . esc_attr( $add_label ) . '"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span><span class="screen-reader-text">' . esc_html( $add_label ) . '</span></button>';
 			}
 			echo '</div><div class="contactpanda-channel-list">';
-			$type_channels = array_values( array_filter( $channels, static function ( $channel ) use ( $type ) { return $type === $channel['type']; } ) );
-			if ( ! $type_channels ) echo '<span class="contactpanda-muted contactpanda-channel-empty">' . esc_html( 'email' === $type ? __( 'No email address saved.', 'contactpanda' ) : '–––' ) . '</span>';
+			if ( $editable ) {
+				echo '<button type="button" class="button-link contactpanda-channel-value contactpanda-channel-empty contactpanda-add-channel" aria-label="' . esc_attr( $add_label ) . '"' . ( $type_channels ? ' hidden' : '' ) . '>–––</button>';
+			} elseif ( ! $type_channels ) {
+				echo '<span class="contactpanda-muted contactpanda-channel-empty">–––</span>';
+			}
 			foreach ( $type_channels as $channel ) self::render_contact_channel_row( $contact_id, $channel, $editable );
 			echo '</div>';
 			if ( $editable ) {
@@ -2727,9 +2732,9 @@ final class ContactPanda_Plugin {
 		$response = self::contact_channel_response( $channel );
 		$type = $response['type'];
 		$primary = ! empty( $response['is_primary'] );
-		echo '<div class="contactpanda-channel-row' . ( $is_new ? ' is-new' : '' ) . '" data-contact="' . esc_attr( $contact_id ) . '" data-channel-id="' . esc_attr( $response['id'] ) . '" data-channel-type="' . esc_attr( $type ) . '" data-primary="' . ( $primary ? '1' : '0' ) . '">';
+		echo '<div class="contactpanda-channel-row' . ( $is_new ? ' is-new' : '' ) . '" data-contact="' . esc_attr( $contact_id ) . '" data-channel-id="' . esc_attr( $response['id'] ) . '" data-channel-type="' . esc_attr( $type ) . '" data-channel-label="' . esc_attr( $response['label'] ) . '" data-primary="' . ( $primary ? '1' : '0' ) . '">';
 		echo '<div class="contactpanda-channel-summary">';
-		if ( $editable ) echo '<button type="button" class="button-link contactpanda-channel-value" data-value="' . esc_attr( $response['value'] ) . '">' . esc_html( $response['display'] ?: __( 'Add', 'contactpanda' ) ) . '</button>';
+		if ( $editable ) echo '<button type="button" class="button-link contactpanda-channel-value" data-value="' . esc_attr( $response['value'] ) . '">' . esc_html( $response['display'] ?: '–––' ) . '</button>';
 		else echo '<strong>' . esc_html( $response['display'] ?: '—' ) . '</strong>';
 		echo '<span class="contactpanda-channel-label">' . esc_html( $response['label_text'] ) . '</span>';
 		echo '<span class="contactpanda-primary-badge"' . ( $primary ? '' : ' hidden' ) . '>' . esc_html__( 'Primary', 'contactpanda' ) . '</span>';
@@ -2745,11 +2750,11 @@ final class ContactPanda_Plugin {
 			echo '<div class="contactpanda-channel-editor is-' . esc_attr( $type ) . '"' . ( $is_new ? '' : ' hidden' ) . '><label><span>' . esc_html__( 'Type', 'contactpanda' ) . '</span><select class="contactpanda-channel-label-select">';
 			foreach ( self::contact_channel_labels( $type ) as $key => $label ) echo '<option value="' . esc_attr( $key ) . '"' . selected( $response['label'], $key, false ) . '>' . esc_html( $label ) . '</option>';
 			echo '</select></label>';
+			echo '<label class="contactpanda-channel-primary"><input type="checkbox" class="contactpanda-channel-primary-input" value="1"' . checked( $primary, true, false ) . ( $primary && ! $is_new ? ' disabled' : '' ) . '> ' . esc_html( 'email' === $type ? __( 'Use as primary email address', 'contactpanda' ) : __( 'Use as primary phone number', 'contactpanda' ) ) . '</label>';
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
 			if ( 'phone' === $type ) echo self::phone_input_html( $response['value'], true );
 			else echo '<label class="contactpanda-channel-value-field"><span>' . esc_html__( 'Email address', 'contactpanda' ) . '</span><input type="email" class="contactpanda-channel-input" value="' . esc_attr( $response['value'] ) . '" autocomplete="email"></label>';
-			echo '<label class="contactpanda-channel-primary"><input type="checkbox" class="contactpanda-channel-primary-input" value="1"' . checked( $primary, true, false ) . ( $primary && ! $is_new ? ' disabled' : '' ) . '> ' . esc_html( 'email' === $type ? __( 'Use as primary email address', 'contactpanda' ) : __( 'Use as primary phone number', 'contactpanda' ) ) . '</label>';
-			echo '<div class="contactpanda-channel-actions"><button type="button" class="button button-primary contactpanda-save-channel">' . esc_html__( 'Save', 'contactpanda' ) . '</button><button type="button" class="button contactpanda-cancel-channel">' . esc_html__( 'Cancel', 'contactpanda' ) . '</button>';
+			echo '<div class="contactpanda-channel-actions"><button type="button" class="button button-primary panda-button-compact contactpanda-save-channel" aria-label="' . esc_attr__( 'Save', 'contactpanda' ) . '" title="' . esc_attr__( 'Save', 'contactpanda' ) . '"><span class="dashicons dashicons-yes" aria-hidden="true"></span></button><button type="button" class="button panda-button-compact contactpanda-cancel-channel" aria-label="' . esc_attr__( 'Cancel', 'contactpanda' ) . '" title="' . esc_attr__( 'Cancel', 'contactpanda' ) . '"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button>';
 			echo '<button type="button" class="button-link-delete contactpanda-delete-channel"' . ( $primary || $is_new ? ' hidden' : '' ) . '>' . esc_html__( 'Remove', 'contactpanda' ) . '</button>';
 			echo '</div></div>';
 		}
@@ -5874,19 +5879,12 @@ final class ContactPanda_Plugin {
 		$suggested = $first_name ? ContactPanda_Store::suggested_salutation( $first_name ) : '';
 		$value = sanitize_key( $value );
 		$label = __( 'Salutation', 'contactpanda' );
-		$add = __( 'Add salutation', 'contactpanda' );
-		/* translators: %s: label of the salutation field. */
-		$edit = sprintf( __( 'Edit %s', 'contactpanda' ), $label );
-		$apply = __( 'Apply', 'contactpanda' );
-		$cancel = __( 'Cancel', 'contactpanda' );
-		echo '<div class="contactpanda-field contactpanda-salutation-field" data-contact="' . esc_attr( $contact_id ) . '"><span' . ( $compact ? ' class="screen-reader-text"' : '' ) . '>' . esc_html( $label ) . '</span>';
-		echo '<div class="contactpanda-field-row"><span data-salutation-empty' . ( $value ? ' hidden' : '' ) . '>–––</span><button type="button" class="contactpanda-salutation-value ' . ( $value ? 'button-link' : 'button panda-button-compact' ) . '" data-value="' . esc_attr( $value ) . '" data-add-label="' . esc_attr( $add ) . '" data-edit-label="' . esc_attr( $edit ) . '" title="' . esc_attr( $value ? $edit : $add ) . '" aria-label="' . esc_attr( $value ? $edit : $add ) . '"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"' . ( $value ? ' hidden' : '' ) . '></span><span data-salutation-text' . ( $value ? '' : ' hidden' ) . '>' . esc_html( self::salutation_label( $value ) ) . '</span></button></div>';
-		echo '<div class="contactpanda-salutation-editor" hidden><select class="contactpanda-salutation-select" aria-label="' . esc_attr( $label ) . '"><option value="">' . esc_html__( '--- Please select ---', 'contactpanda' ) . '</option>';
-		foreach ( self::salutation_options() as $option => $option_label ) echo '<option value="' . esc_attr( $option ) . '"' . selected( $value, $option, false ) . '>' . esc_html( $option_label ) . '</option>';
-		echo '</select><button type="button" class="button button-primary panda-button-compact contactpanda-save-salutation" aria-label="' . esc_attr( $apply ) . '" title="' . esc_attr( $apply ) . '"><span class="dashicons dashicons-saved" aria-hidden="true"></span></button><button type="button" class="button panda-button-compact contactpanda-cancel-salutation" aria-label="' . esc_attr( $cancel ) . '" title="' . esc_attr( $cancel ) . '"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span></button></div>';
+		$choices = array( '' => __( '--- Please select ---', 'contactpanda' ) ) + self::salutation_options();
+		echo '<div class="contactpanda-field contactpanda-editable contactpanda-salutation-field' . ( $compact ? ' contactpanda-list-editable' : '' ) . '" data-entity="contact" data-contact="' . esc_attr( $contact_id ) . '" data-field="anrede"><span' . ( $compact ? ' class="screen-reader-text"' : '' ) . '>' . esc_html( $label ) . '</span>';
+		self::render_inline_control( $label, $value, self::salutation_label( $value ), $choices );
 		/* translators: %s: suggested salutation. */
 		if ( $suggested && $suggested !== $value ) echo '<button type="button" class="button-link contactpanda-salutation-suggestion" data-value="' . esc_attr( $suggested ) . '">' . esc_html( sprintf( __( 'Suggestion: %s', 'contactpanda' ), self::salutation_label( $suggested ) ) ) . '</button>';
-		echo '<div class="contactpanda-field-message" aria-live="polite"></div></div>';
+		echo '</div>';
 	}
 
 	private static function inline_value( $label, $value, $display ) {
@@ -5895,10 +5893,18 @@ final class ContactPanda_Plugin {
 		$edit = sprintf( __( 'Edit %s', 'contactpanda' ), $label );
 		/* translators: %s: field label. */
 		$add = sprintf( __( 'Add %s', 'contactpanda' ), $label );
-		$class = $empty ? 'button panda-button-compact' : 'button-link';
-		$html = '<span class="contactpanda-empty-field-value"' . ( $empty ? '' : ' hidden' ) . '>–––</span>';
-		$html .= '<button type="button" class="' . $class . ' contactpanda-edit contactpanda-field-value" data-value="' . esc_attr( $value ) . '" data-edit-label="' . esc_attr( $edit ) . '" data-add-label="' . esc_attr( $add ) . '" aria-label="' . esc_attr( $empty ? $add : $edit ) . '" title="' . esc_attr( $empty ? $add : $edit ) . '">';
-		return $html . '<span class="dashicons dashicons-plus-alt2" aria-hidden="true"' . ( $empty ? '' : ' hidden' ) . '></span><span data-inline-text' . ( $empty ? ' hidden' : '' ) . '>' . esc_html( $display ) . '</span></button>';
+		return '<button type="button" class="button-link contactpanda-edit contactpanda-field-value" data-value="' . esc_attr( $value ) . '" data-field-label="' . esc_attr( $label ) . '" data-edit-label="' . esc_attr( $edit ) . '" data-add-label="' . esc_attr( $add ) . '" aria-label="' . esc_attr( $empty ? $add : $edit ) . '">' . esc_html( $empty ? '–––' : $display ) . '</button>';
+	}
+
+	/** Render the same inline control for contacts, companies and the salutation library. */
+	public static function render_inline_control( $label, $value, $display, array $choices = array() ) {
+		echo '<div class="contactpanda-field-row">' . self::inline_value( $label, $value, $display ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline_value escapes the control.
+		if ( $choices ) {
+			echo '<template class="contactpanda-inline-options"><select class="contactpanda-input" aria-label="' . esc_attr( $label ) . '">';
+			foreach ( $choices as $key => $choice ) echo '<option value="' . esc_attr( $key ) . '">' . esc_html( $choice ) . '</option>';
+			echo '</select></template>';
+		}
+		echo '<div class="contactpanda-field-message" aria-live="polite"></div>';
 	}
 
 	private static function editable_field( $label, $value, $field, $company_id, $multiline = false ) {
@@ -5910,6 +5916,11 @@ final class ContactPanda_Plugin {
 
 	private static function list_editable_field( $label, $display, $field, $entity, $id, $type = '', $raw_value = null ) {
 		$value = null === $raw_value ? $display : $raw_value;
+		$capability = 'contact' === $entity ? ContactPanda_Capabilities::for_area( 'contacts' ) : self::access_capability();
+		if ( ! ContactPanda_Store::standalone() || ! current_user_can( $capability ) ) {
+			echo esc_html( '' === (string) $value ? '–––' : $display );
+			return;
+		}
 		echo '<div class="contactpanda-editable contactpanda-list-editable" data-entity="' . esc_attr( $entity ) . '" data-' . esc_attr( $entity ) . '="' . esc_attr( $id ) . '" data-field="' . esc_attr( $field ) . '"' . ( $type ? ' data-type="' . esc_attr( $type ) . '"' : '' ) . '>';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		echo '<div class="contactpanda-field-row">' . self::inline_value( $label, $value, $display ) . '</div><div class="contactpanda-field-message" aria-live="polite"></div></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline_value escapes all dynamic values in the generated controls.
@@ -5944,7 +5955,7 @@ final class ContactPanda_Plugin {
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
 		echo '<div class="contactpanda-field contactpanda-editable contactpanda-phone-field" data-entity="' . esc_attr( $entity ) . '" ' . $id_attr . ' data-field="' . esc_attr( $field ) . '" data-type="phone" data-multiline="0">';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		echo '<span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row"><button type="button" class="button-link contactpanda-edit contactpanda-field-value" data-value="' . esc_attr( $value ) . '" aria-label="' . esc_attr( sprintf( __( 'Edit %s', 'contactpanda' ), $label ) ) . '">' . esc_html( $value ? self::format_phone( $value ) : __( 'Add', 'contactpanda' ) ) . '</button></div>';
+		echo '<span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row">' . self::inline_value( $label, $value, self::format_phone( $value ) ) . '</div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline_value escapes the control.
 		echo '<div class="contactpanda-field-message" aria-live="polite"></div></div>';
 	}
 
@@ -5953,7 +5964,7 @@ final class ContactPanda_Plugin {
 		// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- All dynamic values are escaped; the remaining markup is generated by ContactPanda.
 		echo '<div class="contactpanda-field contactpanda-editable contactpanda-uid-field" data-entity="' . esc_attr( $entity ) . '" ' . $attr . ' data-field="uid" data-multiline="0" data-verified="' . ( $verified ? '1' : '0' ) . '">';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		echo '<span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row"><div class="contactpanda-value-with-status"><button type="button" class="button-link contactpanda-edit contactpanda-field-value" data-value="' . esc_attr( $value ) . '" aria-label="' . esc_attr( sprintf( __( 'Edit %s', 'contactpanda' ), $label ) ) . '">' . esc_html( '' !== (string) $value ? $value : __( 'Add', 'contactpanda' ) ) . '</button><span class="contactpanda-vat-check" title="' . esc_attr__( 'Successfully validated through EU VIES', 'contactpanda' ) . '"' . ( $verified ? '' : ' hidden' ) . '>✓</span></div></div>';
+		echo '<span>' . esc_html( $label ) . '</span><div class="contactpanda-field-row"><div class="contactpanda-value-with-status">' . self::inline_value( $label, $value, $value ) . '<span class="contactpanda-vat-check" title="' . esc_attr__( 'Successfully validated through EU VIES', 'contactpanda' ) . '"' . ( $verified ? '' : ' hidden' ) . '>✓</span></div></div>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- inline_value escapes the control.
 		echo '<div class="contactpanda-field-message" aria-live="polite"></div></div>';
 	}
 

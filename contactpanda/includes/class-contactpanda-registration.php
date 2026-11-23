@@ -46,6 +46,7 @@ final class ContactPanda_Registration {
 		add_action( 'admin_post_contactpanda_reset_standalone', array( __CLASS__, 'handle_reset_standalone' ) );
 		add_action( 'admin_post_contactpanda_adopt_theme_styles', array( __CLASS__, 'handle_adopt_theme_styles' ) );
 		add_action( 'admin_post_contactpanda_salutation_dictionary', array( __CLASS__, 'handle_salutation_dictionary' ) );
+		add_action( 'wp_ajax_contactpanda_update_salutation_entry', array( __CLASS__, 'update_salutation_entry' ) );
 		add_action( 'admin_post_contactpanda_export_salutations', array( __CLASS__, 'export_salutations' ) );
 		add_action( 'admin_post_contactpanda_import_woocommerce', array( __CLASS__, 'handle_import_woocommerce' ) );
 		add_action( 'admin_post_contactpanda_migrate_wordpress_users', array( __CLASS__, 'handle_migrate_wordpress_users' ) );
@@ -485,13 +486,17 @@ The link is valid for 24 hours.',
 			echo '<div class="contactpanda-admin-modal is-open"><section class="contactpanda-admin-modal-panel"><h2>' . esc_html__( 'Add first name', 'contactpanda' ) . '</h2><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-settings-grid"><input type="hidden" name="action" value="contactpanda_salutation_dictionary"><input type="hidden" name="operation" value="save"><input type="hidden" name="original_id" value=""><label><span>' . esc_html__( 'First name', 'contactpanda' ) . '</span><input required name="first_name"></label><label><span>' . esc_html__( 'Salutation', 'contactpanda' ) . '</span><select name="salutation" required><option value="">' . esc_html__( '--- Please select ---', 'contactpanda' ) . '</option><option value="mr">' . esc_html__( 'Male', 'contactpanda' ) . '</option><option value="ms">' . esc_html__( 'Female', 'contactpanda' ) . '</option><option value="neutral">' . esc_html__( 'Neutral', 'contactpanda' ) . '</option><option value="ambiguous">' . esc_html__( 'Ambiguous', 'contactpanda' ) . '</option></select></label><label><span>' . esc_html__( 'Language', 'contactpanda' ) . '</span><select name="language">'; foreach ( array( 'de' => 'Deutsch', 'en' => 'English', 'fr' => 'Français', 'es' => 'Español', 'it' => 'Italiano' ) as $code => $label ) echo '<option value="' . esc_attr( $code ) . '">' . esc_html( $label ) . '</option>'; echo '</select></label>'; wp_nonce_field( 'contactpanda_salutation_dictionary' ); echo '<div class="contactpanda-modal-actions"><button class="button button-primary"><span class="dashicons dashicons-saved" aria-hidden="true"></span>' . esc_html__( 'Save', 'contactpanda' ) . '</button><a class="button" href="' . esc_url( remove_query_arg( 'add_salutation' ) ) . '"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span>' . esc_html__( 'Cancel', 'contactpanda' ) . '</a></div></form></section></div>';
 		}
 		echo '<table class="widefat striped contactpanda-table"><thead><tr><th>' . esc_html__( 'First name', 'contactpanda' ) . '</th><th>' . esc_html__( 'Salutation', 'contactpanda' ) . '</th><th>' . esc_html__( 'Source', 'contactpanda' ) . '</th><th>' . esc_html__( 'Actions', 'contactpanda' ) . '</th></tr></thead><tbody>';
+		$salutation_labels = self::dictionary_salutation_labels();
+		$source_labels = array( 'manual' => __( 'Manual', 'contactpanda' ), 'confirmed' => __( 'Confirmed selection', 'contactpanda' ), 'import' => __( 'Import', 'contactpanda' ), 'central' => __( 'Central library', 'contactpanda' ) );
 		foreach ( $rows as $row ) {
-			$delete = wp_nonce_url( admin_url( 'admin-post.php?action=contactpanda_salutation_dictionary&operation=delete&id=' . rawurlencode( (string) $row['id'] ) ), 'contactpanda_salutation_dictionary' );
-			$salutation_labels = array( 'mr' => __( 'Male', 'contactpanda' ), 'ms' => __( 'Female', 'contactpanda' ), 'family' => __( 'Family', 'contactpanda' ), 'neutral' => __( 'Neutral', 'contactpanda' ), 'ambiguous' => __( 'Ambiguous', 'contactpanda' ) );
-			$source_labels = array( 'manual' => __( 'Manual', 'contactpanda' ), 'confirmed' => __( 'Confirmed selection', 'contactpanda' ), 'import' => __( 'Import', 'contactpanda' ), 'central' => __( 'Central library', 'contactpanda' ) );
-			$form_id = 'cp-salutation-' . md5( (string) $row['id'] );
-			echo '<tr><td><form id="' . esc_attr( $form_id ) . '" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_salutation_dictionary"><input type="hidden" name="operation" value="save"><input type="hidden" name="original_id" value="' . esc_attr( $row['id'] ) . '"><input type="hidden" name="language" value="' . esc_attr( $row['language'] ?? $language ) . '">'; wp_nonce_field( 'contactpanda_salutation_dictionary' ); echo '</form>';
-			echo '<input form="' . esc_attr( $form_id ) . '" aria-label="' . esc_attr__( 'First name', 'contactpanda' ) . '" name="first_name" value="' . esc_attr( $row['first_name'] ) . '"></td><td><select form="' . esc_attr( $form_id ) . '" aria-label="' . esc_attr__( 'Salutation', 'contactpanda' ) . '" name="salutation">'; foreach ( $salutation_labels as $key => $label ) echo '<option value="' . esc_attr( $key ) . '"' . selected( $row['salutation'], $key, false ) . '>' . esc_html( $label ) . '</option>'; echo '</select></td><td><span>' . esc_html( $source_labels[ $row['source'] ] ?? $row['source'] ) . '</span></td><td><div class="contactpanda-row-actions"><button form="' . esc_attr( $form_id ) . '" class="button"><span class="dashicons dashicons-saved" aria-hidden="true"></span>' . esc_html__( 'Save', 'contactpanda' ) . '</button><a class="button contactpanda-destructive" href="' . esc_url( $delete ) . '" onclick="return confirm(' . esc_attr( wp_json_encode( __( 'Delete this salutation assignment?', 'contactpanda' ) ) ) . ');"><span class="dashicons dashicons-trash" aria-hidden="true"></span>' . esc_html__( 'Delete', 'contactpanda' ) . '</a></div></td></tr>';
+			$delete = self::salutation_delete_url( $row['id'] );
+			echo '<tr data-salutation-entry="' . esc_attr( $row['id'] ) . '">';
+			echo '<td><div class="contactpanda-editable contactpanda-list-editable" data-entity="dictionary" data-field="first_name">';
+			ContactPanda_Plugin::render_inline_control( __( 'First name', 'contactpanda' ), $row['first_name'], $row['first_name'] );
+			echo '</div></td><td><div class="contactpanda-editable contactpanda-list-editable" data-entity="dictionary" data-field="salutation">';
+			ContactPanda_Plugin::render_inline_control( __( 'Salutation', 'contactpanda' ), $row['salutation'], $salutation_labels[ $row['salutation'] ] ?? '', $salutation_labels );
+			echo '</div></td><td data-salutation-source>' . esc_html( $source_labels[ $row['source'] ] ?? $row['source'] ) . '</td><td><div class="contactpanda-row-actions">';
+			echo '<a class="button contactpanda-destructive" data-salutation-delete href="' . esc_url( $delete ) . '" onclick="return confirm(' . esc_attr( wp_json_encode( __( 'Delete this salutation assignment?', 'contactpanda' ) ) ) . ');"><span class="dashicons dashicons-trash" aria-hidden="true"></span>' . esc_html__( 'Delete', 'contactpanda' ) . '</a></div></td></tr>';
 		}
 		if ( ! $rows ) echo '<tr><td colspan="4">' . esc_html__( 'The dictionary is empty.', 'contactpanda' ) . '</td></tr>';
 		echo '</tbody></table>';
@@ -502,6 +507,27 @@ The link is valid for 24 hours.',
 		echo '<form method="post" enctype="multipart/form-data" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_salutation_dictionary"><input type="hidden" name="operation" value="import"><input type="hidden" name="language" value="' . esc_attr( $row['language'] ?? $language ) . '">'; wp_nonce_field( 'contactpanda_salutation_dictionary' );
 		echo '<input type="file" name="dictionary_file" accept=".csv,text/csv" required><button class="button">' . esc_html__( 'Import and merge CSV', 'contactpanda' ) . '</button></form></div>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-salutation-bulk">'; wp_nonce_field( 'contactpanda_assign_missing_salutations' ); echo '<input type="hidden" name="action" value="contactpanda_assign_missing_salutations"><label><input type="checkbox" name="confirm_apply" value="1"> ' . esc_html__( 'Apply the assignments immediately after checking.', 'contactpanda' ) . '</label> <button class="button">' . esc_html__( 'Reconcile now', 'contactpanda' ) . '</button></form></section>';
+	}
+
+	private static function dictionary_salutation_labels() {
+		return array( 'mr' => __( 'Male', 'contactpanda' ), 'ms' => __( 'Female', 'contactpanda' ), 'family' => __( 'Family', 'contactpanda' ), 'neutral' => __( 'Neutral', 'contactpanda' ), 'ambiguous' => __( 'Ambiguous', 'contactpanda' ) );
+	}
+
+	private static function salutation_delete_url( $id ) {
+		return wp_nonce_url( admin_url( 'admin-post.php?action=contactpanda_salutation_dictionary&operation=delete&id=' . rawurlencode( (string) $id ) ), 'contactpanda_salutation_dictionary' );
+	}
+
+	public static function update_salutation_entry() {
+		if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'You do not have permission.', 'contactpanda' ) ), 403 );
+		check_ajax_referer( 'contactpanda_salutation_dictionary', 'nonce' );
+		$id = sanitize_text_field( wp_unslash( $_POST['entry_id'] ?? '' ) );
+		$field = sanitize_key( wp_unslash( $_POST['field'] ?? '' ) );
+		$value = sanitize_text_field( wp_unslash( $_POST['value'] ?? '' ) );
+		$entry = ContactPanda_Store::update_salutation_entry( $id, $field, $value );
+		if ( is_wp_error( $entry ) ) wp_send_json_error( array( 'message' => $entry->get_error_message() ), 400 );
+		$value = $entry[ $field ];
+		$delete = add_query_arg( array( 'action' => 'contactpanda_salutation_dictionary', 'operation' => 'delete', 'id' => $entry['id'], '_wpnonce' => wp_create_nonce( 'contactpanda_salutation_dictionary' ) ), admin_url( 'admin-post.php' ) );
+		wp_send_json_success( array( 'value' => $value, 'display' => 'salutation' === $field ? self::dictionary_salutation_labels()[ $value ] : $value, 'entry_id' => (string) $entry['id'], 'source' => 'manual' === $entry['source'] ? __( 'Manual', 'contactpanda' ) : '', 'delete_url' => esc_url_raw( $delete ) ) );
 	}
 
 	public static function handle_salutation_dictionary() {

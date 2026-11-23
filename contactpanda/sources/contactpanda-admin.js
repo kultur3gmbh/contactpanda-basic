@@ -269,22 +269,12 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 			return editAddress(button.closest('.contactpanda-address-form'));
 		if (button.classList.contains('contactpanda-save-address'))
 			return saveAddress(button.closest('.contactpanda-address-form'));
-		if (button.classList.contains('contactpanda-salutation-value'))
-			return openSalutation(button.closest('.contactpanda-salutation-field'));
-		if (button.classList.contains('contactpanda-save-salutation'))
-			return saveSalutation(
-				button
-					.closest('.contactpanda-salutation-field')
-					.querySelector('.contactpanda-salutation-select'),
-			);
-		if (button.classList.contains('contactpanda-cancel-salutation'))
-			return closeSalutation(button.closest('.contactpanda-salutation-field'));
 		if (button.classList.contains('contactpanda-add-channel'))
-			return addContactChannel(button.closest('.contactpanda-channel-group'));
+			return addContactChannel(button.closest('.contactpanda-channel-group'), button);
 		if (button.classList.contains('contactpanda-channel-value'))
 			return openContactChannel(button.closest('.contactpanda-channel-row'));
 		if (button.classList.contains('contactpanda-cancel-channel'))
-			return closeContactChannel(button.closest('.contactpanda-channel-row'));
+			return cancelContactChannel(button.closest('.contactpanda-channel-row'));
 		if (button.classList.contains('contactpanda-save-channel'))
 			return saveContactChannel(button.closest('.contactpanda-channel-row'));
 		if (button.classList.contains('contactpanda-delete-channel'))
@@ -311,12 +301,19 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 		var field = button.closest('.contactpanda-editable');
 		if (!field) return;
 		if (button.classList.contains('contactpanda-edit')) startEditing(field);
-		if (button.classList.contains('contactpanda-cancel')) stopEditing(field);
+		if (
+			button.classList.contains('contactpanda-cancel') &&
+			!field.classList.contains('is-saving')
+		) {
+			stopEditing(field);
+			field.querySelector('.contactpanda-field-value').focus();
+		}
 		if (button.classList.contains('contactpanda-save')) saveField(field);
 		if (button.classList.contains('contactpanda-validate-vat')) validateVat(field);
 	});
 
 	document.addEventListener('keydown', function (event) {
+		if (handleInlineEditorKey(event)) return;
 		if (event.key === 'Escape') {
 			var companyModal = document.querySelector(
 				'.contactpanda-company-relation-modal:not([hidden])',
@@ -355,7 +352,6 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 	document.addEventListener('change', function (event) {
 		if (event.target.closest('.contactpanda-central-library-form'))
 			updateCentralLibraryForm(event.target.closest('.contactpanda-central-library-form'));
-		// Salutations are saved explicitly with Apply; changing the select keeps the editor open.
 		if (event.target.classList.contains('contactpanda-new-salutation'))
 			event.target.dataset.autoAssigned = '0';
 		if (event.target.classList.contains('contactpanda-consent-decision'))
@@ -449,81 +445,12 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 		var suggestion = event.target.closest('.contactpanda-salutation-suggestion');
 		if (!suggestion) return;
 		var field = suggestion.closest('.contactpanda-salutation-field');
-		var select = field.querySelector('.contactpanda-salutation-select');
+		startEditing(field);
+		var select = field.querySelector('.contactpanda-editor select');
+		if (!select || field.classList.contains('is-saving')) return;
 		select.value = suggestion.dataset.value;
-		saveSalutation(select);
+		saveField(field);
 	});
-
-	function saveSalutation(select) {
-		var field = select.closest('.contactpanda-salutation-field');
-		var message = field.querySelector('.contactpanda-field-message');
-		var data = new URLSearchParams();
-		data.set('action', 'contactpanda_update_contact_field');
-		data.set('nonce', CONTACTPANDA_CONFIG.nonce);
-		data.set('contact_id', field.dataset.contact);
-		data.set('field', 'anrede');
-		data.set('value', select.value);
-		select.disabled = true;
-		message.textContent = tr('saving', 'Saving…');
-		fetch(CONTACTPANDA_CONFIG.ajaxUrl, requestOptions(data))
-			.then(parseResponse)
-			.then(function (result) {
-				if (!result.success)
-					throw new Error(
-						result.data && result.data.message
-							? result.data.message
-							: tr('saveFailed', 'Saving failed.'),
-					);
-				message.textContent = tr('saved', 'Saved.');
-				message.classList.add('is-success');
-				var value = field.querySelector('.contactpanda-salutation-value');
-				if (value) {
-					var empty = !select.value;
-					value.dataset.value = select.value;
-					value.classList.toggle('button-link', !empty);
-					value.classList.toggle('button', empty);
-					value.classList.toggle('panda-button-compact', empty);
-					value.title = empty ? value.dataset.addLabel : value.dataset.editLabel;
-					value.setAttribute('aria-label', value.title);
-					value.querySelector('.dashicons').hidden = !empty;
-					var label = value.querySelector('[data-salutation-text]');
-					label.textContent = result.data.display;
-					label.hidden = empty;
-				}
-				var suggestion = field.querySelector('.contactpanda-salutation-suggestion');
-				if (suggestion) suggestion.remove();
-				closeSalutation(field, true);
-			})
-			.catch(function (error) {
-				message.textContent = error.message;
-			})
-			.finally(function () {
-				select.disabled = false;
-			});
-	}
-
-	function openSalutation(field) {
-		if (!field) return;
-		var editor = field.querySelector('.contactpanda-salutation-editor');
-		var value = field.querySelector('.contactpanda-salutation-value');
-		if (editor) editor.hidden = false;
-		if (value) value.hidden = true;
-		field.querySelector('[data-salutation-empty]').hidden = true;
-		var select = editor && editor.querySelector('select');
-		if (select) select.focus();
-	}
-
-	function closeSalutation(field, keepValue) {
-		if (!field) return;
-		var editor = field.querySelector('.contactpanda-salutation-editor');
-		var value = field.querySelector('.contactpanda-salutation-value');
-		var select = editor && editor.querySelector('select');
-		if (editor) editor.hidden = true;
-		if (value) value.hidden = false;
-		if (!keepValue && select && value) select.value = value.dataset.value || '';
-		field.querySelector('[data-salutation-empty]').hidden = !!(value && value.dataset.value);
-		if (value) value.focus();
-	}
 
 	function openContactChannel(row) {
 		if (!row) return;
@@ -550,20 +477,45 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 		if (summary) summary.hidden = false;
 	}
 
-	function addContactChannel(group) {
+	function cancelContactChannel(row) {
+		if (!row || row.classList.contains('is-saving')) return;
+		var origin = row.contactpandaAddTrigger || row.querySelector('.contactpanda-channel-value');
+		if (!row.classList.contains('is-new')) {
+			var value = origin.dataset.value;
+			row.querySelector('.contactpanda-channel-label-select').value = row.dataset.channelLabel;
+			row.querySelector('.contactpanda-channel-primary-input').checked =
+				row.dataset.primary === '1';
+			if (row.dataset.channelType === 'phone') {
+				var parts = parsePhone(value);
+				row.querySelector('.contactpanda-phone-prefix').value = parts.code;
+				row.querySelector('.contactpanda-phone-national').value = parts.national;
+			} else {
+				row.querySelector('.contactpanda-channel-input').value = value;
+			}
+		}
+		closeContactChannel(row);
+		finishInlineFocus(origin);
+	}
+
+	function addContactChannel(group, trigger) {
 		if (!group || group.querySelector('.contactpanda-channel-row.is-new')) return;
 		var template = group.querySelector('.contactpanda-channel-template');
 		var list = group.querySelector('.contactpanda-channel-list');
 		if (!template || !list) return;
 		var row = template.content.firstElementChild.cloneNode(true);
+		row.contactpandaAddTrigger = trigger;
 		list.insertBefore(row, list.firstChild);
 		var empty = list.querySelector('.contactpanda-channel-empty');
 		if (empty) empty.hidden = true;
 		openContactChannel(row);
 	}
 
-	function saveContactChannel(row) {
-		if (!row) return;
+	function saveContactChannel(row, next) {
+		if (!row || row.classList.contains('is-saving')) return;
+		var editor = row.querySelector('.contactpanda-channel-editor');
+		var input = editor.querySelector('.contactpanda-channel-input, .contactpanda-phone-national');
+		var origin = row.querySelector('.contactpanda-channel-value');
+		var cancel = editor.querySelector('.contactpanda-cancel-channel');
 		var button = row.querySelector('.contactpanda-save-channel');
 		var group = row.closest('.contactpanda-channel-group');
 		var message = group.querySelector('.contactpanda-channel-message');
@@ -585,7 +537,23 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 			'is_primary',
 			row.querySelector('.contactpanda-channel-primary-input').checked ? '1' : '0',
 		);
+		var originalValue =
+			type === 'phone' ? origin.dataset.value.replace(/\D/g, '') : origin.dataset.value;
+		var currentValue = type === 'phone' ? data.get('value').replace(/\D/g, '') : data.get('value');
+		if (
+			!row.classList.contains('is-new') &&
+			currentValue === originalValue &&
+			data.get('channel_label') === row.dataset.channelLabel &&
+			data.get('is_primary') === row.dataset.primary
+		) {
+			closeContactChannel(row);
+			finishInlineFocus(origin, next);
+			return;
+		}
+		row.classList.add('is-saving');
 		button.disabled = true;
+		cancel.disabled = true;
+		input.readOnly = true;
 		message.classList.remove('is-success');
 		message.textContent = tr('saving', 'Saving…');
 		fetch(CONTACTPANDA_CONFIG.ajaxUrl, requestOptions(data))
@@ -598,8 +566,11 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 							: tr('saveFailed', 'Saving failed.'),
 					);
 				row.dataset.channelId = result.data.id;
+				row.dataset.channelLabel = result.data.label;
 				row.dataset.primary = result.data.is_primary ? '1' : '0';
-				row.classList.remove('is-new');
+				row.classList.remove('is-new', 'is-saving');
+				delete row.contactpandaAddTrigger;
+				group.querySelector('.contactpanda-add-extra-channel').hidden = false;
 				var value = row.querySelector('.contactpanda-channel-value');
 				value.dataset.value = result.data.value;
 				value.textContent = result.data.display;
@@ -632,7 +603,10 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 				var deleteButton = row.querySelector('.contactpanda-delete-channel');
 				if (deleteButton) deleteButton.hidden = !!result.data.is_primary;
 				button.disabled = false;
+				cancel.disabled = false;
+				input.readOnly = false;
 				closeContactChannel(row);
+				finishInlineFocus(origin, next);
 				message.textContent = tr('saved', 'Saved.');
 				message.classList.add('is-success');
 				window.setTimeout(function () {
@@ -641,8 +615,12 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 				}, 2500);
 			})
 			.catch(function (error) {
+				row.classList.remove('is-saving');
 				button.disabled = false;
+				cancel.disabled = false;
+				input.readOnly = false;
 				message.textContent = error.message;
+				input.focus();
 			});
 	}
 
@@ -665,6 +643,11 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 							: tr('saveFailed', 'Saving failed.'),
 					);
 				row.remove();
+				if (!group.querySelector('.contactpanda-channel-row')) {
+					group.querySelector('.contactpanda-channel-empty').hidden = false;
+					group.querySelector('.contactpanda-add-extra-channel').hidden = true;
+					group.querySelector('.contactpanda-channel-empty').focus();
+				}
 				message.textContent = result.data.message;
 				message.classList.add('is-success');
 			})
@@ -753,75 +736,148 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 		document.addEventListener('DOMContentLoaded', activateLinkedTab);
 	else activateLinkedTab();
 
+	var inlineTriggerSelector =
+		'.contactpanda-field-value, .contactpanda-channel-value, .contactpanda-channel-empty.contactpanda-add-channel';
+	var focusableSelector =
+		'a[href], button, input:not([type="hidden"]), select, textarea, [tabindex]';
+
+	function canFocus(control) {
+		return (
+			!control.disabled &&
+			control.tabIndex >= 0 &&
+			!control.closest('[hidden], [inert], [aria-hidden="true"]') &&
+			control.getClientRects().length > 0 &&
+			getComputedStyle(control).visibility !== 'hidden'
+		);
+	}
+
+	function nextInlineControl(field) {
+		var scope = field.closest('.contactpanda-table, .contactpanda-record-workspace') || document;
+		var followsField = function (control) {
+			return (
+				!field.contains(control) &&
+				field.compareDocumentPosition(control) & Node.DOCUMENT_POSITION_FOLLOWING &&
+				canFocus(control)
+			);
+		};
+		return (
+			Array.from(scope.querySelectorAll(inlineTriggerSelector)).find(followsField) ||
+			Array.from(document.querySelectorAll(focusableSelector)).find(followsField)
+		);
+	}
+
+	function finishInlineFocus(origin, next) {
+		if (next && canFocus(next)) {
+			if (next.matches(inlineTriggerSelector)) next.click();
+			else next.focus();
+		} else if (origin && canFocus(origin)) {
+			origin.focus();
+		}
+	}
+
+	function handleInlineEditorKey(event) {
+		if (event.isComposing || event.defaultPrevented) return false;
+		var editor = event.target.closest('.contactpanda-editor, .contactpanda-channel-editor');
+		if (!editor) return false;
+		var channel = editor.classList.contains('contactpanda-channel-editor');
+		var field = editor.closest(channel ? '.contactpanda-channel-row' : '.contactpanda-editable');
+		var control = channel
+			? editor.querySelector('.contactpanda-channel-input, .contactpanda-phone-national')
+			: editor.querySelector('.contactpanda-input');
+		if (event.key === 'Escape') {
+			event.preventDefault();
+			var cancel = editor.querySelector(
+				channel ? '.contactpanda-cancel-channel' : '.contactpanda-cancel',
+			);
+			cancel.click();
+			return true;
+		}
+		if (
+			event.target !== control ||
+			!(
+				(event.key === 'Tab' && !event.shiftKey) ||
+				(event.key === 'Enter' && control.tagName === 'INPUT')
+			)
+		)
+			return false;
+		event.preventDefault();
+		var next = event.key === 'Tab' ? nextInlineControl(field) : null;
+		if (channel) saveContactChannel(field, next);
+		else saveField(field, next);
+		return true;
+	}
+
+	function inlineAction(className, icon, label, primary) {
+		var button = document.createElement('button');
+		button.type = 'button';
+		button.className =
+			'button panda-button-compact ' + className + (primary ? ' button-primary' : '');
+		button.title = label;
+		button.setAttribute('aria-label', label);
+		var symbol = document.createElement('span');
+		symbol.className = 'dashicons dashicons-' + icon;
+		symbol.setAttribute('aria-hidden', 'true');
+		button.appendChild(symbol);
+		return button;
+	}
+
 	function startEditing(field) {
-		if (!field || field.classList.contains('is-editing')) return;
+		if (!field) return;
+		var existing = field.querySelector('.contactpanda-editor .contactpanda-input');
+		if (existing) {
+			existing.focus();
+			return;
+		}
 		var valueNode = field.querySelector('.contactpanda-field-value');
-		var multiline = field.dataset.multiline === '1';
+		var options = field.querySelector('.contactpanda-inline-options');
 		var isPhone = field.dataset.type === 'phone';
-		var input = document.createElement(multiline ? 'textarea' : 'input');
-		input.className = 'contactpanda-input';
-		input.value = valueNode.dataset.value || '';
-		field.dataset.verifiedOriginal = field.dataset.verified || '0';
-		if (!multiline)
-			input.type =
-				field.dataset.field === 'domain'
-					? 'url'
-					: field.dataset.field === 'email'
-						? 'email'
-						: 'text';
-		field.classList.add('is-editing');
-		field.querySelector('.contactpanda-field-row').hidden = true;
+		var multiline = field.dataset.multiline === '1';
 		var editor = document.createElement('div');
 		editor.className = 'contactpanda-editor';
-		if (isPhone) editor.appendChild(buildPhoneGroup(valueNode.dataset.value || ''));
-		else editor.appendChild(input);
-		var validateButton =
-			field.dataset.field === 'uid'
-				? '<button type="button" class="button contactpanda-validate-vat">' +
-					tr('validateVat', 'Validate VAT ID') +
-					'</button>'
-				: '';
-		var compactActions =
-			!multiline &&
-			(field.dataset.entity === 'contact' ||
-				field.classList.contains('contactpanda-list-editable'));
-		var saveLabel = tr('save', 'Save');
-		var cancelLabel = tr('cancel', 'Cancel');
-		var saveContent = compactActions
-			? '<span class="dashicons dashicons-yes" aria-hidden="true"></span><span class="screen-reader-text">' +
-				saveLabel +
-				'</span>'
-			: saveLabel;
-		var actionSize = compactActions ? ' panda-button-compact' : '';
-		var cancelContent = compactActions
-			? '<span class="dashicons dashicons-no-alt" aria-hidden="true"></span><span class="screen-reader-text">' +
-				cancelLabel +
-				'</span>'
-			: cancelLabel;
-		editor.insertAdjacentHTML(
-			'beforeend',
-			'<div class="contactpanda-editor-actions"><button type="button" class="button button-primary contactpanda-save' +
-				actionSize +
-				'" aria-label="' +
-				saveLabel +
-				'" title="' +
-				saveLabel +
-				'">' +
-				saveContent +
-				'</button>' +
-				validateButton +
-				'<button type="button" class="button contactpanda-cancel' +
-				actionSize +
-				'" aria-label="' +
-				cancelLabel +
-				'" title="' +
-				cancelLabel +
-				'">' +
-				cancelContent +
-				'</button></div>',
+		var input;
+		if (isPhone) {
+			editor.appendChild(buildPhoneGroup(valueNode.dataset.value || ''));
+			input = editor.querySelector('.contactpanda-phone-national');
+		} else {
+			input = options
+				? options.content.firstElementChild.cloneNode(true)
+				: document.createElement(multiline ? 'textarea' : 'input');
+			input.classList.add('contactpanda-input');
+			input.value = valueNode.dataset.value || '';
+			if (!options && !multiline)
+				input.type =
+					field.dataset.field === 'domain'
+						? 'url'
+						: field.dataset.field === 'email'
+							? 'email'
+							: 'text';
+			editor.appendChild(input);
+		}
+		input.setAttribute(
+			'aria-label',
+			valueNode.dataset.fieldLabel || valueNode.getAttribute('aria-label') || '',
 		);
+		field.dataset.verifiedOriginal = field.dataset.verified || '0';
+		field.classList.add('is-editing');
+		field.querySelector('.contactpanda-field-row').hidden = true;
+		var actions = document.createElement('div');
+		actions.className = 'contactpanda-editor-actions';
+		actions.appendChild(inlineAction('contactpanda-save', 'yes', tr('save', 'Save'), true));
+		actions.appendChild(
+			inlineAction('contactpanda-cancel', 'no-alt', tr('cancel', 'Cancel'), false),
+		);
+		if (field.dataset.field === 'uid')
+			actions.appendChild(
+				inlineAction(
+					'contactpanda-validate-vat',
+					'admin-tools',
+					tr('validateVat', 'Validate VAT ID'),
+					false,
+				),
+			);
+		editor.appendChild(actions);
 		field.querySelector('.contactpanda-field-message').before(editor);
-		(isPhone ? editor.querySelector('.contactpanda-phone-national') : input).focus();
+		input.focus();
 	}
 
 	function validateVat(field) {
@@ -870,30 +926,64 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 		field.querySelector('.contactpanda-field-message').textContent = '';
 	}
 
-	function saveField(field) {
-		var input = field.querySelector('.contactpanda-input');
+	function updateInlineValue(control, value, display) {
+		control.dataset.value = value;
+		control.textContent = value === '' ? '–––' : display;
+		var label = value === '' ? control.dataset.addLabel : control.dataset.editLabel;
+		if (label) control.setAttribute('aria-label', label);
+	}
+
+	function saveField(field, next) {
+		if (!field || field.classList.contains('is-saving')) return;
+		var input = field.querySelector('.contactpanda-editor .contactpanda-input');
+		if (!input) return;
+		var origin = field.querySelector('.contactpanda-field-value');
+		var value =
+			field.dataset.type === 'phone'
+				? composePhone(field.querySelector('.contactpanda-phone-input-group'))
+				: input.value;
 		var saveButton = field.querySelector('.contactpanda-save');
+		var cancelButton = field.querySelector('.contactpanda-cancel');
 		var message = field.querySelector('.contactpanda-field-message');
+		var previous = origin.dataset.value || '';
+		var unchanged =
+			field.dataset.type === 'phone'
+				? value.replace(/\D/g, '') === previous.replace(/\D/g, '')
+				: value === previous;
+		if (unchanged) {
+			stopEditing(field, true);
+			finishInlineFocus(origin, next);
+			return;
+		}
+		var dictionary = field.closest('[data-salutation-entry]');
 		var isContact = field.dataset.entity === 'contact';
 		var data = new URLSearchParams();
 		data.set(
 			'action',
-			isContact ? 'contactpanda_update_contact_field' : 'contactpanda_update_company_field',
+			dictionary
+				? 'contactpanda_update_salutation_entry'
+				: isContact
+					? 'contactpanda_update_contact_field'
+					: 'contactpanda_update_company_field',
 		);
-		data.set('nonce', CONTACTPANDA_CONFIG.nonce);
 		data.set(
-			isContact ? 'contact_id' : 'company_id',
-			isContact ? field.dataset.contact : field.dataset.company,
+			'nonce',
+			dictionary ? CONTACTPANDA_CONFIG.salutationDictionaryNonce : CONTACTPANDA_CONFIG.nonce,
 		);
+		if (dictionary) data.set('entry_id', dictionary.dataset.salutationEntry);
+		else
+			data.set(
+				isContact ? 'contact_id' : 'company_id',
+				isContact ? field.dataset.contact : field.dataset.company,
+			);
 		data.set('field', field.dataset.field);
-		data.set(
-			'value',
-			field.dataset.type === 'phone'
-				? composePhone(field.querySelector('.contactpanda-phone-input-group'))
-				: input.value,
-		);
+		data.set('value', value);
 		field.classList.add('is-saving');
 		saveButton.disabled = true;
+		cancelButton.disabled = true;
+		input.readOnly = true;
+		if (input.tagName === 'SELECT') input.disabled = true;
+		message.classList.remove('is-success');
 		message.textContent = tr('saving', 'Saving…');
 		fetch(CONTACTPANDA_CONFIG.ajaxUrl, requestOptions(data))
 			.then(parseResponse)
@@ -904,22 +994,12 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 							? result.data.message
 							: tr('saveFailed', 'Saving failed.'),
 					);
-				var valueNode = field.querySelector('.contactpanda-field-value');
-				valueNode.dataset.value = result.data.value;
-				var inlineText = valueNode.querySelector('[data-inline-text]');
-				if (inlineText) {
-					var empty = !String(result.data.value || '');
-					inlineText.textContent = result.data.display;
-					inlineText.hidden = empty;
-					valueNode.querySelector('.dashicons').hidden = !empty;
-					field.querySelector('.contactpanda-empty-field-value').hidden = !empty;
-					valueNode.classList.toggle('button', empty);
-					valueNode.classList.toggle('panda-button-compact', empty);
-					valueNode.classList.toggle('button-link', !empty);
-					valueNode.title = empty ? valueNode.dataset.addLabel : valueNode.dataset.editLabel;
-					valueNode.setAttribute('aria-label', valueNode.title);
-				} else {
-					valueNode.textContent = result.data.display;
+				updateInlineValue(origin, result.data.value, result.data.display);
+				if (dictionary) {
+					dictionary.dataset.salutationEntry = result.data.entry_id;
+					dictionary.querySelector('[data-salutation-delete]').href = result.data.delete_url;
+					if (result.data.source)
+						dictionary.querySelector('[data-salutation-source]').textContent = result.data.source;
 				}
 				if (field.dataset.field === 'email') {
 					var mailLink = field.querySelector('.contactpanda-mail-link');
@@ -930,23 +1010,38 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 					var salutation = document.querySelector(
 						'.contactpanda-salutation-field[data-contact="' +
 							field.dataset.contact +
-							'"] .contactpanda-salutation-select',
+							'"] .contactpanda-field-value',
 					);
-					if (salutation && !salutation.value) salutation.value = result.data.salutation;
+					if (salutation && !salutation.dataset.value)
+						updateInlineValue(
+							salutation,
+							result.data.salutation,
+							CONTACTPANDA_CONFIG.salutationLabels[result.data.salutation] ||
+								result.data.salutation,
+						);
 				}
+				var suggestion = field.querySelector('.contactpanda-salutation-suggestion');
+				if (suggestion) suggestion.remove();
 				stopEditing(field, true);
-				message.textContent = tr('saved', 'Saved.');
+				var saved = tr('saved', 'Saved.');
+				message.textContent = saved;
 				message.classList.add('is-success');
+				finishInlineFocus(origin, next);
 				window.setTimeout(function () {
-					message.textContent = '';
-					message.classList.remove('is-success');
+					if (message.textContent === saved) {
+						message.textContent = '';
+						message.classList.remove('is-success');
+					}
 				}, 2500);
 			})
 			.catch(function (error) {
 				field.classList.remove('is-saving');
 				saveButton.disabled = false;
+				cancelButton.disabled = false;
+				input.readOnly = false;
+				input.disabled = false;
 				message.textContent = error.message;
-				message.classList.remove('is-success');
+				input.focus();
 			});
 	}
 

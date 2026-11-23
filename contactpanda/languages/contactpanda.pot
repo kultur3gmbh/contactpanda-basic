@@ -10645,7 +10645,7 @@ msgstr ""
 msgid "Compact"
 msgstr ""
 
-msgid "About ..."
+msgid "Info"
 msgstr ""
 
 msgid "Broadcasts"
@@ -10670,4 +10670,13 @@ msgid "The selection can hold up to 10,000 people."
 msgstr ""
 
 msgid "The search has expired. Run the search again."
+msgstr ""
+
+msgid "The salutation assignment no longer exists."
+msgstr ""
+
+msgid "Enter a valid first name or salutation."
+msgstr ""
+
+msgid "The salutation assignment could not be saved. Check whether the name already exists in this language."
 msgstr ""

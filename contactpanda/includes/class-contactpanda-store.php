@@ -673,6 +673,41 @@ final class ContactPanda_Store {
 		return false !== $wpdb->insert( $table, $data ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points.
 	}
 
+	/** Update one field of an existing dictionary entry, keeping its language and history. */
+	public static function update_salutation_entry( $id, $field, $value ) {
+		global $wpdb;
+		$entry = self::salutation( $id );
+		if ( ! $entry ) return new WP_Error( 'contactpanda_salutation_missing', __( 'The salutation assignment no longer exists.', 'contactpanda' ) );
+		if ( 'first_name' === $field && self::normalize_first_name( $value ) ) {
+			$changes = array( 'first_name' => $value, 'first_name_normalized' => self::normalize_first_name( $value ) );
+		} elseif ( 'salutation' === $field && in_array( $value, array( 'mr', 'ms', 'family', 'neutral', 'ambiguous' ), true ) ) {
+			$changes = array( 'salutation' => $value );
+		} else {
+			return new WP_Error( 'contactpanda_salutation_invalid', __( 'Enter a valid first name or salutation.', 'contactpanda' ) );
+		}
+		if ( $value === $entry[ $field ] ) return $entry;
+		$changes['source'] = 'manual';
+		$changes['updated_at'] = current_time( 'mysql' );
+		$updated = array_replace( $entry, $changes );
+		if ( self::ready() ) {
+			$saved = $wpdb->update( ContactPanda_Schema::table_names()['salutations'], $changes, array( 'id' => absint( $id ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- The existing unique index protects against overwriting another entry.
+			if ( $saved ) return $updated;
+		} else {
+			$library = (array) get_option( 'contactpanda_salutation_library', array() );
+			$language = $entry['language'] ?? 'de';
+			$key = 'first_name' === $field ? $language . ':' . $updated['first_name_normalized'] : (string) $id;
+			$legacy_key = $updated['first_name_normalized'] ?? self::normalize_first_name( $updated['first_name'] );
+			$legacy_conflict = 'de' === $language && $legacy_key !== (string) $id && isset( $library[ $legacy_key ] );
+			if ( isset( $library[ $id ] ) && ( $key === (string) $id || ( ! isset( $library[ $key ] ) && ! $legacy_conflict ) ) ) {
+				unset( $library[ $id ] );
+				$updated['id'] = $key;
+				$library[ $key ] = $updated;
+				if ( update_option( 'contactpanda_salutation_library', $library, false ) ) return $updated;
+			}
+		}
+		return new WP_Error( 'contactpanda_salutation_conflict', __( 'The salutation assignment could not be saved. Check whether the name already exists in this language.', 'contactpanda' ) );
+	}
+
 	public static function delete_salutation( $id ) {
 		global $wpdb;
 		if ( ! self::ready() ) { $library = (array) get_option( 'contactpanda_salutation_library', array() ); $key = sanitize_text_field( (string) $id ); if ( ! isset( $library[ $key ] ) ) return false; unset( $library[ $key ] ); return update_option( 'contactpanda_salutation_library', $library, false ); }

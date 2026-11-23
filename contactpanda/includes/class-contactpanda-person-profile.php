@@ -14,7 +14,7 @@ final class ContactPanda_Person_Profile {
 	}
 
 	public static function tabs( $tabs ) {
-		$tabs['about_me'] = array( 'label' => __( 'About ...', 'contactpanda' ), 'position' => 'before_notes' );
+		$tabs['about_me'] = array( 'label' => __( 'Info', 'contactpanda' ), 'position' => 'before_notes' );
 		return $tabs;
 	}
 

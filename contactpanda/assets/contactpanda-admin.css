@@ -180,7 +180,7 @@ body.contactpanda-modal-open{overflow:hidden}.contactpanda-mailing-modal{z-index
 .contactpanda-grid{grid-template-columns:minmax(320px,390px) minmax(0,1fr)}
 .contactpanda-salutation-value.is-empty{color:#7a8795!important;font-weight:500!important}
 .contactpanda-channel-heading .contactpanda-add-channel{position:relative!important;display:inline-grid!important;place-items:center!important;box-sizing:border-box!important;width:30px!important;height:28px!important;min-height:28px!important;padding:0!important;border:1px solid #cbd4dd!important;border-radius:6px!important;background:#eef1f4!important;color:#526274!important}.contactpanda-channel-heading .contactpanda-add-channel:hover,.contactpanda-channel-heading .contactpanda-add-channel:focus{border-color:#5266d4!important;background:#5266d4!important;color:#fff!important}.contactpanda-channel-heading .contactpanda-add-channel .dashicons{width:17px;height:17px;font-size:17px;line-height:17px}
-.contactpanda-list-editable{min-width:90px}.contactpanda-list-editable .contactpanda-field-row{display:block}.contactpanda-list-editable .contactpanda-field-value{width:100%;font-weight:600!important}.contactpanda-list-editable .contactpanda-editor{position:relative;z-index:20;display:flex;align-items:center;gap:6px;min-width:0;padding:0;border:0;background:transparent;box-shadow:none}.contactpanda-list-editable .contactpanda-editor>.contactpanda-input{box-sizing:border-box;width:min(180px,100%);min-width:90px;height:32px;min-height:32px;padding:2px 7px;font:inherit}.contactpanda-list-editable .contactpanda-editor>textarea.contactpanda-input{width:min(320px,100%);height:auto;min-height:74px}.contactpanda-list-editable .contactpanda-editor-actions{display:inline-flex;align-items:center;gap:4px;margin:0}.contactpanda-list-editable .contactpanda-editor-actions .contactpanda-save,.contactpanda-list-editable .contactpanda-editor-actions .contactpanda-cancel{display:inline-grid!important;place-items:center;box-sizing:border-box;width:28px!important;min-width:28px!important;height:28px!important;min-height:28px!important;margin:0!important;padding:0!important;border-radius:50%!important;color:#fff!important}.contactpanda-list-editable .contactpanda-editor-actions .contactpanda-save{border-color:#16803c!important;background:#16803c!important}.contactpanda-list-editable .contactpanda-editor-actions .contactpanda-cancel{border-color:#c62828!important;background:#c62828!important}.contactpanda-list-editable .contactpanda-editor-actions .dashicons{width:17px;height:17px;font-size:17px;line-height:17px}.contactpanda-list-editable .contactpanda-field-message{font-size:11px}.contactpanda-list-inline-edit .contactpanda-inline-edit-fields input,.contactpanda-list-inline-edit .contactpanda-inline-edit-fields textarea{box-sizing:border-box;width:100%}.contactpanda-list-inline-edit .contactpanda-inline-edit-fields p{margin:7px 0 0}
+.contactpanda-list-editable{min-width:90px}.contactpanda-list-editable .contactpanda-field-row{display:block}.contactpanda-list-editable .contactpanda-field-value{font-weight:600!important}.contactpanda-list-editable .contactpanda-editor{position:relative;z-index:20;display:flex;align-items:center;gap:6px;min-width:0;padding:0;border:0;background:transparent;box-shadow:none}.contactpanda-list-editable .contactpanda-editor>.contactpanda-input{box-sizing:border-box;width:min(180px,100%);min-width:90px;height:32px;min-height:32px;padding:2px 7px;font:inherit}.contactpanda-list-editable .contactpanda-editor>textarea.contactpanda-input{width:min(320px,100%);height:auto;min-height:74px}.contactpanda-list-editable .contactpanda-editor-actions{display:inline-flex;align-items:center;gap:4px;margin:0}.contactpanda-list-editable .contactpanda-editor-actions .dashicons{width:17px;height:17px;font-size:17px;line-height:17px}.contactpanda-list-editable .contactpanda-field-message{font-size:11px}.contactpanda-list-inline-edit .contactpanda-inline-edit-fields input,.contactpanda-list-inline-edit .contactpanda-inline-edit-fields textarea{box-sizing:border-box;width:100%}.contactpanda-list-inline-edit .contactpanda-inline-edit-fields p{margin:7px 0 0}
 .contactpanda-hero-preview{box-sizing:border-box;min-height:240px;padding:48px 30px;display:flex;flex-direction:column;justify-content:center}.contactpanda-hero-preview>strong{font-size:30px;line-height:1.2}.contactpanda-hero-preview>span{align-self:center;margin-top:14px;padding:10px 16px;border-radius:5px;background:#4253b5;color:#fff}.contactpanda-social-preview span{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;margin:3px;padding:7px;border-radius:999px;color:#fff;font-weight:700}
 @media(max-width:900px){.contactpanda-grid{grid-template-columns:1fr}}
 .contactpanda-merge-modal{display:flex!important;position:fixed;z-index:100100;inset:0;padding:24px;background:rgba(25,40,55,.58)}.contactpanda-merge-panel{box-sizing:border-box;width:min(1280px,100%);max-height:calc(100vh - 48px);margin:auto;overflow:auto;padding:0 26px 26px;background:#fff;border-radius:12px;box-shadow:0 18px 55px rgba(0,0,0,.3)}.contactpanda-merge-header{position:sticky;z-index:4;top:0;display:flex;align-items:center;justify-content:space-between;margin:0 -26px 20px;padding:18px 26px;border-bottom:1px solid #dfe5eb;background:#fff}.contactpanda-merge-header h2{margin:0}.contactpanda-merge-header .dashicons{width:25px;height:25px;font-size:25px}.contactpanda-merge-channels{margin:22px 0;padding:18px;border:1px solid #dfe5eb;border-radius:8px;background:#f8fafb}.contactpanda-merge-channels fieldset{display:grid;gap:7px;margin:14px 0;padding:12px;border:1px solid #dfe5eb;border-radius:7px;background:#fff}.contactpanda-merge-channels legend{padding:0 6px;font-weight:700}.contactpanda-merge-channels label{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:7px}.contactpanda-merge-channels input[type=checkbox],.contactpanda-merge-channels input[type=radio]{margin:0}
@@ -501,3 +501,41 @@ body.contactpanda-modal-open{overflow:hidden}.contactpanda-mailing-modal{z-index
 .contactpanda-company-address .contactpanda-form-grid :is(input, select) { width: 100%; }
 .contactpanda-company-relation-modal .contactpanda-modal-panel > form { display: grid; gap: 10px; }
 .contactpanda-company-link-results:not(:empty) { display: grid; gap: 4px; max-height: 12em; overflow: auto; }
+
+.contactpanda-field-row[hidden],
+.contactpanda-channel-summary[hidden],
+.contactpanda-channel-group .contactpanda-add-channel[hidden] { display: none !important; }
+
+.contactpanda-editable .contactpanda-editor {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+}
+.contactpanda-editable .contactpanda-editor > .contactpanda-input {
+	flex: 1 1 min(100%, 90px);
+	min-width: 0;
+	max-width: 100%;
+}
+.contactpanda-editable .contactpanda-editor > .contactpanda-phone-input-group {
+	flex: 1 1 min(100%, 170px);
+	min-width: 0;
+}
+.contactpanda-editable .contactpanda-editor-actions,
+.contactpanda-channel-editor .contactpanda-channel-actions {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	margin: 0;
+}
+.contactpanda-editable .contactpanda-field-value,
+.contactpanda-channel-group .contactpanda-channel-empty {
+	text-align: start;
+	opacity: 1;
+}
+.contactpanda-editable .contactpanda-field-value:focus-visible,
+.contactpanda-channel-group .contactpanda-channel-value:focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}

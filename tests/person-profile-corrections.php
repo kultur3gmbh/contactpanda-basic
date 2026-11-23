@@ -42,7 +42,7 @@ try{
  $contact=ContactPanda_Store::contact($contacts[0]);$tabs=new ReflectionMethod('ContactPanda_Plugin','render_person_tabs');if(PHP_VERSION_ID<80100)$tabs->setAccessible(true);
  $_GET=[];ob_start();$tabs->invoke(null,$contacts[0],null,$contact,[],[],false,[],true);$html=ob_get_clean();
  $doc=new DOMDocument();@$doc->loadHTML('<?xml encoding="UTF-8">'.$html);$xpath=new DOMXPath($doc);$buttons=$xpath->query('//button[@role="tab"]');$panels=$xpath->query('//div[@role="tabpanel"]');
- profile_expect(trim($buttons[0]->textContent)==='About ...'&&strpos($buttons[1]->getAttribute('id'),'-notes-tab')!==false,'About me is the first tab directly before Notes');
+ profile_expect(trim($buttons[0]->textContent)==='Info'&&strpos($buttons[1]->getAttribute('id'),'-notes-tab')!==false,'Info is the first tab directly before Notes');
  profile_expect($buttons[0]->getAttribute('aria-selected')==='true'&&!$panels[0]->hasAttribute('hidden')&&$panels[1]->hasAttribute('hidden'),'About me opens as the sole active initial tab');
  profile_expect(substr_count($html,'id="contactpanda-biography-card"')===1,'Self-description editor rendered once');
  remove_filter('contactpanda_person_detail_tabs',['ContactPanda_Plus_Donations','tabs'],20);
