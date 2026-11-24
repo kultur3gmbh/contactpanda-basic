@@ -449,6 +449,7 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 						option.setAttribute('role', 'option');
 						option.setAttribute('aria-selected', 'false');
 						option.textContent = person.label;
+						option.addEventListener('mousedown', (event) => event.preventDefault());
 						option.addEventListener('click', function () {
 							form.elements.contact_id.value = person.id;
 							input.value = person.label;

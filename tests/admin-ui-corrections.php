@@ -124,7 +124,7 @@ foreach ( array( 'contactpanda_bulk_manage_contact_tags', 'bulk_manage_contact_t
 	}
 }
 
-foreach ( array( "['marketable', 'newsletter', 'trash', 'tags_add', 'tags_remove', 'selection_remove', 'selection_save', 'merge']", 'contactpanda-save-bulk-tags', 'contactpanda-remove-bulk-tag', 'tag_ids[]' ) as $contract ) {
+foreach ( array( "['marketable', 'newsletter', 'trash', 'tags_add', 'tags_remove', 'selection_remove', 'selection_save', 'merge', 'salutations']", 'contactpanda-save-bulk-tags', 'contactpanda-remove-bulk-tag', 'tag_ids[]' ) as $contract ) {
 	if ( false === strpos( $script, $contract ) ) {
 		fwrite( STDERR, "Missing selected-person tag interaction contract {$contract}.\n" );
 		exit( 1 );
