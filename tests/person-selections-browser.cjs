@@ -81,6 +81,33 @@ assert.equal(await run('inlineRequests[3].action'),'contactpanda_update_salutati
 assert.equal(await run('inlineRequests[3].entry'),'en:fixture');
 assert.equal(await run('document.querySelector("[data-salutation-entry] .contactpanda-field-value").textContent'),'Ms');
 assert.deepEqual(await run('__errors'),[]);
+
+await req('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/?s=NoMatch&cp_add_results=1'},s);
+await run('new Promise(r=>setTimeout(r,150))');
+await run(`document.body.innerHTML='<form class="contactpanda-search"><input name="s" value="NoMatch"><button class="cp-selection-add" data-list-token="emptyresults" type="button">Add</button><span class="cp-selection-result"></span></form><div class="contactpanda-bulk-toolbar"><select id="contactpanda-bulk-action"><option value="salutations">Salutations</option></select><button class="contactpanda-open-bulk">Run</button></div><details class="cp-selection-retained" open hidden><summary>Outside <span data-cp-retained-count></span></summary><ul></ul><button data-cp-retained-more>More</button></details><dialog class="contactpanda-salutation-preview"><p class="contactpanda-salutation-preview-message"></p><div class="contactpanda-salutation-preview-rows" hidden><table><tbody></tbody></table></div><button class="contactpanda-apply-salutations" disabled>Apply</button></dialog>';
+window.CONTACTPANDA_CONFIG={nonce:'fixture',ajaxUrl:'/ajax'};
+window.CP_SELECTIONS={ajax:'/ajax',nonce:'fixture',user:1,source:'contactpanda',current:'0',rows:[],i18n:{added:'%d added'}};
+sessionStorage.setItem('cp-selection:1:contactpanda',JSON.stringify({ids:['1'],names:{1:'Fixture Person'},query:'s=Previous',pending:true}));
+window.requests=[];
+window.fetch=(url,{body})=>{
+ const operation=body.get('cp_selection_operation')||body.get('operation');
+ requests.push([operation,body.get('ids'),body.get('preview')]);
+ const data=operation==='search_results'?{ids:[],total:0}:{preview:'reviewtoken',rows:[{name:'Fixture Person',label:'Ms'}]};
+ return Promise.resolve({ok:true,json:()=>Promise.resolve({success:true,data})});
+};`);
+await run(fs.readFileSync(root+'/assets/contactpanda-admin.js','utf8'));
+await run(fs.readFileSync(root+'/assets/contactpanda-selections.js','utf8'));
+await run('new Promise(r=>setTimeout(r,40))');
+assert.deepEqual(await run('ContactPandaSelections.ids()'),['1']);
+assert.equal(await run('document.querySelector(".cp-selection-retained li").textContent'),'Fixture Person');
+assert.equal(await run('document.querySelector(".cp-selection-retained").hidden'),false);
+assert.equal(await run('requests[0][0]'),'search_results');
+await run(`document.querySelector('.contactpanda-open-bulk').click();new Promise(r=>setTimeout(r,40))`);
+assert.deepEqual(await run('requests[1]'),['preview','["1"]',null]);
+assert.equal(await run('document.querySelector(".contactpanda-salutation-preview tbody").textContent'),'Fixture PersonMs');
+assert.equal(await run('document.querySelector(".contactpanda-apply-salutations").disabled'),false);
+assert.equal(await run('requests.length'),2);
+console.log('PASS selection remains visible with zero search results and salutation preview requires confirmation');
 console.log('PASS keyboard inline editing across rows, hidden fields, server errors, Escape and next focus');
 console.log('PASS print content prepared in iframe without opening an empty tab');
 console.log('PASS additive selection across searches, visible header selection, removal without deletion, saved-list chooser and newsletter draft retention');

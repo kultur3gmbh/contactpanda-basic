@@ -18,7 +18,7 @@
   boxes().forEach(function (box) {
    if (box.checked) {
     selected.add(box.value);
-    if (box.getAttribute('aria-label')) names[box.value] = box.getAttribute('aria-label');
+    if (box.dataset.contactName) names[box.value] = box.dataset.contactName;
    } else {
     selected.delete(box.value);
     delete names[box.value];
@@ -118,7 +118,7 @@
   function applyBasket() {
    boxes().forEach(function (box) {
     box.checked = basket.indexOf(box.value) !== -1;
-    if (box.checked && box.getAttribute('aria-label')) names[box.value] = box.getAttribute('aria-label');
+    if (box.checked && box.dataset.contactName) names[box.value] = box.dataset.contactName;
    });
    store();
    renderRetained();

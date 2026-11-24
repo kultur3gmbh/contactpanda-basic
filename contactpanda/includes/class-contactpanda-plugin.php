@@ -2568,7 +2568,7 @@ final class ContactPanda_Plugin {
 			$edit_url = add_query_arg( array( 'page' => self::people_page_slug(), 'person' => $id, 'contactpanda_list_state' => $list_state ), admin_url( 'admin.php' ) );
 			$view_url = add_query_arg( 'ansicht', 'anzeigen', $edit_url );
 			$display_name = trim( $first_name . ' ' . $last_name );
-				echo '<tr class="contactpanda-person-data-row"><th class="check-column" scope="row"><input type="checkbox" class="contactpanda-person-select" value="' . esc_attr( $id ) . '" aria-label="' . esc_attr( ( $display_name ?: __( 'Unnamed person', 'contactpanda' ) ) . __( ' select', 'contactpanda' ) ) . '"></th><td class="column-first_name contactpanda-first-name">';
+				echo '<tr class="contactpanda-person-data-row"><th class="check-column" scope="row"><input type="checkbox" class="contactpanda-person-select" value="' . esc_attr( $id ) . '" data-contact-name="' . esc_attr( $display_name ?: __( 'Unnamed person', 'contactpanda' ) ) . '" aria-label="' . esc_attr( ( $display_name ?: __( 'Unnamed person', 'contactpanda' ) ) . __( ' select', 'contactpanda' ) ) . '"></th><td class="column-first_name contactpanda-first-name">';
 			self::list_editable_field( __( 'First name', 'contactpanda' ), $first_name, 'first_name', 'contact', $id );
 				echo '</td><td class="column-last_name contactpanda-last-name" title="' . esc_attr( $last_name ) . '">';
 			self::list_editable_field( __( 'Last name', 'contactpanda' ), $last_name, 'last_name', 'contact', $id );
