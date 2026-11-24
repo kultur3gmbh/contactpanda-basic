@@ -10680,3 +10680,39 @@ msgstr ""
 
 msgid "The salutation assignment could not be saved. Check whether the name already exists in this language."
 msgstr ""
+
+msgid "Checking selected people…"
+msgstr ""
+
+msgid "No missing salutations could be assigned for this selection."
+msgstr ""
+
+msgid "The preview expired. Please review the selection again."
+msgstr ""
+
+msgid "%1$d salutations saved. %2$d skipped."
+msgstr ""
+
+msgid "Selected people outside these results"
+msgstr ""
+
+msgid "Show more"
+msgstr ""
+
+msgid "Apply assignments"
+msgstr ""
+
+msgid "Search company name"
+msgstr ""
+
+msgid "Please review the fields taken from the previous address before saving."
+msgstr ""
+
+msgid "Previous address"
+msgstr ""
+
+msgid "No matching people found."
+msgstr ""
+
+msgid "Searching…"
+msgstr ""

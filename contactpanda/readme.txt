@@ -4,7 +4,7 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.9.119
+Stable tag: 0.9.120
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -42,6 +42,12 @@ To reproduce an expanded copy, use Prettier 3.6.2 with parser babel, singleQuote
 The WordPress.org distribution is prepared for community translations through translate.wordpress.org. Existing PO/MO catalogs remain maintained for separate distributions and are omitted only from the WordPress.org package. Before a WordPress language pack is available, untranslated strings fall back to English.
 
 == Changelog ==
+
+= 0.9.120 =
+* Preview and assign missing salutations for selected people, and keep the first-name reconciliation above the list.
+* Keep selected people visible across searches and return to the filtered list after merging.
+* Improve company contact linking, address editing, search, and inline save and trash actions.
+* Learn confirmed salutations only from Herr and Frau equivalents.
 
 = 0.9.119 =
 * Use clickable placeholders and compact inline actions in people, companies and the salutation library.

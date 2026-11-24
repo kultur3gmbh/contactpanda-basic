@@ -192,12 +192,17 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 			var bulkAction = document.getElementById('contactpanda-bulk-action').value;
 			if (['selection_remove', 'selection_save', 'merge'].indexOf(bulkAction) !== -1)
 				return window.ContactPandaSelections.run(bulkAction);
+			if (bulkAction === 'salutations') return openSalutationPreview(button);
 			if (bulkAction === 'newsletter') return openNewsletterSelection();
 			if (bulkAction === 'trash') return bulkTrashPeople();
 			if (bulkAction === 'tags_add' || bulkAction === 'tags_remove')
 				return openBulkTags(bulkAction);
 			return openBulkMarketing();
 		}
+		if (button.classList.contains('contactpanda-close-salutation-preview'))
+			return button.closest('dialog').close();
+		if (button.classList.contains('contactpanda-apply-salutations'))
+			return applySalutationPreview(button);
 		if (button.classList.contains('contactpanda-close-bulk')) return closeBulkMarketing();
 		if (button.classList.contains('contactpanda-close-bulk-tags')) return closeBulkTags();
 		if (button.classList.contains('contactpanda-save-bulk-tags')) return saveBulkTags();
@@ -279,6 +284,8 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 			return saveContactChannel(button.closest('.contactpanda-channel-row'));
 		if (button.classList.contains('contactpanda-delete-channel'))
 			return deleteContactChannel(button.closest('.contactpanda-channel-row'));
+		if (button.classList.contains('contactpanda-create-linked-person'))
+			return createLinkedPerson(button);
 		if (button.classList.contains('contactpanda-open-company-relation')) {
 			return toggleLocalModal(document.getElementById(button.dataset.modal || ''), true);
 		}
@@ -313,6 +320,8 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 	});
 
 	document.addEventListener('keydown', function (event) {
+		if (event.target.matches('.contactpanda-company-link-search') && companyPickerKey(event))
+			return;
 		if (handleInlineEditorKey(event)) return;
 		if (event.key === 'Escape') {
 			var companyModal = document.querySelector(
@@ -384,61 +393,138 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 
 	document.querySelectorAll('.contactpanda-central-library-form').forEach(updateCentralLibraryForm);
 
-	var companySearchTimer;
-	var companySearchRequest = 0;
-	document.addEventListener('input', function (event) {
-		var input = event.target;
-		if (!input.classList.contains('contactpanda-company-link-search')) return;
-		var form = input.form;
-		var results = form.querySelector('.contactpanda-company-link-results');
-		var submit = form.querySelector('[type="submit"]');
-		form.elements.contact_id.value = '';
-		submit.disabled = true;
-		results.replaceChildren();
-		clearTimeout(companySearchTimer);
-		var request = ++companySearchRequest;
-		var search = input.value.trim();
-		if (!search) return;
-		companySearchTimer = window.setTimeout(function () {
-			var data = new URLSearchParams({
-				action: 'contactpanda_company_people_search',
-				nonce: CONTACTPANDA_CONFIG.nonce,
-				search: search,
-			});
-			fetch(CONTACTPANDA_CONFIG.ajaxUrl, requestOptions(data))
+	const companyPickers = new WeakMap();
+
+	function setCompanyResults(input, open) {
+		const list = document.getElementById(input.getAttribute('aria-controls'));
+		list.hidden = !open;
+		input.setAttribute('aria-expanded', String(open));
+		input.removeAttribute('aria-activedescendant');
+		list
+			.querySelectorAll('[aria-selected="true"]')
+			.forEach((option) => option.setAttribute('aria-selected', 'false'));
+	}
+
+	function searchCompanyPeople(input) {
+		const form = input.form;
+		const picker = input.closest('.contactpanda-company-link-picker');
+		const list = picker.querySelector('[role="listbox"]');
+		const status = picker.querySelector('[role="status"]');
+		const create = picker.querySelector('.contactpanda-create-linked-person');
+		const submit = form.querySelector('[type="submit"]');
+		const previous = companyPickers.get(input);
+		if (previous) previous.abort();
+		const request = new AbortController();
+		companyPickers.set(input, request);
+		const search = input.value.trim();
+		create.hidden = true;
+		setCompanyResults(input, false);
+		list.replaceChildren();
+		status.textContent = '';
+		const data = new URLSearchParams({
+			action: 'contactpanda_company_people_search',
+			nonce: CONTACTPANDA_CONFIG.nonce,
+			search,
+		});
+		window.setTimeout(function () {
+			if (request.signal.aborted) return;
+			const options = requestOptions(data);
+			options.signal = request.signal;
+			fetch(CONTACTPANDA_CONFIG.ajaxUrl, options)
 				.then(parseResponse)
 				.then(function (response) {
-					if (request !== companySearchRequest) return;
+					if (request.signal.aborted) return;
 					if (!response.success)
 						throw new Error(tr('noUsableResponse', 'No usable response was received.'));
-					if (!response.data.length) results.textContent = tr('noPeopleFound', 'No people found');
-					response.data.forEach(function (person) {
-						var button = document.createElement('button');
-						button.className = 'button panda-button-regular';
-						button.type = 'button';
-						var icon = document.createElement('span');
-						icon.className = 'dashicons dashicons-admin-links';
-						icon.setAttribute('aria-hidden', 'true');
-						button.append(icon, document.createTextNode(person.label));
-						button.addEventListener('click', function () {
+					if (!response.data.length) {
+						status.textContent = tr('noPeopleFound', 'No people found');
+						create.hidden = !search || form.closest('[hidden]') !== null;
+						return;
+					}
+					response.data.forEach(function (person, index) {
+						const option = document.createElement('button');
+						option.id = list.id + '-' + index;
+						option.type = 'button';
+						option.tabIndex = -1;
+						option.setAttribute('role', 'option');
+						option.setAttribute('aria-selected', 'false');
+						option.textContent = person.label;
+						option.addEventListener('click', function () {
 							form.elements.contact_id.value = person.id;
 							input.value = person.label;
 							submit.disabled = false;
-							results.replaceChildren();
+							status.textContent = person.label;
+							setCompanyResults(input, false);
 							form.elements.position.focus();
 						});
-						results.appendChild(button);
+						list.appendChild(option);
 					});
+					if (document.activeElement === input) setCompanyResults(input, true);
 				})
 				.catch(function (error) {
-					if (request === companySearchRequest) results.textContent = error.message;
+					if (!request.signal.aborted) status.textContent = error.message;
 				});
-		}, 200);
-	});
+		}, 180);
+	}
 
+	function companyPickerKey(event) {
+		const input = event.target;
+		const list = document.getElementById(input.getAttribute('aria-controls'));
+		if (event.key === 'Escape' && !list.hidden) {
+			event.preventDefault();
+			setCompanyResults(input, false);
+			return true;
+		}
+		if (event.key === 'Tab') {
+			setCompanyResults(input, false);
+			return false;
+		}
+		const options = Array.from(list.querySelectorAll('[role="option"]'));
+		const selected = options.findIndex((option) => option.getAttribute('aria-selected') === 'true');
+		if (event.key === 'Enter' && !list.hidden) {
+			event.preventDefault();
+			if (selected !== -1) options[selected].click();
+			return true;
+		}
+		if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return false;
+		event.preventDefault();
+		if (!options.length) {
+			searchCompanyPeople(input);
+			return true;
+		}
+		if (list.hidden) setCompanyResults(input, true);
+		const index =
+			event.key === 'ArrowDown'
+				? (selected + 1) % options.length
+				: selected < 1
+					? options.length - 1
+					: selected - 1;
+		if (selected !== -1) options[selected].setAttribute('aria-selected', 'false');
+		options[index].setAttribute('aria-selected', 'true');
+		input.setAttribute('aria-activedescendant', options[index].id);
+		options[index].scrollIntoView({ block: 'nearest' });
+		return true;
+	}
+
+	document.addEventListener('focusin', function (event) {
+		const input = event.target;
+		if (
+			input.matches('.contactpanda-company-link-search') &&
+			!Number(input.form.elements.contact_id.value)
+		)
+			searchCompanyPeople(input);
+	});
+	document.addEventListener('focusout', function (event) {
+		const picker = event.target.closest('.contactpanda-company-link-picker');
+		if (picker && !picker.contains(event.relatedTarget))
+			setCompanyResults(picker.querySelector('input'), false);
+	});
 	document.addEventListener('input', function (event) {
-		if (!event.target.classList.contains('contactpanda-new-first-name')) return;
-		updateNewPersonSalutationSuggestion(event.target.closest('.contactpanda-new-person-modal'));
+		const input = event.target;
+		if (!input.matches('.contactpanda-company-link-search')) return;
+		input.form.elements.contact_id.value = '';
+		input.form.querySelector('[type="submit"]').disabled = true;
+		searchCompanyPeople(input);
 	});
 
 	document.addEventListener('click', function (event) {
@@ -1131,6 +1217,96 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 			});
 	}
 
+	function salutationBulkRequest(values) {
+		const data = new URLSearchParams(values);
+		data.set('action', 'contactpanda_bulk_salutations');
+		data.set('nonce', CONTACTPANDA_CONFIG.nonce);
+		return fetch(CONTACTPANDA_CONFIG.ajaxUrl, requestOptions(data))
+			.then(parseResponse)
+			.then(function (result) {
+				if (!result.success)
+					throw new Error(result.data?.message || tr('saveFailed', 'Saving failed.'));
+				return result.data;
+			});
+	}
+
+	function openSalutationPreview(trigger) {
+		const dialog = document.querySelector('.contactpanda-salutation-preview');
+		const ids = selectedContactIds();
+		if (!dialog || dialog.open || !ids.length) return;
+		const message = dialog.querySelector('.contactpanda-salutation-preview-message');
+		const rows = dialog.querySelector('.contactpanda-salutation-preview-rows');
+		const body = rows.querySelector('tbody');
+		const apply = dialog.querySelector('.contactpanda-apply-salutations');
+		delete dialog.dataset.preview;
+		apply.disabled = true;
+		rows.hidden = true;
+		body.replaceChildren();
+		message.textContent = tr('salutationsChecking', 'Checking selected people…');
+		dialog.showModal();
+		dialog.addEventListener('close', () => trigger.focus(), { once: true });
+		const request = salutationBulkRequest({ operation: 'preview', ids: JSON.stringify(ids) });
+		dialog.previewRequest = request;
+		request
+			.then(function (result) {
+				if (!dialog.open || dialog.previewRequest !== request) return;
+				const fragment = document.createDocumentFragment();
+				result.rows.forEach(function (row) {
+					const tr = document.createElement('tr');
+					[row.name, row.label].forEach(function (value) {
+						const td = document.createElement('td');
+						td.textContent = value;
+						tr.appendChild(td);
+					});
+					fragment.appendChild(tr);
+				});
+				body.appendChild(fragment);
+				rows.hidden = !result.rows.length;
+				dialog.dataset.preview = result.preview;
+				apply.disabled = !result.preview;
+				message.textContent = result.rows.length
+					? ''
+					: tr(
+							'salutationsNoMatches',
+							'No missing salutations could be assigned for this selection.',
+						);
+			})
+			.catch(function (error) {
+				if (dialog.previewRequest === request) message.textContent = error.message;
+			});
+	}
+
+	function applySalutationPreview(button) {
+		const dialog = button.closest('dialog');
+		const preview = dialog.dataset.preview;
+		if (!preview || button.disabled) return;
+		const message = dialog.querySelector('.contactpanda-salutation-preview-message');
+		button.disabled = true;
+		message.textContent = tr('saving', 'Saving…');
+		salutationBulkRequest({ operation: 'apply', preview })
+			.then(function (result) {
+				try {
+					sessionStorage.setItem('cp-salutation-result', result.message);
+				} catch (_) {}
+				window.location.reload();
+			})
+			.catch(function (error) {
+				message.textContent = error.message;
+			});
+	}
+
+	const salutationResult = document.querySelector('.contactpanda-salutation-result');
+	if (salutationResult) {
+		try {
+			const message = sessionStorage.getItem('cp-salutation-result');
+			if (message) {
+				salutationResult.textContent = message;
+				salutationResult.hidden = false;
+				sessionStorage.removeItem('cp-salutation-result');
+			}
+		} catch (_) {}
+	}
+
 	function selectedContactIds() {
 		if (window.ContactPandaSelections) return window.ContactPandaSelections.ids();
 		return Array.prototype.slice
@@ -1593,6 +1769,30 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 			});
 	}
 
+	function createLinkedPerson(button) {
+		const origin = button.closest('.contactpanda-company-relation-modal');
+		const modal = document.querySelector('.contactpanda-new-person-modal');
+		if (!origin || !modal) return;
+		const form = button.form;
+		const query = form.querySelector('.contactpanda-company-link-search').value.trim();
+		const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(query);
+		modal.companyLinkOrigin = origin;
+		modal.dataset.returnCompany = form.elements.company_id.value;
+		modal.querySelector('.contactpanda-new-company-id').value = modal.dataset.returnCompany;
+		modal.querySelector('.contactpanda-new-company-name').value = button.dataset.companyName;
+		modal.querySelector('.contactpanda-new-company-position').value = form.elements.position.value;
+		const name = !email && /^[^\s]+(?:\s+[^\s]+)?$/.test(query) ? query.split(/\s+/) : [];
+		modal.querySelector('.contactpanda-new-first-name').value = name[0] || '';
+		modal.querySelector('.contactpanda-new-last-name').value = name[1] || '';
+		modal.querySelector('.contactpanda-new-email').value = email ? query : '';
+		const salutation = modal.querySelector('.contactpanda-new-salutation');
+		salutation.value = '';
+		salutation.dataset.autoAssigned = '0';
+		modal.querySelector('.contactpanda-new-email').required = false;
+		toggleLocalModal(origin, false);
+		openNewPerson();
+	}
+
 	function openNewPerson() {
 		var modal = document.querySelector('.contactpanda-new-person-modal');
 		if (!modal) return;
@@ -1624,6 +1824,10 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 		var modal = document.querySelector('.contactpanda-new-person-modal');
 		if (modal) modal.hidden = true;
 		document.body.classList.remove('contactpanda-modal-open');
+		if (modal && modal.companyLinkOrigin) {
+			toggleLocalModal(modal.companyLinkOrigin, true);
+			delete modal.companyLinkOrigin;
+		}
 	}
 
 	function saveNewPerson() {
@@ -1923,7 +2127,9 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 		modal.hidden = !open;
 		document.body.classList.toggle('contactpanda-modal-open', open);
 		if (open) {
-			var focusTarget = modal.querySelector('.contactpanda-role-input,input,button');
+			var focusTarget =
+				modal.querySelector('.contactpanda-company-link-search, .contactpanda-role-input') ||
+				modal.querySelector('input:not([type="hidden"]), button');
 			if (focusTarget) focusTarget.focus();
 		}
 	}

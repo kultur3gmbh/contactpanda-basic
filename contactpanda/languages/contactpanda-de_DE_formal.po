@@ -9639,3 +9639,39 @@ msgstr "Bitte einen gültigen Vornamen oder eine gültige Anrede eingeben."
 
 msgid "The salutation assignment could not be saved. Check whether the name already exists in this language."
 msgstr "Die Anredezuordnung konnte nicht gespeichert werden. Bitte prüfen, ob der Name in dieser Sprache bereits vorhanden ist."
+
+msgid "Checking selected people…"
+msgstr "Ausgewählte Personen werden geprüft…"
+
+msgid "No missing salutations could be assigned for this selection."
+msgstr "Für diese Auswahl konnten keine fehlenden Anreden zugeordnet werden."
+
+msgid "The preview expired. Please review the selection again."
+msgstr "Die Vorschau ist abgelaufen. Bitte prüfen Sie die Auswahl erneut."
+
+msgid "%1$d salutations saved. %2$d skipped."
+msgstr "%1$d Anreden gespeichert, %2$d übersprungen."
+
+msgid "Selected people outside these results"
+msgstr "Ausgewählte Personen außerhalb dieser Treffer"
+
+msgid "Show more"
+msgstr "Mehr anzeigen"
+
+msgid "Apply assignments"
+msgstr "Zuordnungen übernehmen"
+
+msgid "Search company name"
+msgstr "Firmennamen suchen"
+
+msgid "Please review the fields taken from the previous address before saving."
+msgstr "Bitte prüfen Sie vor dem Speichern die aus der bisherigen Adresse übernommenen Felder."
+
+msgid "Previous address"
+msgstr "Bisherige Adresse"
+
+msgid "No matching people found."
+msgstr "Keine passenden Personen gefunden."
+
+msgid "Searching…"
+msgstr "Suche läuft…"

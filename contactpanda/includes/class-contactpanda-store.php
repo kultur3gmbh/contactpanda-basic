@@ -662,7 +662,8 @@ final class ContactPanda_Store {
 		$salutation = sanitize_key( $salutation );
 		$normalized = self::normalize_first_name( $first_name );
 		$language = self::salutation_language( $language );
-		if ( ! $normalized || ! in_array( $salutation, array( 'mr', 'ms', 'family', 'neutral', 'ambiguous' ), true ) ) return false;
+		$choices = 'confirmed' === $source ? array( 'mr', 'ms' ) : array( 'mr', 'ms', 'family', 'neutral', 'ambiguous' );
+		if ( ! $normalized || ! in_array( $salutation, $choices, true ) ) return false;
 		$key = $language . ':' . $normalized;
 		if ( ! self::ready() ) { $library = (array) get_option( 'contactpanda_salutation_library', array() ); $now = current_time( 'mysql' ); $library[ $key ] = array( 'first_name' => sanitize_text_field( trim( $first_name ) ), 'first_name_normalized' => $normalized, 'language' => $language, 'salutation' => $salutation, 'source' => sanitize_key( $source ), 'created_at' => $library[ $key ]['created_at'] ?? $now, 'updated_at' => $now ); return update_option( 'contactpanda_salutation_library', $library, false ) || isset( $library[ $key ] ); }
 		$table = ContactPanda_Schema::table_names()['salutations'];

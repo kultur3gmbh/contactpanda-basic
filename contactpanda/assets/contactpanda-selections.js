@@ -3,12 +3,30 @@
  var c = window.CP_SELECTIONS; if (!c) return;
  // wp_localize_script serializes top-level scalars as strings: '0' is truthy.
  var current = Number(c.current);
- var labels = c.i18n, key = 'cp-selection:' + c.user + ':' + c.source, basket = [], pending = false, savedId = 0;
- function store() { try { sessionStorage.setItem(key, JSON.stringify({ids:basket,pending:pending,savedId:savedId,query:query()})); } catch (_) {} }
- function query() { var u = new URL(location.href); ['contactpanda_page','orderby','order','list_state','cp_add_results'].forEach(function (k) { u.searchParams.delete(k); }); return u.search; }
+ var labels = c.i18n, key = 'cp-selection:' + c.user + ':' + c.source, basket = [], names = {}, pending = false, savedId = 0;
+ function store() { try { sessionStorage.setItem(key, JSON.stringify({ids:basket,names:names,pending:pending,savedId:savedId,query:query()})); } catch (_) {} }
+ function query() {
+  var params = new URLSearchParams(location.search);
+  ['contactpanda_page','orderby','order','list_state','cp_add_results','cp_merge_complete'].forEach(function (key) { params.delete(key); });
+  params.sort();
+  return params.toString();
+ }
  function ids(values) { return Array.from(new Set(values.map(String).filter(function (v) { return /^[1-9][0-9]*$/.test(v); }))).slice(0,10000); }
  function boxes() { return Array.from(document.querySelectorAll('.contactpanda-person-select')); }
- function collect() { boxes().forEach(function (box) { basket = basket.filter(function (id) { return id !== box.value; }); if (box.checked) basket.push(box.value); }); basket=ids(basket); store(); }
+ function collect() {
+  var selected = new Set(basket);
+  boxes().forEach(function (box) {
+   if (box.checked) {
+    selected.add(box.value);
+    if (box.getAttribute('aria-label')) names[box.value] = box.getAttribute('aria-label');
+   } else {
+    selected.delete(box.value);
+    delete names[box.value];
+   }
+  });
+  basket = ids(Array.from(selected));
+  store();
+ }
  function refresh() { var action = document.getElementById('contactpanda-bulk-action'); if (action) action.dispatchEvent(new Event('change', {bubbles:true})); }
  function request(operation, values) { var data = new URLSearchParams({action:'contactpanda_selection',nonce:c.nonce,cp_selection_operation:operation}); Object.keys(values || {}).forEach(function (k) { if (Array.isArray(values[k])) values[k].forEach(function (v) { data.append(k+'[]',v); }); else data.set(k,values[k]); }); return fetch(c.ajax,{method:'POST',credentials:'same-origin',body:data}).then(function (r) { return r.json(); }).then(function (r) { if (!r.success) throw new Error(r.data && r.data.message || labels.error); return r.data; }); }
  function nameDialog(value, done) {
@@ -37,7 +55,7 @@
     });
    });
   }
-  if(action==='merge') { var form=document.createElement('form');form.method='post';form.action=c.post;var values={action:'contactpanda_merge_preview',_wpnonce:c.mergeNonce,entity:'contacts'};Object.keys(values).forEach(function(k){var f=document.createElement('input');f.type='hidden';f.name=k;f.value=values[k];form.appendChild(f);});basket.forEach(function(id){var f=document.createElement('input');f.type='hidden';f.name='ids[]';f.value=id;form.appendChild(f);});document.body.appendChild(form);form.submit(); }
+  if(action==='merge') { var form=document.createElement('form');form.method='post';form.action=c.post;var toolbar = document.querySelector('.contactpanda-bulk-toolbar');var values={action:'contactpanda_merge_preview',_wpnonce:c.mergeNonce,entity:'contacts',merge_origin:'people',list_token:toolbar ? toolbar.dataset.listToken || '' : ''};Object.keys(values).forEach(function(k){var f=document.createElement('input');f.type='hidden';f.name=k;f.value=values[k];form.appendChild(f);});basket.forEach(function(id){var f=document.createElement('input');f.type='hidden';f.name='ids[]';f.value=id;form.appendChild(f);});document.body.appendChild(form);form.submit(); }
  }};
  var add = document.querySelector('.cp-selection-add');
  if (document.querySelector('.contactpanda-bulk-toolbar') || add) {
@@ -46,16 +64,71 @@
   try {
    var previous = JSON.parse(sessionStorage.getItem(key) || '{}');
    replay = !!previous.pending && url.searchParams.has('cp_add_results');
-   if (replay || previous.query === query()) {
+   if (!url.searchParams.has('cp_merge_complete') && (replay || (previous.query || '').replace(/^\?/, '') === query())) {
     basket = ids(previous.ids || []);
+    names = previous.names || {};
     savedId = Number(previous.savedId) || 0;
    }
   } catch (_) {}
+  var retained = document.querySelector('.cp-selection-retained');
+  var labelRequests = new Set();
+  var retainedLimit = 25;
+
+  function renderRetained() {
+   if (!retained) return;
+   var visible = new Set(boxes().map(function (box) { return box.value; }));
+   var outside = basket.filter(function (id) { return !visible.has(id); });
+   var shown = outside.slice(0, retainedLimit);
+   retained.hidden = !outside.length;
+   retained.querySelector('[data-cp-retained-count]').textContent = '(' + outside.length + ')';
+   var list = retained.querySelector('ul');
+   list.replaceChildren();
+   shown.forEach(function (id) {
+    var item = document.createElement('li');
+    item.textContent = names[id] || labels.unnamed || 'Unnamed person';
+    var remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'button panda-button-compact';
+    remove.setAttribute('aria-label', (labels.remove || 'Remove from selection') + ' ' + item.textContent);
+    remove.title = labels.remove || 'Remove from selection';
+    remove.innerHTML = '<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>';
+    remove.onclick = function () {
+     basket = basket.filter(function (itemId) { return itemId !== id; });
+     delete names[id];
+     applyBasket();
+     var next = list.querySelector('button');
+     if (next) next.focus();
+     else if (add) add.focus();
+    };
+    item.appendChild(remove);
+    list.appendChild(item);
+   });
+   retained.querySelector('[data-cp-retained-more]').hidden = shown.length >= outside.length;
+   var missing = shown.filter(function (id) { return !names[id] && !labelRequests.has(id); }).slice(0, 50);
+   if (missing.length) {
+    missing.forEach(function (id) { labelRequests.add(id); });
+    request('people_labels', {ids:missing}).then(function (labelsById) {
+     missing.forEach(function (id) { if (basket.indexOf(id) !== -1 && labelsById[id]) names[id] = labelsById[id]; });
+     store();
+     renderRetained();
+    }).catch(function () {});
+   }
+  }
+
   function applyBasket() {
-   boxes().forEach(function (box) { box.checked = basket.indexOf(box.value) !== -1; });
+   boxes().forEach(function (box) {
+    box.checked = basket.indexOf(box.value) !== -1;
+    if (box.checked && box.getAttribute('aria-label')) names[box.value] = box.getAttribute('aria-label');
+   });
    store();
+   renderRetained();
    refresh();
   }
+
+  if (retained) retained.querySelector('[data-cp-retained-more]').onclick = function () {
+   retainedLimit += 25;
+   renderRetained();
+  };
   var status = document.querySelector('.cp-selection-result');
   function appendResults() {
    add.disabled = true;
@@ -70,7 +143,7 @@
    }).catch(function (error) { status.textContent = error.message; })
     .finally(function () { add.disabled = false; });
   }
-  if (current > 0 && !replay) {
+  if (current > 0 && !replay && current !== savedId && !url.searchParams.has('cp_merge_complete')) {
    if (add) add.disabled = true;
    request('load', {id:current}).then(function (row) {
     basket = ids(row.ids);
@@ -106,12 +179,16 @@
     appendResults();
    }
   }
-  document.addEventListener('change',function(e){if(e.target.matches('.contactpanda-person-select,.contactpanda-select-all')){collect();refresh();}});
+  document.addEventListener('change',function(e){if(e.target.matches('.contactpanda-person-select,.contactpanda-select-all')){collect();renderRetained();refresh();}});
   document.querySelectorAll('form.contactpanda-search').forEach(function (form) {
    form.addEventListener('submit', function () {
-    if (!pending) { basket = []; savedId = 0; store(); }
+    if (!pending) { basket = []; names = {}; savedId = 0; store(); }
    });
   });
+  if (url.searchParams.has('cp_merge_complete')) {
+   url.searchParams.delete('cp_merge_complete');
+   history.replaceState(history.state, '', url);
+  }
   applyBasket();
  }
  function chooser(target, newsletter){

@@ -539,3 +539,59 @@ body.contactpanda-modal-open{overflow:hidden}.contactpanda-mailing-modal{z-index
 	outline: 2px solid currentColor;
 	outline-offset: 2px;
 }
+
+:root body :is(.contactpanda-editor-actions, .contactpanda-channel-actions) .button.panda-button-compact:is(.contactpanda-save, .contactpanda-save-channel) {
+	background: #16803c !important;
+	border-color: #16803c !important;
+	color: #fff !important;
+}
+:root body :is(.contactpanda-editor-actions, .contactpanda-channel-actions) .button.panda-button-compact:is(.contactpanda-save, .contactpanda-save-channel):hover:not(:disabled) {
+	background: #126b32 !important;
+	border-color: #126b32 !important;
+}
+:root body .button.panda-button-compact:is(.contactpanda-save, .contactpanda-save-channel) .dashicons { color: #fff !important; }
+.contactpanda-wrap .contactpanda-company-search { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.contactpanda-wrap .contactpanda-company-search input[type=search] { width: min(100%, 26rem); max-width: calc(100% - 52px); }
+.contactpanda-wrap .contactpanda-company-search .contactpanda-icon-button { width: 42px !important; flex: 0 0 42px; }
+.contactpanda-company-address-summary { display: block; font-weight: 400; margin-top: 4px; white-space: pre-line; }
+.contactpanda-company-address[open] .contactpanda-company-address-summary { display: none; }
+.contactpanda-company-link-picker { position: relative; }
+.contactpanda-company-link-picker > label { display: block; margin-bottom: 5px; }
+.contactpanda-company-link-input { display: flex; align-items: center; gap: 6px; }
+.contactpanda-company-link-input input { flex: 1 1 auto; min-width: 0; width: 100%; }
+.contactpanda-company-link-picker [hidden] { display: none !important; }
+.contactpanda-company-link-picker .contactpanda-company-link-results:not(:empty) {
+	position: absolute;
+	inset: auto 0 auto;
+	z-index: 5;
+	padding: 4px;
+	border: 1px solid #8c8f94;
+	border-radius: 4px;
+	background: #fff;
+	box-shadow: 0 6px 12px #0002;
+}
+.contactpanda-company-link-results button {
+	text-align: start;
+	border: 0;
+	background: #fff;
+	color: #1d2327;
+	padding: 7px 9px;
+}
+.contactpanda-company-link-results button:is(:hover, [aria-selected=true]) { background: #ededed; }
+.contactpanda-company-link-status:empty { display: none; }
+
+.cp-selection-retained { margin: 10px 0; padding: 10px; border: 1px solid #dcdcde; border-radius: 6px; }
+.cp-selection-retained[hidden] { display: none; }
+.cp-selection-retained ul { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 0; margin: 8px 0 0; list-style: none; }
+.cp-selection-retained li { display: inline-flex; align-items: center; gap: 5px; margin: 0; }
+
+.contactpanda-salutation-preview {
+	box-sizing: border-box;
+	width: min(620px, calc(100% - 32px));
+	padding: 20px;
+	border: 1px solid #ccd0d4;
+	border-radius: 8px;
+}
+.contactpanda-salutation-preview::backdrop { background: #0007; }
+.contactpanda-salutation-preview-rows { max-height: 55vh; overflow: auto; margin-bottom: 10px; }
+.contactpanda-salutation-result { padding: 6px 10px; border-inline-start: 3px solid #16803c; }

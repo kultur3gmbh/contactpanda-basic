@@ -10,7 +10,7 @@
     {
       "runtime": "assets/contactpanda-admin.js",
       "readable": "sources/contactpanda-admin.js",
-      "sha256": "d34771dd2a8da5c7d900afe18c229c3b18f3f12b7d1a88bd2bdcb55214302f1d",
+      "sha256": "1279cf50120bfd8a61c24c38275be8fce27ed1dac561eba6cd5641011bc3c794",
       "syntax_tree_matches": true
     },
     {
@@ -34,7 +34,7 @@
     {
       "runtime": "assets/contactpanda-selections.js",
       "readable": "sources/contactpanda-selections.js",
-      "sha256": "1eb19b56f4312d86f246775e2a4b091e97a34cd86378ce72b473e6e5a4adc9ec",
+      "sha256": "5db4b433068228d23318a499cce0d1c58a20afd0e2da5db4f2e7bb16eb2cfe72",
       "syntax_tree_matches": true
     },
     {

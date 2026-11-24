@@ -561,6 +561,10 @@ final class ContactPanda_Data_Tools {
 		$ids = isset( $_POST['ids'] ) && is_array( $_POST['ids'] ) ? array_values( array_unique( array_filter( array_map( 'absint', $_POST['ids'] ) ) ) ) : array();
 		if ( count( $ids ) < 2 || count( $ids ) > 20 ) self::redirect_duplicate_notice( 'error', __( 'Select between two and twenty records to merge.', 'contactpanda' ) );
 		$token = wp_generate_password( 12, false, false ); $state = array( 'entity' => 'companies' === sanitize_key( wp_unslash( $_POST['entity'] ?? '' ) ) ? 'companies' : 'contacts', 'ids' => $ids );
+		if ( 'contacts' === $state['entity'] && 'people' === sanitize_key( wp_unslash( $_POST['merge_origin'] ?? '' ) ) ) {
+			$people = ContactPanda_Selections::people_state( sanitize_key( wp_unslash( $_POST['list_token'] ?? '' ) ) );
+			$state['people_return'] = $people['return_url'] ?? admin_url( 'admin.php?page=contactpanda-people' );
+		}
 		set_transient( 'contactpanda_merge_' . get_current_user_id() . '_' . $token, $state, HOUR_IN_SECONDS ); wp_safe_redirect( self::duplicates_url( array( 'merge_token' => $token ) ) ); exit;
 	}
 
@@ -707,8 +711,15 @@ final class ContactPanda_Data_Tools {
 		}
 		$result = ContactPanda_Store::merge_records( $state['entity'], $selected_ids, $primary_id, $choices, $resolved, $channels, $primary_channels );
 		if ( is_wp_error( $result ) ) self::redirect_duplicate_notice( 'error', $result->get_error_message(), array( 'merge_token' => $token ) );
-		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		delete_transient( 'contactpanda_merge_' . get_current_user_id() . '_' . $token ); self::redirect_duplicate_notice( 'success', sprintf( __( '%d duplicate fragments were merged and moved to Trash.', 'contactpanda' ), $result['merged'] ) );
+		delete_transient( 'contactpanda_merge_' . get_current_user_id() . '_' . $token );
+		/* translators: %d: number of merged duplicate records. */
+		$message = sprintf( __( '%d duplicate fragments were merged and moved to Trash.', 'contactpanda' ), $result['merged'] );
+		if ( ! empty( $state['people_return'] ) ) {
+			set_transient( 'contactpanda_people_merge_notice_' . get_current_user_id(), $message, MINUTE_IN_SECONDS );
+			wp_safe_redirect( add_query_arg( 'cp_merge_complete', '1', $state['people_return'] ) );
+			exit;
+		}
+		self::redirect_duplicate_notice( 'success', $message );
 	}
 
 	public static function render_central_library() {
