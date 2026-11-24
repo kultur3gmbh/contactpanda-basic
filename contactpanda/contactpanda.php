@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
- * Version: 0.9.120
+ * Version: 0.9.121
  * Author: Kultur3 GmbH
  * License: GPLv3
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.9.120' );
+define( 'CONTACTPANDA_VERSION', '0.9.121' );
 // Keep browser caches independent from the public plugin version so that
 // corrected admin interactions are loaded even for same-version test builds.
 define( 'CONTACTPANDA_ASSET_VERSION', CONTACTPANDA_VERSION . '-20261112-2' );

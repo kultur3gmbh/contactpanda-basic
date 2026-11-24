@@ -2583,7 +2583,7 @@ final class ContactPanda_Plugin {
 			$email = self::value( $contact, array( 'email' ) );
 				echo '<td class="' . esc_attr( self::column_class( 'email', 'contactpanda-email-column' ) ) . '"><div class="contactpanda-list-email"><span title="' . esc_attr( $email ) . '">' . esc_html( $email ?: '—' ) . '</span>';
 			if ( is_email( $email ) ) {
-				echo '<a class="button panda-button-compact contactpanda-mail-link" href="mailto:' . esc_attr( $email ) . '" aria-label="' . esc_attr__( 'Send email', 'contactpanda' ) . '" title="' . esc_attr__( 'Send email', 'contactpanda' ) . '"><span class="dashicons dashicons-email-alt" aria-hidden="true"></span></a>';
+				echo '<a class="button panda-button-small contactpanda-mail-link" href="mailto:' . esc_attr( $email ) . '" aria-label="' . esc_attr__( 'Send email', 'contactpanda' ) . '" title="' . esc_attr__( 'Send email', 'contactpanda' ) . '"><span class="dashicons dashicons-email-alt" aria-hidden="true"></span></a>';
 			}
 			echo '</div></td>';
 			$primary_phone = self::meta( $contact, array( 'primary_phone' ) );
@@ -2927,7 +2927,7 @@ final class ContactPanda_Plugin {
 	private static function trash_button_html( $entity, $id, $name = '' ) {
 		$label = __( 'Move to Trash', 'contactpanda' );
 		$name = trim( $name ) ?: ( 'companies' === $entity ? __( 'Unnamed company', 'contactpanda' ) : __( 'Unnamed person', 'contactpanda' ) );
-		return '<button type="button" class="button contactpanda-trash-row-action contactpanda-trash-direct" data-entity="' . esc_attr( $entity ) . '" data-record-id="' . esc_attr( $id ) . '" data-operation="trash" data-record-name="' . esc_attr( $name ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'contactpanda_record_action' ) ) . '" aria-label="' . esc_attr( $label ) . '" title="' . esc_attr( $label ) . '"><span class="dashicons dashicons-trash" aria-hidden="true"></span><span class="screen-reader-text">' . esc_html( $label ) . '</span></button>';
+		return '<button type="button" class="button panda-button-small contactpanda-trash-row-action contactpanda-trash-direct" data-contactpanda-action="delete" data-entity="' . esc_attr( $entity ) . '" data-record-id="' . esc_attr( $id ) . '" data-operation="trash" data-record-name="' . esc_attr( $name ) . '" data-nonce="' . esc_attr( wp_create_nonce( 'contactpanda_record_action' ) ) . '" aria-label="' . esc_attr( $label ) . '" title="' . esc_attr( $label ) . '"><span class="dashicons dashicons-trash" aria-hidden="true"></span><span class="screen-reader-text">' . esc_html( $label ) . '</span></button>';
 	}
 
 	private static function render_index() {
@@ -4255,7 +4255,7 @@ final class ContactPanda_Plugin {
 			$results = $modal . '-results';
 			echo '<div class="contactpanda-company-link-picker"><label for="' . esc_attr( $search ) . '">' . esc_html__( 'Search people', 'contactpanda' ) . '</label>';
 			echo '<div class="contactpanda-company-link-input"><input id="' . esc_attr( $search ) . '" type="search" class="contactpanda-company-link-search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="' . esc_attr( $results ) . '" autocomplete="off" required>';
-			echo '<button type="button" class="button panda-button-regular contactpanda-create-linked-person" data-company-name="' . esc_attr( $company_name ) . '" data-contactpanda-action-mode="icon" title="' . esc_attr__( 'Add person', 'contactpanda' ) . '" aria-label="' . esc_attr__( 'Add person', 'contactpanda' ) . '" hidden><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span></button></div>';
+			echo '<button type="button" class="button panda-button-regular contactpanda-create-linked-person" data-company-name="' . esc_attr( $company_name ) . '" data-contactpanda-action="add" data-contactpanda-action-mode="labelled" hidden><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>' . esc_html__( 'Create new?', 'contactpanda' ) . '</button></div>';
 			echo '<div id="' . esc_attr( $results ) . '" class="contactpanda-company-link-results" role="listbox" aria-label="' . esc_attr__( 'Search people', 'contactpanda' ) . '" hidden></div><p class="contactpanda-company-link-status" role="status"></p></div>';
 		}
 		echo '<label><span>' . esc_html__( 'Position / role', 'contactpanda' ) . '</span><input name="position" maxlength="190" value="' . esc_attr( $position ) . '"></label><p class="contactpanda-row-actions"><button type="button" class="button contactpanda-close-company-relation"><span class="dashicons dashicons-no-alt" aria-hidden="true"></span>' . esc_html__( 'Cancel', 'contactpanda' ) . '</button><button type="submit" class="button button-primary"' . disabled( ! $contact_id, true, false ) . '><span class="dashicons dashicons-yes" aria-hidden="true"></span>' . esc_html__( 'Save', 'contactpanda' ) . '</button></p></form></div></div>';

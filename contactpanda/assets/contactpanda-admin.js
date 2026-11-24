@@ -305,7 +305,8 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 						form.elements.contact_id.value = person.id;
 						input.value = person.label;
 						submit.disabled = false;
-						status.textContent = person.label;
+						create.hidden = true;
+						status.textContent = '';
 						setCompanyResults(input, false);
 						form.elements.position.focus();
 					});
@@ -1246,9 +1247,9 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 		modal.querySelector('.contactpanda-new-company-id').value = modal.dataset.returnCompany;
 		modal.querySelector('.contactpanda-new-company-name').value = button.dataset.companyName;
 		modal.querySelector('.contactpanda-new-company-position').value = form.elements.position.value;
-		const name = !email && /^[^\s]+(?:\s+[^\s]+)?$/.test(query) ? query.split(/\s+/) : [];
+		const name = email ? [] : query.split(/\s+/);
 		modal.querySelector('.contactpanda-new-first-name').value = name[0] || '';
-		modal.querySelector('.contactpanda-new-last-name').value = name[1] || '';
+		modal.querySelector('.contactpanda-new-last-name').value = name.slice(1).join(' ');
 		modal.querySelector('.contactpanda-new-email').value = email ? query : '';
 		const salutation = modal.querySelector('.contactpanda-new-salutation');
 		salutation.value = '';

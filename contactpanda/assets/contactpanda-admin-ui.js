@@ -466,10 +466,21 @@
 
 	function actionIcon(control) {
 		if (!control || control.dataset.contactpandaActionReady === '1') return;
-		control.classList.add('button', control.classList.contains('panda-button-compact') ? 'panda-button-compact' : 'panda-button-regular');
+		control.classList.add('button');
+		if (!control.matches('.panda-button-small,.panda-button-compact,.panda-button-medium,.panda-button-regular')) {
+			control.classList.add('panda-button-regular');
+		}
 		var label = (control.getAttribute('aria-label') || control.getAttribute('title') || control.textContent || '').trim().replace(/\s+/g, ' ');
 		var action = control.dataset.contactpandaAction || '';
+		if (control.matches('a[href^="tel:"]')) action = 'phone';
+		else if (control.matches('a[href^="mailto:"]')) action = 'email';
 		if (!action) actionIcons.some(function (entry) { if (entry[0].test(label)) { action = entry[1]; return true; } return false; });
+		if (control.closest('tbody tr') && ['phone', 'email', 'delete', 'duplicate', 'remove', 'activate', 'deactivate',
+		    'archive', 'refresh', 'download', 'import', 'export', 'restore', 'unlock',
+		    'undo', 'publish', 'confirm', 'schedule', 'apply', 'reset', 'print'].includes(action)) {
+			control.classList.remove('panda-button-regular', 'panda-button-compact', 'panda-button-medium');
+			control.classList.add('panda-button-small');
+		}
 		var definition = actionDefinitions[action];
 		var visible = control.cloneNode(true);
 		visible.querySelectorAll('.dashicons,.contactpanda-action-icon,.cpls-action-icon,.screen-reader-text').forEach(function (node) { node.remove(); });
@@ -483,7 +494,6 @@
 		control.dataset.contactpandaAction = action;
 		control.classList.add(labelled ? 'contactpanda-action-labelled' : 'contactpanda-list-action', 'contactpanda-action-' + action.replace(/([A-Z])/g, '-$1').toLowerCase());
 		if (definition.state) control.classList.add('is-' + definition.state);
-		if (control.disabled || control.getAttribute('aria-disabled') === 'true') control.classList.add('is-disabled');
 		control.title = label;
 		control.setAttribute('aria-label', label);
 		var glyph = document.createElement('span');
@@ -512,8 +522,9 @@
 				actionColumns.forEach(function (index) { var cell = row.children[index]; if (cell) cell.querySelectorAll('a,button').forEach(actionIcon); });
 			});
 		});
-		findAll(root, '.contactpanda-mail-link,.contactpanda-channel-action,.contactpanda-copy-shortcode,.contactpanda-system-email-block-actions button,.contactpanda-email-block-actions button,.contactpanda-block-actions button').forEach(function (control) {
-			control.classList.add('button', 'panda-button-compact');
+		findAll(root, '.contactpanda-mail-link,.contactpanda-wrap td a.button[href^="mailto:"],.contactpanda-wrap td a.button[href^="tel:"],.contactpanda-channel-action,.contactpanda-copy-shortcode,.contactpanda-system-email-block-actions button,.contactpanda-email-block-actions button,.contactpanda-block-actions button').forEach(function (control) {
+			control.classList.add('button', 'panda-button-small');
+			control.classList.remove('panda-button-compact', 'panda-button-regular');
 			control.dataset.contactpandaActionMode = 'icon';
 			if (control.matches('.contactpanda-mail-link')) control.dataset.contactpandaAction = 'email';
 			if (control.matches('.contactpanda-channel-action')) control.dataset.contactpandaAction = control.href.indexOf('tel:') === 0 ? 'phone' : 'email';
@@ -535,7 +546,7 @@
 
 	function largeActionIcon(control) {
 		if (!control || control.dataset.contactpandaLargeActionReady === '1') return;
-		if (control.matches('.panda-button-compact,.button-small,.button-link,.button-link-delete,[data-contactpanda-action-mode="icon"]') || control.closest(compactActionContainers + ',.wp-picker-container,.contactpanda-unified-color,.media-modal,.wp-editor-wrap,.mce-toolbar,.components-toolbar')) return;
+		if (control.matches('.panda-button-small,.panda-button-medium,.panda-button-compact,.button-small,.button-link,.button-link-delete,[data-contactpanda-action-mode="icon"]') || control.closest(compactActionContainers + ',.wp-picker-container,.contactpanda-unified-color,.media-modal,.wp-editor-wrap,.mce-toolbar,.components-toolbar')) return;
 		var label = (control.value || control.textContent || control.getAttribute('aria-label') || control.getAttribute('title') || '').trim().replace(/\s+/g, ' ');
 		var action = control.dataset.contactpandaAction || '';
 		if (!action && /^(?:back(?: to)?|return(?: to)?|zurück|zurueck)(?:\s|$)/i.test(label)) action = 'back';
@@ -548,7 +559,6 @@
 		control.classList.add('contactpanda-large-action', 'panda-button-regular');
 		if (action === 'delete' || action === 'deactivate') control.classList.add('is-danger');
 		if (control.classList.contains('button-primary') || action === 'publish') control.classList.add('is-primary');
-		if (control.disabled || control.getAttribute('aria-disabled') === 'true') control.classList.add('is-disabled');
 		if (!definition || control.querySelector('svg')) return;
 		control.dataset.contactpandaActionReady = '1';
 		control.dataset.contactpandaAction = action;

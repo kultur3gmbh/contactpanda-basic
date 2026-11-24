@@ -595,3 +595,18 @@ body.contactpanda-modal-open{overflow:hidden}.contactpanda-mailing-modal{z-index
 .contactpanda-salutation-preview::backdrop { background: #0007; }
 .contactpanda-salutation-preview-rows { max-height: 55vh; overflow: auto; margin-bottom: 10px; }
 .contactpanda-salutation-result { padding: 6px 10px; border-inline-start: 3px solid #16803c; }
+
+.contactpanda-newsletter-imports {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+	gap: 16px;
+}
+.contactpanda-newsletter-imports > .contactpanda-card { margin: 0; }
+.contactpanda-newsletter-imports .contactpanda-migration-report ul {
+	list-style: disc;
+	padding-inline-start: 20px;
+}
+.contactpanda-company-link-input .contactpanda-create-linked-person { flex: 0 0 auto; }
+@media (max-width: 440px) {
+	.contactpanda-company-link-input { flex-wrap: wrap; }
+}

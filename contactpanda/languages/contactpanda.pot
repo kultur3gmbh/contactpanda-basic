@@ -10716,3 +10716,30 @@ msgstr ""
 
 msgid "Searching…"
 msgstr ""
+
+msgid "Create new?"
+msgstr ""
+
+msgid "Import email templates"
+msgstr ""
+
+msgid "Import people"
+msgstr ""
+
+msgid "Creates editable email templates and read-only archives of historical mailings."
+msgstr ""
+
+msgid "Matches subscribers by email address. An unsubscribe or bounce status takes precedence over marketing consent."
+msgstr ""
+
+msgid "Preview shows a sample. Confirmation imports all matching records."
+msgstr ""
+
+msgid "%1$d email templates and %2$d historical mailings."
+msgstr ""
+
+msgid "%1$d new, %2$d updated, %3$d skipped, %4$d errors."
+msgstr ""
+
+msgid "Select an import and preview it first."
+msgstr ""

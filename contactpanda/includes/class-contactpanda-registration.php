@@ -779,7 +779,7 @@ The link is valid for 24 hours.',
 				'description' => __( 'Contacts and their marketing state can be migrated now. Additional FluentCRM content can be supplied by an installed ContactPanda extension.', 'contactpanda' ),
 			);
 		}
-		if ( self::newsletter_plugin_installed() ) {
+		if ( self::newsletter_plugin_installed() || apply_filters( 'contactpanda_newsletter_plugin_templates_available', false ) ) {
 			$sources['newsletter_plugin'] = array(
 				'label'       => __( 'The Newsletter Plugin', 'contactpanda' ),
 				'active'      => defined( 'NEWSLETTER_VERSION' ) || class_exists( 'Newsletter' ),
@@ -1010,51 +1010,103 @@ The link is valid for 24 hours.',
 	}
 
 	private static function render_newsletter_plugin_migration() {
-		if ( ! self::newsletter_plugin_installed() || ! apply_filters( 'contactpanda_can_migrate_newsletter_plugin', true ) ) return;
-		$table = self::newsletter_plugin_table();
+		$templates_available = (bool) apply_filters( 'contactpanda_newsletter_plugin_templates_available', false );
+		$source_installed = self::newsletter_plugin_installed();
+		if ( ! $source_installed && ! $templates_available ) return;
 		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Import The Newsletter Plugin data', 'contactpanda' ) . '</h2>';
-		if ( ! defined( 'NEWSLETTER_VERSION' ) && ! class_exists( 'Newsletter' ) ) echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'The Newsletter Plugin is installed but inactive. Existing source tables can still be read without changing them.', 'contactpanda' ) . '</p></div>';
+		if ( $source_installed && ! defined( 'NEWSLETTER_VERSION' ) && ! class_exists( 'Newsletter' ) ) echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'The Newsletter Plugin is installed but inactive. Existing source tables can still be read without changing them.', 'contactpanda' ) . '</p></div>';
 		if ( ! ContactPanda_Store::ready() ) {
 			echo '<p>' . esc_html__( 'Create the ContactPanda database before importing newsletter subscribers.', 'contactpanda' ) . '</p></section>';
 			return;
 		}
-		if ( ! $table ) {
+		echo '<div class="contactpanda-newsletter-imports">';
+		self::render_newsletter_import_scope( 'people', (bool) self::newsletter_plugin_table() );
+		if ( $templates_available ) self::render_newsletter_import_scope( 'templates', true );
+		echo '</div><p class="description">' . esc_html__( 'The original newsletter plugin data remains unchanged.', 'contactpanda' ) . '</p>';
+		echo '<div class="contactpanda-migration-progress" hidden aria-live="polite"><strong>' . esc_html__( 'Preparing migration…', 'contactpanda' ) . '</strong><progress value="0" max="100"></progress><span>0%</span><small></small></div>';
+		echo '</section>';
+	}
+
+	private static function render_newsletter_import_scope( $scope, $available ) {
+		$templates = 'templates' === $scope;
+		$report = (array) get_option( 'contactpanda_last_newsletter_plugin_migration_report_' . $scope, array() );
+		$preview = (array) get_transient( self::newsletter_preview_key( $scope ) );
+		$title = $templates ? __( 'Import email templates', 'contactpanda' ) : __( 'Import people', 'contactpanda' );
+		echo '<section class="contactpanda-card"><h3>' . esc_html( $title ) . '</h3>';
+		if ( ! $available ) {
 			echo '<p>' . esc_html__( 'No compatible The Newsletter Plugin subscriber table was detected. Nothing will be changed.', 'contactpanda' ) . '</p></section>';
 			return;
 		}
-		$report = (array) get_option( 'contactpanda_last_newsletter_plugin_migration_report', array() );
-		$preview = (array) get_transient( 'contactpanda_newsletter_plugin_preview_' . get_current_user_id() );
-		echo '<p>' . esc_html__( 'Subscribers are matched by email address. Historical mailings and available statistics are imported as read-only archives by ContactPanda Plus. Unsubscribed and bounced states take precedence and are never changed into a marketing consent by the import.', 'contactpanda' ) . '</p>';
-		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		if ( $preview ) echo '<div class="contactpanda-migration-report"><h3>' . esc_html__( 'Import preview', 'contactpanda' ) . '</h3><p>' . esc_html( sprintf( __( '%1$d subscribers, %2$d reusable email sources, and %3$d historical mailings were found. No data has been changed yet.', 'contactpanda' ), absint( $preview['subscribers'] ?? 0 ), absint( $preview['templates'] ?? 0 ), absint( $preview['mailings'] ?? 0 ) ) ) . '</p></div>';
+		$description = $templates
+			? __( 'Creates editable email templates and read-only archives of historical mailings.', 'contactpanda' )
+			: __( 'Matches subscribers by email address. An unsubscribe or bounce status takes precedence over marketing consent.', 'contactpanda' );
+		echo '<p>' . esc_html( $description ) . '</p>';
+		if ( $preview ) {
+			echo '<div class="contactpanda-migration-report"><h4>' . esc_html__( 'Import preview', 'contactpanda' ) . '</h4><p>' . esc_html( self::newsletter_import_summary( $scope, $preview ) ) . '</p>';
+			if ( ! empty( $preview['sample'] ) ) {
+				echo '<ul>';
+				foreach ( $preview['sample'] as $record ) echo '<li>' . esc_html( $record ) . '</li>';
+				echo '</ul>';
+				if ( ( $preview['templates'] ?? $preview['subscribers'] ?? 0 ) > count( $preview['sample'] ) ) echo '<p>' . esc_html__( 'Preview shows a sample. Confirmation imports all matching records.', 'contactpanda' ) . '</p>';
+			}
+			echo '</div>';
+		}
 		if ( $report ) {
-			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-			echo '<p><strong>' . esc_html__( 'Last import:', 'contactpanda' ) . '</strong> ' . esc_html( sprintf( __( '%1$d new, %2$d updated, %3$d templates, %4$d mailings, %5$d skipped, %6$d errors. Completed: %7$s', 'contactpanda' ), absint( $report['new'] ?? 0 ), absint( $report['updated'] ?? 0 ), absint( $report['templates'] ?? 0 ), absint( $report['mailings'] ?? 0 ), absint( $report['skipped'] ?? 0 ), absint( $report['errors'] ?? 0 ), sanitize_text_field( $report['completed_at'] ?? '' ) ) ) . '</p>';
+			echo '<p><strong>' . esc_html__( 'Last import:', 'contactpanda' ) . '</strong> ' . esc_html( self::newsletter_import_summary( $scope, $report ) ) . '</p>';
 			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			if ( isset( $report['mailing_recipients'] ) ) echo '<p>' . esc_html( sprintf( __( '%d historical recipient assignments were imported and linked to matching people.', 'contactpanda' ), absint( $report['mailing_recipients'] ) ) ) . '</p>';
 			/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 			if ( isset( $report['editable_blocks'] ) ) echo '<p>' . esc_html( sprintf( __( '%1$d editable content blocks were created; %2$d source fragments required an HTML fallback.', 'contactpanda' ), absint( $report['editable_blocks'] ), absint( $report['html_fallbacks'] ?? 0 ) ) ) . '</p>';
 		}
 		echo '<div class="contactpanda-database-actions">';
-		self::newsletter_import_form( 'preview', __( 'Preview import', 'contactpanda' ), 'button-secondary' );
-		if ( $preview ) self::newsletter_import_form( 'run', __( 'Import and merge now', 'contactpanda' ), 'button-primary' );
-		echo '<p class="description">' . esc_html__( 'The original newsletter plugin data remains unchanged.', 'contactpanda' ) . '</p></div>';
-		echo '<div class="contactpanda-migration-progress" hidden aria-live="polite"><strong>' . esc_html__( 'Preparing migration…', 'contactpanda' ) . '</strong><progress value="0" max="100"></progress><span>0%</span><small></small></div>';
-		echo '</section>';
+		self::newsletter_import_form( $scope, 'preview', __( 'Preview import', 'contactpanda' ), 'button-secondary' );
+		if ( self::newsletter_has_records( $scope, $preview ) ) self::newsletter_import_form( $scope, 'run', $title, 'button-primary' );
+		echo '</div></section>';
 	}
 
-	private static function newsletter_import_form( $mode, $label, $class ) {
+	private static function newsletter_import_summary( $scope, array $report ) {
+		if ( 'templates' === $scope ) {
+			/* translators: %1$d: email templates; %2$d: historical mailings. */
+			return sprintf( __( '%1$d email templates and %2$d historical mailings.', 'contactpanda' ), absint( $report['templates'] ?? 0 ), absint( $report['mailings'] ?? 0 ) );
+		}
+		/* translators: %1$d: new people; %2$d: updated people; %3$d: skipped records; %4$d: import errors. */
+		return sprintf( __( '%1$d new, %2$d updated, %3$d skipped, %4$d errors.', 'contactpanda' ), absint( $report['new'] ?? 0 ), absint( $report['updated'] ?? 0 ), absint( $report['skipped'] ?? 0 ), absint( $report['errors'] ?? 0 ) );
+	}
+
+	private static function newsletter_preview_key( $scope ) {
+		return 'contactpanda_newsletter_plugin_preview_' . $scope . '_' . get_current_user_id();
+	}
+
+	private static function newsletter_has_records( $scope, array $preview ) {
+		return 'templates' === $scope
+			? ! empty( $preview['templates'] )
+			: ! empty( $preview['new'] ) || ! empty( $preview['updated'] );
+	}
+
+	private static function newsletter_import_form( $scope, $mode, $label, $class ) {
 		$live_class = 'run' === $mode ? ' contactpanda-live-migration-form' : '';
 		echo '<form class="contactpanda-inline-action-form contactpanda-migration-progress-form' . esc_attr( $live_class ) . '" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_migrate_newsletter_plugin"><input type="hidden" name="mode" value="' . esc_attr( $mode ) . '"><input type="hidden" name="migration_source" value="newsletter_plugin">';
 		wp_nonce_field( 'contactpanda_migrate_newsletter_plugin' );
+		echo '<input type="hidden" name="newsletter_scope" value="' . esc_attr( $scope ) . '">';
 		echo '<button type="submit" class="button ' . esc_attr( $class ) . '">' . esc_html( $label ) . '</button></form>';
 	}
 
 	public static function handle_migrate_newsletter_plugin() {
 		check_admin_referer( self::database_nonce_action( 'contactpanda_migrate_newsletter_plugin' ) );
+		$scope = sanitize_key( wp_unslash( $_POST['newsletter_scope'] ?? '' ) );
+		$mode = sanitize_key( wp_unslash( $_POST['mode'] ?? '' ) );
+		if ( ! in_array( $scope, array( 'people', 'templates' ), true ) || ! in_array( $mode, array( 'preview', 'run' ), true ) ) self::database_redirect( 'error', __( 'Select an import and preview it first.', 'contactpanda' ), 'newsletter_plugin' );
+		$preview_only = 'preview' === $mode;
+		$preview_key = self::newsletter_preview_key( $scope );
+		if ( ! $preview_only && ! self::newsletter_has_records( $scope, (array) get_transient( $preview_key ) ) ) self::database_redirect( 'error', __( 'Select an import and preview it first.', 'contactpanda' ), 'newsletter_plugin' );
+		delete_transient( $preview_key );
 		delete_transient( 'contactpanda_groundhogg_migration_' . get_current_user_id() );
 		self::store_migration_progress( array( 'stage' => __( 'Preparing migration…', 'contactpanda' ), 'processed' => 0, 'total' => 0, 'percent' => 0 ) );
-		if ( ! apply_filters( 'contactpanda_can_migrate_newsletter_plugin', true ) ) wp_die( esc_html__( 'The Newsletter Plugin migration is not available.', 'contactpanda' ), '', array( 'response' => 403 ) );
+		if ( 'templates' === $scope ) {
+			if ( ! ContactPanda_Store::ready() || ! apply_filters( 'contactpanda_newsletter_plugin_templates_available', false ) ) self::database_redirect( 'error', __( 'The Newsletter Plugin migration is not available.', 'contactpanda' ), 'newsletter_plugin' );
+			$report = (array) apply_filters( 'contactpanda_newsletter_plugin_templates_import', array(), $preview_only, self::newsletter_plugin_table() );
+			self::finish_newsletter_plugin_import( $scope, $preview_only, $report );
+		}
 		$table = self::newsletter_plugin_table();
 		if ( ! $table || ! ContactPanda_Store::ready() ) {
 			self::database_redirect( 'error', __( 'The newsletter subscriber source or the ContactPanda database is not available.', 'contactpanda' ) );
@@ -1067,8 +1119,6 @@ The link is valid for 24 hours.',
 		}
 		$quoted = implode( ',', array_fill( 0, count( $wanted ), '%i' ) );
 		$rows = (array) $wpdb->get_results( $wpdb->prepare( "SELECT {$quoted} FROM %i", array_merge( $wanted, array( $table ) ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The generated column list contains only %i placeholders; discovered column names and the source table are supplied as identifier arguments to prepare.
-		$mode = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : 'run';
-		$preview_only = 'preview' === $mode;
 		$report = array( 'new' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => 0, 'subscribers' => count( $rows ), 'completed_at' => current_time( 'mysql' ) );
 		$processed = 0;
 		foreach ( $rows as $row ) {
@@ -1086,6 +1136,10 @@ The link is valid for 24 hours.',
 				'source'     => 'newsletter_plugin',
 				'meta'       => array( 'newsletter_plugin_id' => absint( $row['id'] ?? 0 ), 'newsletter_plugin_status' => $status_code ),
 			);
+			if ( $preview_only && count( $report['sample'] ?? array() ) < 20 ) {
+				$name = trim( $data['first_name'] . ' ' . $data['last_name'] );
+				$report['sample'][] = $name ?: $email;
+			}
 			if ( $contact ) {
 				if ( $preview_only ) { ++$report['updated']; self::newsletter_migration_progress( $processed, count( $rows ) ); continue; }
 				$current = sanitize_key( $contact['optin_status'] ?? '' );
@@ -1094,7 +1148,7 @@ The link is valid for 24 hours.',
 				$data['first_name'] = $contact['first_name'] ?: $data['first_name'];
 				$data['last_name'] = $contact['last_name'] ?: $data['last_name'];
 				$data['optin_status'] = $incoming;
-				ContactPanda_Store::update_contact( $contact['id'], $data );
+				if ( ! ContactPanda_Store::update_contact( $contact['id'], $data ) ) { ++$report['errors']; continue; }
 				if ( 'confirmed' === $incoming && ! $was_confirmed ) ContactPanda_Store::record_consent( $contact['id'], 'granted', 'newsletter_plugin_import', self::valid_import_date( $row['created'] ?? '' ), __( 'Imported newsletter subscription.', 'contactpanda' ) );
 				++$report['updated'];
 			} else {
@@ -1107,18 +1161,20 @@ The link is valid for 24 hours.',
 			}
 			self::newsletter_migration_progress( $processed, count( $rows ) );
 		}
-		self::store_migration_progress( array( 'stage' => __( 'Preparing migration…', 'contactpanda' ), 'processed' => count( $rows ), 'total' => count( $rows ), 'percent' => 70 ) );
-		$report = (array) apply_filters( 'contactpanda_newsletter_plugin_migration_report', $report, $preview_only, $table );
+		self::finish_newsletter_plugin_import( $scope, $preview_only, $report );
+	}
+
+	private static function finish_newsletter_plugin_import( $scope, $preview_only, array $report ) {
+		if ( ! empty( $report['warnings'][0] ) ) self::database_redirect( 'error', $report['warnings'][0], 'newsletter_plugin' );
 		if ( $preview_only ) {
-			set_transient( 'contactpanda_newsletter_plugin_preview_' . get_current_user_id(), $report, HOUR_IN_SECONDS );
-			self::database_redirect( 'success', __( 'The newsletter import preview is ready. No source or ContactPanda data has been changed.', 'contactpanda' ) );
+			set_transient( self::newsletter_preview_key( $scope ), $report, HOUR_IN_SECONDS );
+			self::database_redirect( 'success', __( 'The newsletter import preview is ready. No source or ContactPanda data has been changed.', 'contactpanda' ), 'newsletter_plugin' );
 		}
-		delete_transient( 'contactpanda_newsletter_plugin_preview_' . get_current_user_id() );
 		$report['completed_at'] = current_time( 'mysql' );
-		update_option( 'contactpanda_last_newsletter_plugin_migration_report', $report, false );
-		self::store_migration_progress( array( 'stage' => __( 'Migration completed.', 'contactpanda' ), 'processed' => count( $rows ), 'total' => count( $rows ), 'percent' => 100 ) );
-		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
-		self::database_redirect( 'success', sprintf( __( 'Newsletter subscriber import completed: %1$d new contacts, %2$d updated contacts, %3$d skipped.', 'contactpanda' ), $report['new'], $report['updated'], $report['skipped'] ) );
+		update_option( 'contactpanda_last_newsletter_plugin_migration_report_' . $scope, $report, false );
+		$total = absint( $report['templates'] ?? $report['subscribers'] ?? 0 );
+		self::store_migration_progress( array( 'stage' => __( 'Migration completed.', 'contactpanda' ), 'processed' => $total, 'total' => $total, 'percent' => 100 ) );
+		self::database_redirect( 'success', self::newsletter_import_summary( $scope, $report ), 'newsletter_plugin' );
 	}
 
 	private static function newsletter_migration_progress( $processed, $total ) {

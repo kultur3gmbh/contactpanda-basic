@@ -7,6 +7,16 @@ function req(method,params={},sessionId){return new Promise(r=>{pending.set(++i,
 const server=http.createServer((request,response)=>{response.end('<html lang="de"><body>Fixture</body></html>')});
 (async()=>{await new Promise(r=>server.listen(0,'127.0.0.1',r));const {result:{targetId}}=await req('Target.createTarget',{url:'about:blank'}),{result:{sessionId:s}}=await req('Target.attachToTarget',{targetId,flatten:true});
 async function run(expression){const r=await req('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true},s);if(r.result.exceptionDetails)throw Error(JSON.stringify(r.result.exceptionDetails));return r.result.result.value;}
+async function clickControl(selector) {
+ const position = await run(`(() => {
+  const control = document.querySelector(${JSON.stringify(selector)});
+  control.scrollIntoView({block:'nearest'});
+  const {x,y,width,height} = control.getBoundingClientRect();
+  return {x:x+width/2,y:y+height/2};
+ })()`);
+ await req('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...position},s);
+ await req('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...position},s);
+}
 await req('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/?s=Fixture'},s);await run('new Promise(r=>setTimeout(r,200))');
 await run(`document.body.innerHTML='<form class="contactpanda-search"><div class="contactpanda-people-search-row"><input name="s" value="Fixture"><button type="button" class="cp-selection-add" data-list-token="fixturetoken">?+</button><span class="cp-selection-result" role="status"></span></div></form><div class="contactpanda-bulk-toolbar"><select id="contactpanda-bulk-action"><option value="selection_save">Save</option><option value="merge">Merge</option><option value="selection_remove">Remove</option></select><button type="button" class="contactpanda-open-bulk">Run</button><span class="contactpanda-bulk-selection"></span></div><input type="checkbox" class="contactpanda-select-all"><input type="checkbox" class="contactpanda-person-select" value="2"><input type="checkbox" class="contactpanda-person-select" value="3"><form id="contactpanda-campaign-form"><input name="subject" value="Keep draft"><fieldset class="contactpanda-audience-source"><label hidden><input type="radio" name="audience_source" value="manual"><span class="cp-manual-selection-label"></span></label><input name="manual_contact_ids" type="hidden"><div class="contactpanda-customer-search-results"></div></fieldset></form>';
 window.__errors=[];addEventListener('error',e=>__errors.push(e.message));window.CONTACTPANDA_CONFIG={};window.CP_SELECTIONS={ajax:'/ajax',nonce:'fixture',user:1,source:'contactpanda',current:'0',rows:[{id:7,name:'Fixture saved',count:2}],i18n:{name:'Name',save:'Speichern',cancel:'Abbrechen',load:'Auswahl laden',error:'Fehler',added:'%d hinzugefügt',capacity:'Maximal 10000'}};sessionStorage.setItem('cp-selection:1:contactpanda',JSON.stringify({ids:['1'],query:'?s=Fixture'}));window.__requests=[];window.fetch=(url,opts)=>{const operation=opts.body.get('cp_selection_operation');__requests.push({url,operation,token:opts.body.get('list_token')});const data=operation==='search_results'?{ids:[2,3,4],total:3}:{id:7,name:'Fixture saved',ids:[2,3]};return Promise.resolve({json:()=>Promise.resolve({success:true,data})});};`);
@@ -84,18 +94,22 @@ assert.deepEqual(await run('__errors'),[]);
 
 await req('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/?s=NoMatch&cp_add_results=1'},s);
 await run('new Promise(r=>setTimeout(r,150))');
-await run(`document.body.innerHTML='<form class="contactpanda-search"><input name="s" value="NoMatch"><button class="cp-selection-add" data-list-token="emptyresults" type="button">Add</button><span class="cp-selection-result"></span></form><div class="contactpanda-bulk-toolbar"><select id="contactpanda-bulk-action"><option value="salutations">Salutations</option></select><button class="contactpanda-open-bulk">Run</button></div><details class="cp-selection-retained" open hidden><summary>Outside <span data-cp-retained-count></span></summary><ul></ul><button data-cp-retained-more>More</button></details><dialog class="contactpanda-salutation-preview"><p class="contactpanda-salutation-preview-message"></p><div class="contactpanda-salutation-preview-rows" hidden><table><tbody></tbody></table></div><button class="contactpanda-apply-salutations" disabled>Apply</button></dialog>';
+await run(`document.body.innerHTML='<form class="contactpanda-search"><input name="s" value="NoMatch"><button class="cp-selection-add" data-list-token="emptyresults" type="button">Add</button><span class="cp-selection-result"></span></form><div class="contactpanda-bulk-toolbar"><select id="contactpanda-bulk-action"><option value="salutations">Salutations</option></select><button class="contactpanda-open-bulk">Run</button></div><details class="cp-selection-retained" open hidden><summary>Outside <span data-cp-retained-count></span></summary><ul></ul><button data-cp-retained-more>More</button></details><dialog class="contactpanda-salutation-preview"><p class="contactpanda-salutation-preview-message"></p><div class="contactpanda-salutation-preview-rows" hidden><table><tbody></tbody></table></div><button class="button button-primary contactpanda-apply-salutations" disabled>Apply assignments</button></dialog>';
 window.CONTACTPANDA_CONFIG={nonce:'fixture',ajaxUrl:'/ajax'};
 window.CP_SELECTIONS={ajax:'/ajax',nonce:'fixture',user:1,source:'contactpanda',current:'0',rows:[],i18n:{added:'%d added'}};
 sessionStorage.setItem('cp-selection:1:contactpanda',JSON.stringify({ids:['1'],names:{1:'Fixture Person'},query:'s=Previous',pending:true}));
-window.requests=[];
+window.requests=[];document.body.classList.add('contactpanda-wrap');
 window.fetch=(url,{body})=>{
  const params=new URLSearchParams(body);
  const operation=params.get('cp_selection_operation')||params.get('operation');
  requests.push([operation,params.get('ids'),params.get('preview')]);
  const data=operation==='search_results'?{ids:[],total:0}:{preview:'reviewtoken',rows:[{name:'Fixture Person',label:'Ms'}]};
- return Promise.resolve({ok:true,json:()=>Promise.resolve({success:true,data})});
+ return Promise.resolve({ok:true,json:()=>Promise.resolve(operation==='apply'?{success:false,data:{message:'Save response checked'}}:{success:true,data})});
 };`);
+const styles = ['contactpanda-admin.css','panda-action-buttons.css'].map(file => fs.readFileSync(root+'/assets/'+file,'utf8')).join('\n');
+await run(`document.head.append(document.createElement('style'));document.head.lastElementChild.textContent=${JSON.stringify(styles)}`);
+await run(fs.readFileSync(root+'/assets/contactpanda-admin-ui.js','utf8'));
+await run('ContactPandaAdminUI.enhance(document)');
 await run(fs.readFileSync(root+'/assets/contactpanda-admin.js','utf8'));
 await run(fs.readFileSync(root+'/assets/contactpanda-selections.js','utf8'));
 await run('new Promise(r=>setTimeout(r,40))');
@@ -108,14 +122,21 @@ assert.deepEqual(await run('requests[1]'),['preview','["1"]',null]);
 assert.equal(await run('document.querySelector(".contactpanda-salutation-preview tbody").textContent'),'Fixture PersonMs');
 assert.equal(await run('document.querySelector(".contactpanda-apply-salutations").disabled'),false);
 assert.equal(await run('requests.length'),2);
+assert.equal(await run('getComputedStyle(document.querySelector(".contactpanda-apply-salutations")).pointerEvents'),'auto');
+await clickControl('.contactpanda-apply-salutations');
+assert.deepEqual(await run('requests[2]'),['apply',null,'reviewtoken']);
 
 await run(`document.querySelector('.contactpanda-salutation-preview').close();new Promise(r=>setTimeout(r,100));`);
-await run(`document.body.insertAdjacentHTML('beforeend','<button class="contactpanda-open-company-relation" data-modal="link-fixture">Link</button><div id="link-fixture" class="contactpanda-company-relation-modal" hidden><form><input type="hidden" name="company_id" value="39"><input type="hidden" name="contact_id" value="0"><div class="contactpanda-company-link-picker"><input class="contactpanda-company-link-search" aria-controls="fixture-options"><button type="button" class="contactpanda-create-linked-person" data-company-name="Fixture Company" hidden>+</button><div role="listbox" id="fixture-options" hidden></div><p role="status"></p></div><input name="position"><button type="submit" disabled>Save</button></form></div><div class="contactpanda-new-person-modal" hidden><p class="contactpanda-modal-message"></p><input class="contactpanda-new-company-id"><input class="contactpanda-new-company-name"><input class="contactpanda-new-company-position"><input class="contactpanda-new-first-name"><input class="contactpanda-new-last-name"><input class="contactpanda-new-email"><select class="contactpanda-new-salutation"><option value="">Select</option></select></div>');
+await run(`document.body.insertAdjacentHTML('beforeend','<button class="contactpanda-open-company-relation" data-modal="link-fixture">Link</button><div id="link-fixture" class="contactpanda-company-relation-modal" hidden><form><input type="hidden" name="company_id" value="39"><input type="hidden" name="contact_id" value="0"><div class="contactpanda-company-link-picker"><input class="contactpanda-company-link-search" aria-controls="fixture-options"><button type="button" class="button panda-button-regular contactpanda-create-linked-person" data-company-name="Fixture Company" hidden>+ Create new?</button><div role="listbox" id="fixture-options" hidden></div><p role="status"></p></div><input name="position"><button type="submit" class="button button-primary" disabled>Save</button></form></div><div class="contactpanda-new-person-modal" hidden><p class="contactpanda-modal-message"></p><input class="contactpanda-new-company-id"><input class="contactpanda-new-company-name"><input class="contactpanda-new-company-position"><input class="contactpanda-new-first-name"><input class="contactpanda-new-last-name"><input class="contactpanda-new-email"><select class="contactpanda-new-salutation"><option value="">Select</option></select></div>');
 window.fetch=(url,{body})=>{
  const term=new URLSearchParams(body).get('search');
  const data=term==='New Person'?[]:[{id:42,label:'Existing Person'}];
  return Promise.resolve({ok:true,json:()=>Promise.resolve({success:true,data})});
 };
+ContactPandaAdminUI.enhance(document);
+document.querySelector('#link-fixture form').addEventListener('submit', event => {
+ event.preventDefault(); window.linkedPayload=Object.fromEntries(new FormData(event.currentTarget));
+});
 document.querySelector('.contactpanda-open-company-relation').click();
 new Promise(r=>setTimeout(r,260));`);
 assert.equal(await run('document.activeElement.className'),'contactpanda-company-link-search');
@@ -124,8 +145,12 @@ await run(`for(const key of ['ArrowDown','Enter']) document.activeElement.dispat
 assert.equal(await run('document.querySelector("#link-fixture [name=contact_id]").value'),'42');
 assert.equal(await run('document.querySelector("#link-fixture [type=submit]").disabled'),false);
 assert.equal(await run('document.activeElement.name'),'position');
-await run(`document.activeElement.value='Editor';
-const lookup=document.querySelector('.contactpanda-company-link-search');
+assert.equal(await run('getComputedStyle(document.querySelector(".contactpanda-create-linked-person")).display'),'none');
+assert.equal(await run('document.querySelector("#link-fixture [role=status]").textContent'),'');
+await run("document.activeElement.value='Editor'");
+await clickControl('#link-fixture [type=submit]');
+assert.deepEqual(await run('linkedPayload'),{company_id:'39',contact_id:'42',position:'Editor'});
+await run(`const lookup=document.querySelector('.contactpanda-company-link-search');
 lookup.focus(); lookup.value='New Person'; lookup.dispatchEvent(new Event('input',{bubbles:true}));
 new Promise(r=>setTimeout(r,260));`);
 assert.equal(await run('document.querySelector(".contactpanda-create-linked-person").hidden'),false);

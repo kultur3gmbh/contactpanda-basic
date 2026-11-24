@@ -9675,3 +9675,30 @@ msgstr "Keine passenden Personen gefunden."
 
 msgid "Searching…"
 msgstr "Suche läuft…"
+
+msgid "Create new?"
+msgstr "Neu anlegen?"
+
+msgid "Import email templates"
+msgstr "E-Mail-Vorlagen importieren"
+
+msgid "Import people"
+msgstr "Personen importieren"
+
+msgid "Creates editable email templates and read-only archives of historical mailings."
+msgstr "Erstellt bearbeitbare E-Mail-Vorlagen und schreibgeschützte Archive historischer Aussendungen."
+
+msgid "Matches subscribers by email address. An unsubscribe or bounce status takes precedence over marketing consent."
+msgstr "Gleicht Abonnenten anhand ihrer E-Mail-Adresse ab. Abmeldungen und unzustellbare Adressen haben Vorrang vor der Marketingzustimmung."
+
+msgid "Preview shows a sample. Confirmation imports all matching records."
+msgstr "Die Vorschau zeigt einen Ausschnitt. Nach der Bestätigung werden alle passenden Datensätze importiert."
+
+msgid "%1$d email templates and %2$d historical mailings."
+msgstr "%1$d E-Mail-Vorlagen und %2$d historische Aussendungen."
+
+msgid "%1$d new, %2$d updated, %3$d skipped, %4$d errors."
+msgstr "%1$d neu, %2$d aktualisiert, %3$d übersprungen, %4$d Fehler."
+
+msgid "Select an import and preview it first."
+msgstr "Wählen Sie einen Import und öffnen Sie zuerst seine Vorschau."
