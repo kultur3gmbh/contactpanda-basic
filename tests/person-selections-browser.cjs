@@ -90,8 +90,9 @@ window.CP_SELECTIONS={ajax:'/ajax',nonce:'fixture',user:1,source:'contactpanda',
 sessionStorage.setItem('cp-selection:1:contactpanda',JSON.stringify({ids:['1'],names:{1:'Fixture Person'},query:'s=Previous',pending:true}));
 window.requests=[];
 window.fetch=(url,{body})=>{
- const operation=body.get('cp_selection_operation')||body.get('operation');
- requests.push([operation,body.get('ids'),body.get('preview')]);
+ const params=new URLSearchParams(body);
+ const operation=params.get('cp_selection_operation')||params.get('operation');
+ requests.push([operation,params.get('ids'),params.get('preview')]);
  const data=operation==='search_results'?{ids:[],total:0}:{preview:'reviewtoken',rows:[{name:'Fixture Person',label:'Ms'}]};
  return Promise.resolve({ok:true,json:()=>Promise.resolve({success:true,data})});
 };`);

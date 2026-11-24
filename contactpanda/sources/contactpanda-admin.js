@@ -1233,7 +1233,7 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 	function openSalutationPreview(trigger) {
 		const dialog = document.querySelector('.contactpanda-salutation-preview');
 		const ids = selectedContactIds();
-		if (!dialog || dialog.open || !ids.length) return;
+		if (!dialog || dialog.open || !ids.length || allMatchingPeopleSelected) return;
 		const message = dialog.querySelector('.contactpanda-salutation-preview-message');
 		const rows = dialog.querySelector('.contactpanda-salutation-preview-rows');
 		const body = rows.querySelector('tbody');
@@ -1378,6 +1378,7 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 					'selection_remove',
 					'selection_save',
 					'merge',
+					'salutations',
 				].indexOf(action.value) === -1 ||
 				(['marketable', 'trash', 'tags_add', 'tags_remove'].indexOf(action.value) !== -1 &&
 					allMatchingPeopleSelected);
@@ -2864,6 +2865,7 @@ window.PandaQuickSearch = window.PandaQuickSearch || {
 				'selection_remove',
 				'selection_save',
 				'merge',
+				'salutations',
 			].indexOf(action.value) !== -1;
 		button.disabled =
 			!selected || !supported || (action.value === 'merge' && (selected < 2 || selected > 20));

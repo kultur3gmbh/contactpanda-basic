@@ -882,7 +882,7 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 	function openSalutationPreview(trigger) {
 		const dialog = document.querySelector('.contactpanda-salutation-preview');
 		const ids = selectedContactIds();
-		if (!dialog || dialog.open || !ids.length) return;
+		if (!dialog || dialog.open || !ids.length || allMatchingPeopleSelected) return;
 		const message = dialog.querySelector('.contactpanda-salutation-preview-message');
 		const rows = dialog.querySelector('.contactpanda-salutation-preview-rows');
 		const body = rows.querySelector('tbody');
@@ -976,7 +976,7 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 		}
 		if (label && !allMatchingPeopleSelected) label.textContent = selected.length === 1 ? tr('onePersonSelected', '1 person selected') : format(tr('peopleSelected', '%d people selected'), selected.length);
 		if (allMatching) allMatching.hidden = allMatchingPeopleSelected || !selectAll || !selectAll.checked || !toolbar || Number(toolbar.dataset.total || 0) <= checkboxes.length;
-		if (button) button.disabled = !(selected.length || allMatchingPeopleSelected) || !action || ['marketable', 'newsletter', 'trash', 'tags_add', 'tags_remove', 'selection_remove', 'selection_save', 'merge'].indexOf(action.value) === -1 || (['marketable', 'trash', 'tags_add', 'tags_remove'].indexOf(action.value) !== -1 && allMatchingPeopleSelected);
+		if (button) button.disabled = !(selected.length || allMatchingPeopleSelected) || !action || ['marketable', 'newsletter', 'trash', 'tags_add', 'tags_remove', 'selection_remove', 'selection_save', 'merge', 'salutations'].indexOf(action.value) === -1 || (['marketable', 'trash', 'tags_add', 'tags_remove'].indexOf(action.value) !== -1 && allMatchingPeopleSelected);
 		if (button && action && action.value === 'merge' && (selected.length < 2 || selected.length > 20)) button.disabled = true;
 		var outputModal = document.querySelector('.contactpanda-output-modal');
 		if (outputModal) {
@@ -2013,7 +2013,7 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 		var button = document.querySelector('.contactpanda-open-bulk');
 		if (!action || !button) return;
 		var selected = window.ContactPandaSelections ? window.ContactPandaSelections.ids().length : document.querySelectorAll('.contactpanda-person-select:checked').length;
-		var supported = ['marketable', 'newsletter', 'trash', 'tags_add', 'tags_remove', 'selection_remove', 'selection_save', 'merge'].indexOf(action.value) !== -1;
+		var supported = ['marketable', 'newsletter', 'trash', 'tags_add', 'tags_remove', 'selection_remove', 'selection_save', 'merge', 'salutations'].indexOf(action.value) !== -1;
 		button.disabled = !selected || !supported || (action.value === 'merge' && (selected < 2 || selected > 20));
 		button.setAttribute('aria-disabled', button.disabled ? 'true' : 'false');
 		button.classList.toggle('is-disabled', button.disabled);
