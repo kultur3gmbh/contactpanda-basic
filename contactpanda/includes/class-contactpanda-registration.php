@@ -6,6 +6,7 @@ final class ContactPanda_Registration {
 	const OPTION = 'contactpanda_registration_settings';
 	const GENERAL_OPTION = 'contactpanda_general_settings';
 	const NOTICE_PREFIX = 'contactpanda_registration_notice_';
+	private static $newsletter_progress_scope = '';
 
 	/** Customer and business account registration is a free Basic capability. */
 	public static function customer_registration_enabled() {
@@ -1041,7 +1042,6 @@ The link is valid for 24 hours.',
 		self::render_newsletter_import_scope( 'people', (bool) self::newsletter_plugin_table() );
 		if ( $templates_available ) self::render_newsletter_import_scope( 'templates', true );
 		echo '</div><p class="description">' . esc_html__( 'The original newsletter plugin data remains unchanged.', 'contactpanda' ) . '</p>';
-		echo '<div class="contactpanda-migration-progress" hidden aria-live="polite"><strong>' . esc_html__( 'Preparing migration…', 'contactpanda' ) . '</strong><progress value="0" max="100"></progress><span>0%</span><small></small></div>';
 		echo '</section>';
 	}
 
@@ -1078,8 +1078,13 @@ The link is valid for 24 hours.',
 		}
 		echo '<div class="contactpanda-database-actions">';
 		self::newsletter_import_form( $scope, 'preview', __( 'Preview import', 'contactpanda' ), 'button-secondary' );
-		if ( self::newsletter_has_records( $scope, $preview ) ) self::newsletter_import_form( $scope, 'run', $title, 'button-primary' );
-		echo '</div></section>';
+		$can_import = self::newsletter_has_records( $scope, $preview );
+		if ( $can_import ) self::newsletter_import_form( $scope, 'run', $title, 'button-primary' );
+		echo '</div>';
+		if ( $can_import ) {
+			echo '<div class="contactpanda-migration-progress" hidden aria-live="polite"><strong>' . esc_html__( 'Preparing migration…', 'contactpanda' ) . '</strong><progress value="0" max="100"></progress><span>0%</span><small></small></div>';
+		}
+		echo '</section>';
 	}
 
 	private static function newsletter_import_summary( $scope, array $report ) {
@@ -1118,7 +1123,7 @@ The link is valid for 24 hours.',
 		$preview_key = self::newsletter_preview_key( $scope );
 		if ( ! $preview_only && ! self::newsletter_has_records( $scope, (array) get_transient( $preview_key ) ) ) self::database_redirect( 'error', __( 'Select an import and preview it first.', 'contactpanda' ), 'newsletter_plugin' );
 		delete_transient( $preview_key );
-		delete_transient( 'contactpanda_groundhogg_migration_' . get_current_user_id() );
+		self::$newsletter_progress_scope = $scope;
 		self::store_migration_progress( array( 'stage' => __( 'Preparing migration…', 'contactpanda' ), 'processed' => 0, 'total' => 0, 'percent' => 0 ) );
 		if ( 'templates' === $scope ) {
 			if ( ! ContactPanda_Store::ready() || ! apply_filters( 'contactpanda_newsletter_plugin_templates_available', false ) ) self::database_redirect( 'error', __( 'The Newsletter Plugin migration is not available.', 'contactpanda' ), 'newsletter_plugin' );
@@ -1621,7 +1626,7 @@ The link is valid for 24 hours.',
 	public static function store_migration_progress( $progress ) {
 		if ( ! is_array( $progress ) || ! get_current_user_id() ) return;
 		set_transient(
-			'contactpanda_groundhogg_migration_' . get_current_user_id(),
+			self::migration_progress_key( self::$newsletter_progress_scope ),
 			array(
 				'stage'     => sanitize_text_field( $progress['stage'] ?? '' ),
 				'processed' => absint( $progress['processed'] ?? 0 ),
@@ -1632,10 +1637,16 @@ The link is valid for 24 hours.',
 		);
 	}
 
+	private static function migration_progress_key( $scope ) {
+		$prefix = in_array( $scope, array( 'people', 'templates' ), true ) ? 'contactpanda_newsletter_progress_' . $scope . '_' : 'contactpanda_groundhogg_migration_';
+		return $prefix . get_current_user_id();
+	}
+
 	public static function migration_progress_ajax() {
 		check_ajax_referer( 'contactpanda_update_company', 'nonce' );
 		if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( array( 'message' => __( 'You do not have permission.', 'contactpanda' ) ), 403 );
-		$progress = get_transient( 'contactpanda_groundhogg_migration_' . get_current_user_id() );
+		$scope = sanitize_key( wp_unslash( $_POST['newsletter_scope'] ?? '' ) );
+		$progress = get_transient( self::migration_progress_key( $scope ) );
 		wp_send_json_success( is_array( $progress ) ? $progress : array( 'stage' => __( 'Preparing migration…', 'contactpanda' ), 'processed' => 0, 'total' => 0, 'percent' => 0 ) );
 	}
 

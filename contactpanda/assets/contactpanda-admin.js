@@ -1840,10 +1840,18 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 			liveForm.dataset.running = '1';
 			var liveButton = liveForm.querySelector('button[type="submit"]');
 			var liveProgress = liveForm.closest('.contactpanda-card').querySelector('.contactpanda-migration-progress');
+			var liveData = new FormData(liveForm);
 			if (liveButton) liveButton.disabled = true;
-			if (liveProgress) liveProgress.hidden = false;
+			if (liveProgress) {
+				liveProgress.hidden = false;
+				liveProgress.querySelector('strong').textContent = tr('migrationPreparing', 'Preparing migration…');
+				liveProgress.querySelector('progress').value = 0;
+				liveProgress.querySelector('span').textContent = '0%';
+				liveProgress.querySelector('small').textContent = '';
+			}
 			var pollLiveMigration = function () {
 				var progressData = new URLSearchParams(); progressData.set('action', 'contactpanda_migration_progress'); progressData.set('nonce', CONTACTPANDA_CONFIG.nonce);
+				if (liveData.has('newsletter_scope')) progressData.set('newsletter_scope', liveData.get('newsletter_scope'));
 				fetch(CONTACTPANDA_CONFIG.ajaxUrl, requestOptions(progressData)).then(parseResponse).then(function (result) {
 					if (!result.success || !liveProgress) return;
 					var value = Math.max(0, Math.min(100, parseInt(result.data.percent || 0, 10)));
@@ -1853,9 +1861,7 @@ window.PandaQuickSearch = window.PandaQuickSearch || {matches: function (query, 
 					liveProgress.querySelector('small').textContent = result.data.total ? String(result.data.processed) + ' / ' + String(result.data.total) : String(result.data.processed || '');
 				}).catch(function () {});
 			};
-			pollLiveMigration();
 			var liveTimer = window.setInterval(pollLiveMigration, 1000);
-			var liveData = new FormData(liveForm);
 			fetch(CONTACTPANDA_CONFIG.ajaxUrl, {method: 'POST', body: liveData, credentials: 'same-origin'}).then(parseResponse).then(function (result) {
 				window.clearInterval(liveTimer);
 				if (!result.success || !result.data || !result.data.redirect) throw new Error(result.data && result.data.message ? result.data.message : tr('invalidServerResponse', 'The server returned an invalid response.'));

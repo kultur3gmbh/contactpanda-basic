@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, migrations, and optional Groundhogg compatibility.
- * Version: 0.9.122
+ * Version: 0.9.123
  * Author: Kultur3 GmbH
  * License: GPLv3
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -14,7 +14,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.9.122' );
+define( 'CONTACTPANDA_VERSION', '0.9.123' );
 // Keep browser caches independent from the public plugin version so that
 // corrected admin interactions are loaded even for same-version test builds.
 define( 'CONTACTPANDA_ASSET_VERSION', CONTACTPANDA_VERSION . '-20261112-2' );
@@ -25,7 +25,7 @@ define( 'CONTACTPANDA_URL', plugin_dir_url( __FILE__ ) );
 
 // Frontend forms need the bundled catalog too, without loading the admin class.
 add_action( 'init', static function () {
-	load_plugin_textdomain( 'contactpanda', false, dirname( plugin_basename( CONTACTPANDA_FILE ) ) . '/languages' ); // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Bundled German catalogs are required for offline/sideloaded installations; register at init so frontend forms work without a WordPress.org language pack.
+	load_plugin_textdomain( 'contactpanda', false, dirname( plugin_basename( CONTACTPANDA_FILE ) ) . '/languages' ); // phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound -- Bundled catalogs localize frontend forms on sideloaded installations without a WordPress.org language pack.
 }, 0 );
 
 /** Basic 1.1 integration contract; lookup never grants additional CRM permissions. */

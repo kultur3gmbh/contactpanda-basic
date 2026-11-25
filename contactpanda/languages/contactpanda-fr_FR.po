@@ -1,0 +1,285 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: ContactPanda Basic\n"
+"Language: fr_FR\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+msgid "--- Please select ---"
+msgstr "--- Veuillez sélectionner ---"
+
+msgid "A user account already exists for this email address."
+msgstr "Un compte existe déjà pour cette adresse e-mail."
+
+msgid "Add a separate shipping address"
+msgstr "Ajouter une adresse de livraison différente"
+
+msgid "Add company details"
+msgstr "Ajouter les informations de l’entreprise"
+
+msgid "Address line 2"
+msgstr "Complément d’adresse"
+
+msgid "Austria"
+msgstr "Autriche"
+
+msgid "Billing address"
+msgstr "Adresse de facturation"
+
+msgid "Business customer"
+msgstr "Client professionnel"
+
+msgid "Checking EU VIES…"
+msgstr "Vérification dans le système européen VIES…"
+
+msgid "City"
+msgstr "Ville"
+
+msgid "Close registration"
+msgstr "Fermer le formulaire d’inscription"
+
+msgid "Confirm your registration at {site_name}"
+msgstr "Confirmez votre inscription sur {site_name}"
+
+msgid "Confirmations"
+msgstr "Confirmations"
+
+msgid "Correct email address"
+msgstr "Corriger l’adresse e-mail"
+
+msgid "Country"
+msgstr "Pays"
+
+msgid "Country calling code"
+msgstr "Indicatif téléphonique"
+
+msgid "Create a customer account to manage your profile, addresses, orders, and bookings."
+msgstr "Créez un compte client pour gérer votre profil, vos adresses, vos commandes et vos réservations."
+
+msgid "Create customer account"
+msgstr "Créer un compte client"
+
+msgid "Customer account registration is disabled."
+msgstr "La création de comptes clients est désactivée."
+
+msgid "Email address"
+msgstr "Adresse e-mail"
+
+msgid "Family"
+msgstr "Famille"
+
+msgid "First name"
+msgstr "Prénom"
+
+msgid "France"
+msgstr "France"
+
+msgid "Germany"
+msgstr "Allemagne"
+
+msgid "Hello {first_name},\n\nplease confirm your email address by opening this link:\n{confirmation_link}\n\nThe link is valid for 24 hours."
+msgstr "Bonjour {first_name},\n\nveuillez confirmer votre adresse e-mail en ouvrant ce lien :\n{confirmation_link}\n\nCe lien est valable pendant 24 heures."
+
+msgid "I accept the terms and conditions."
+msgstr "J’accepte les conditions générales."
+
+msgid "I have read the privacy policy."
+msgstr "J’ai lu la politique de confidentialité."
+
+msgid "I would also like to receive news and offers by email. I can withdraw this consent at any time."
+msgstr "Je souhaite également recevoir les actualités et les offres par e-mail. Je peux retirer mon consentement à tout moment."
+
+msgid "If you cannot find the message, please also check your spam folder."
+msgstr "Si vous ne trouvez pas le message, vérifiez également votre dossier de courriers indésirables."
+
+msgid "Industry"
+msgstr "Secteur d’activité"
+
+msgid "Italy"
+msgstr "Italie"
+
+msgid "Last name"
+msgstr "Nom de famille"
+
+msgid "Legal company name"
+msgstr "Raison sociale"
+
+msgid "Mr"
+msgstr "Monsieur"
+
+msgid "Ms"
+msgstr "Madame"
+
+msgid "Name"
+msgstr "Nom"
+
+msgid "Netherlands"
+msgstr "Pays-Bas"
+
+msgid "Neutral"
+msgstr "Neutre"
+
+msgid "New here?"
+msgstr "Première visite ?"
+
+msgid "Password"
+msgstr "Mot de passe"
+
+msgid "Phone"
+msgstr "Téléphone"
+
+msgid "Phone number"
+msgstr "Numéro de téléphone"
+
+msgid "Please complete all required billing details."
+msgstr "Veuillez renseigner toutes les informations obligatoires de facturation."
+
+msgid "Please complete all required contact details."
+msgstr "Veuillez renseigner toutes les coordonnées obligatoires."
+
+msgid "Please complete the separate shipping address."
+msgstr "Veuillez renseigner l’adresse de livraison différente."
+
+msgid "Please confirm your email address"
+msgstr "Veuillez confirmer votre adresse e-mail"
+
+msgid "Please enter a VAT ID."
+msgstr "Veuillez saisir un numéro de TVA."
+
+msgid "Please enter a formally valid EU VAT ID."
+msgstr "Veuillez saisir un numéro de TVA au format valide pour l’Union européenne."
+
+msgid "Please enter a valid email address."
+msgstr "Veuillez saisir une adresse e-mail valide."
+
+msgid "Please enter a valid username."
+msgstr "Veuillez saisir un identifiant valide."
+
+msgid "Please select"
+msgstr "Veuillez sélectionner"
+
+msgid "Please select a valid billing country."
+msgstr "Veuillez sélectionner un pays de facturation valide."
+
+msgid "Position / Job title"
+msgstr "Fonction / Intitulé du poste"
+
+msgid "Postal code"
+msgstr "Code postal"
+
+msgid "Prefix title"
+msgstr "Titre (avant le nom)"
+
+msgid "Private customer"
+msgstr "Client particulier"
+
+msgid "Register now"
+msgstr "S’inscrire"
+
+msgid "Registration"
+msgstr "Inscription"
+
+msgid "Registration type"
+msgstr "Type d’inscription"
+
+msgid "Repeat password"
+msgstr "Confirmer le mot de passe"
+
+msgid "Salutation"
+msgstr "Civilité"
+
+msgid "Save and send again"
+msgstr "Enregistrer et renvoyer"
+
+msgid "Send confirmation email again"
+msgstr "Renvoyer l’e-mail de confirmation"
+
+msgid "Spam protection could not be completed. Please try submitting the form again."
+msgstr "La vérification anti-spam n’a pas abouti. Veuillez soumettre à nouveau le formulaire."
+
+msgid "Street and house number"
+msgstr "Numéro et nom de rue"
+
+msgid "Submit business registration"
+msgstr "Envoyer la demande d’inscription professionnelle"
+
+msgid "Switzerland"
+msgstr "Suisse"
+
+msgid "Thank you. Please check your inbox and confirm your email address."
+msgstr "Merci. Consultez votre boîte de réception pour confirmer votre adresse e-mail."
+
+msgid "Thank you. Please check your inbox and confirm your email address. Your business registration will be activated after approval."
+msgstr "Merci. Consultez votre boîte de réception pour confirmer votre adresse e-mail. Votre compte professionnel sera activé après validation."
+
+msgid "The ContactPanda registration form is disabled in the settings."
+msgstr "Le formulaire d’inscription ContactPanda est désactivé dans les réglages."
+
+msgid "The confirmation email could not be sent. Please try again later."
+msgstr "L’e-mail de confirmation n’a pas pu être envoyé. Veuillez réessayer plus tard."
+
+msgid "The form session has expired. Please try again."
+msgstr "La session du formulaire a expiré. Veuillez réessayer."
+
+msgid "The password must contain at least 10 characters."
+msgstr "Le mot de passe doit contenir au moins 10 caractères."
+
+msgid "The passwords do not match."
+msgstr "Les mots de passe ne correspondent pas."
+
+msgid "The privacy policy must be acknowledged."
+msgstr "Veuillez confirmer que vous avez lu la politique de confidentialité."
+
+msgid "The registration could not be processed."
+msgstr "L’inscription n’a pas pu être traitée."
+
+msgid "The registration could not be processed. Please try again later."
+msgstr "L’inscription n’a pas pu être traitée. Veuillez réessayer plus tard."
+
+msgid "The terms and conditions must be accepted."
+msgstr "Veuillez accepter les conditions générales."
+
+msgid "The VAT ID does not have a valid EU format."
+msgstr "Le format du numéro de TVA n’est pas valide pour l’Union européenne."
+
+msgid "The VAT ID is not valid according to EU VIES."
+msgstr "Le numéro de TVA n’est pas reconnu comme valide par le système européen VIES."
+
+msgid "This username is already in use."
+msgstr "Cet identifiant est déjà utilisé."
+
+msgid "User account"
+msgstr "Compte utilisateur"
+
+msgid "Username"
+msgstr "Identifiant"
+
+msgid "VAT ID"
+msgstr "Numéro de TVA intracommunautaire"
+
+msgid "VAT ID successfully validated"
+msgstr "Numéro de TVA validé"
+
+msgid "VAT ID validation could not be completed."
+msgstr "La vérification du numéro de TVA n’a pas abouti."
+
+msgid "Validate VAT ID"
+msgstr "Vérifier le numéro de TVA"
+
+#, php-format
+msgid "We sent the confirmation email to %s."
+msgstr "Un e-mail de confirmation a été envoyé à %s."
+
+msgid "Website"
+msgstr "Site web"
+
+msgid "You are already signed in."
+msgstr "Vous êtes déjà connecté."
+
+msgid "Your email address has been confirmed. You can now sign in."
+msgstr "Votre adresse e-mail a été confirmée. Vous pouvez maintenant vous connecter."
+
+msgid "Your email address has been confirmed. Your business registration is still awaiting approval."
+msgstr "Votre adresse e-mail a été confirmée. Votre inscription professionnelle est en attente de validation."

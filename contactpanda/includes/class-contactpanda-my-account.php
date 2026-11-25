@@ -7,6 +7,8 @@ defined( 'ABSPATH' ) || exit;
  * replacing WooCommerce templates in the active theme.
  */
 final class ContactPanda_My_Account {
+	private static $registration_rendered_at;
+
 	public static function boot() {
 		if ( ! class_exists( 'WooCommerce' ) ) {
 			return;
@@ -77,7 +79,7 @@ final class ContactPanda_My_Account {
 	}
 
 	public static function registration_disclosure() {
-		if ( is_user_logged_in() ) {
+		if ( is_user_logged_in() || ! shortcode_exists( 'contactpanda_registration' ) ) {
 			return;
 		}
 		$requested_type = isset( $_GET['contactpanda_registration_type'] ) ? sanitize_key( wp_unslash( $_GET['contactpanda_registration_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- display choice only.
@@ -89,6 +91,12 @@ final class ContactPanda_My_Account {
 		echo '<section class="contactpanda-account-registration"><h2>' . esc_html__( 'New here?', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Create a customer account to manage your profile, addresses, orders, and bookings.', 'contactpanda' ) . '</p>';
 		echo '<button type="button" class="button contactpanda-registration-toggle" aria-expanded="' . ( $is_open ? 'true' : 'false' ) . '" aria-controls="contactpanda-account-registration-form" data-open-label="' . esc_attr__( 'Register now', 'contactpanda' ) . '" data-close-label="' . esc_attr__( 'Close registration', 'contactpanda' ) . '">' . esc_html( $is_open ? __( 'Close registration', 'contactpanda' ) : __( 'Register now', 'contactpanda' ) ) . '</button>';
 		echo '<div id="contactpanda-account-registration-form" class="contactpanda-account-registration-form"' . ( $is_open ? '' : ' hidden' ) . '>' . $form . '</div></section>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ContactPanda shortcode returns escaped form markup.
+		self::$registration_rendered_at = did_action( 'woocommerce_after_customer_login_form' );
+	}
+
+	/** Let later account hooks tell whether this login form already has a registration block. */
+	public static function registration_disclosure_rendered() {
+		return doing_action( 'woocommerce_after_customer_login_form' ) && self::$registration_rendered_at === did_action( 'woocommerce_after_customer_login_form' );
 	}
 
 	public static function account_menu( $items ) {

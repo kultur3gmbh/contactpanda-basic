@@ -92,7 +92,7 @@ final class ContactPanda_Spam_Protection {
 	public static function render_fields( $context = 'signup' ) {
 		$s = self::settings();
 		$context = sanitize_key( $context );
-		$html = '<input type="hidden" name="contactpanda_spam_started" value="' . esc_attr( time() ) . '"><div class="contactpanda-registration-trap" aria-hidden="true"><label>Website<input type="text" name="contactpanda_spam_website" tabindex="-1" autocomplete="off"></label></div>';
+		$html = '<input type="hidden" name="contactpanda_spam_started" value="' . esc_attr( time() ) . '"><div class="contactpanda-registration-trap" aria-hidden="true"><label>' . esc_html__( 'Website', 'contactpanda' ) . '<input type="text" name="contactpanda_spam_website" tabindex="-1" autocomplete="off"></label></div>';
 		if ( 'turnstile' === $s['provider'] && $s['turnstile_site_key'] ) {
 			wp_enqueue_script( 'contactpanda-turnstile', 'https://challenges.cloudflare.com/turnstile/v0/api.js', array(), null, true ); // phpcs:ignore WordPress.WP.EnqueuedResourceParameters.MissingVersion,PluginCheck.CodeAnalysis.EnqueuedResourceOffloading.OffloadedContent -- The explicitly enabled Turnstile service requires its official challenge script; data use and consent are documented in readme.txt.
 			$html .= '<div class="cf-turnstile" data-sitekey="' . esc_attr( $s['turnstile_site_key'] ) . '"></div>';
