@@ -3671,8 +3671,12 @@ final class ContactPanda_Plugin {
 			if ( is_wp_error( $contact_id ) || ! $contact_id ) {
 				return is_wp_error( $contact_id ) ? $contact_id : new WP_Error( 'contactpanda_optin_save', __( 'The newsletter subscription could not be saved.', 'contactpanda' ) );
 			}
-			if ( $contact && ! ContactPanda_Store::update_contact( $contact_id, $payload ) ) {
-				return new WP_Error( 'contactpanda_optin_save', __( 'The newsletter subscription could not be saved.', 'contactpanda' ) );
+			if ( $contact ) {
+				if ( '' === $first_name ) unset( $payload['first_name'] );
+				if ( '' === $last_name ) unset( $payload['last_name'] );
+				if ( ! ContactPanda_Store::update_contact( $contact_id, $payload ) ) {
+					return new WP_Error( 'contactpanda_optin_save', __( 'The newsletter subscription could not be saved.', 'contactpanda' ) );
+				}
 			}
 			ContactPanda_Store::record_consent( $contact_id, 'granted', $source, $date, $proof );
 			if ( class_exists( 'ContactPanda_Newsletter_Schema' ) ) {

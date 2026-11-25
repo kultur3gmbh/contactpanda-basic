@@ -4,7 +4,7 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.9.121
+Stable tag: 0.9.122
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -42,6 +42,10 @@ To reproduce an expanded copy, use Prettier 3.6.2 with parser babel, singleQuote
 The WordPress.org distribution is prepared for community translations through translate.wordpress.org. Existing PO/MO catalogs remain maintained for separate distributions and are omitted only from the WordPress.org package. Before a WordPress language pack is available, untranslated strings fall back to English.
 
 == Changelog ==
+
+= 0.9.122 =
+* Simplify the standard newsletter signup with optional name fields, a privacy link, and one consent checkbox.
+* Keep existing profile names when newsletter subscribers confirm without supplying names.
 
 = 0.9.121 =
 * Enable confirmation buttons after salutation review and company contact selection.

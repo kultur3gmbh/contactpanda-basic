@@ -10743,3 +10743,24 @@ msgstr ""
 
 msgid "Select an import and preview it first."
 msgstr ""
+
+msgid "Privacy notice"
+msgstr ""
+
+msgid "I would like to receive the newsletter from {site_name} by email. I can unsubscribe at any time."
+msgstr ""
+
+msgid "Show first name"
+msgstr ""
+
+msgid "Show last name"
+msgstr ""
+
+msgid "Privacy link label"
+msgstr ""
+
+msgid "Select a privacy policy page to show the link on the signup form."
+msgstr ""
+
+msgid "Use {site_name} to insert the newsletter sender. This checkbox is required."
+msgstr ""

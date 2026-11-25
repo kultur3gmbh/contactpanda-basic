@@ -9702,3 +9702,24 @@ msgstr "%1$d neu, %2$d aktualisiert, %3$d übersprungen, %4$d Fehler."
 
 msgid "Select an import and preview it first."
 msgstr "Wählen Sie einen Import und öffnen Sie zuerst seine Vorschau."
+
+msgid "Privacy notice"
+msgstr "Datenschutzhinweise"
+
+msgid "I would like to receive the newsletter from {site_name} by email. I can unsubscribe at any time."
+msgstr "Ich möchte den Newsletter von {site_name} per E-Mail erhalten. Ich kann mich jederzeit abmelden."
+
+msgid "Show first name"
+msgstr "Vorname anzeigen"
+
+msgid "Show last name"
+msgstr "Nachname anzeigen"
+
+msgid "Privacy link label"
+msgstr "Beschriftung des Datenschutzlinks"
+
+msgid "Select a privacy policy page to show the link on the signup form."
+msgstr "Wählen Sie eine Seite mit Datenschutzhinweisen, damit der Link im Anmeldeformular erscheint."
+
+msgid "Use {site_name} to insert the newsletter sender. This checkbox is required."
+msgstr "Verwenden Sie {site_name} für den Absender. Dieses Kontrollkästchen ist ein Pflichtfeld."
