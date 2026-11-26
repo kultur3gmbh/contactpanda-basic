@@ -3930,6 +3930,22 @@ msgid "ContactPanda can add a Hide link to non-critical promotional, license-key
 msgstr "ContactPanda kann bei unkritischen Werbe-, Lizenzschlüssel- und Upgrade-Hinweisen einen Link zum Ausblenden ergänzen. Fehlermeldungen, Sicherheitswarnungen und WordPress-Core-Updates werden niemals ausgeblendet."
 
 #: contactpanda/includes/class-contactpanda-data-tools.php
+msgid "Display of admin notices"
+msgstr "Anzeige der Admin-Hinweise"
+
+#: contactpanda/includes/class-contactpanda-data-tools.php
+msgid "Show all admin notices"
+msgstr "Alle Admin-Hinweise anzeigen"
+
+#: contactpanda/includes/class-contactpanda-data-tools.php
+msgid "Allow hiding non-critical admin notices"
+msgstr "Ausblenden unkritischer Admin-Hinweise erlauben"
+
+#: contactpanda/includes/class-contactpanda-data-tools.php
+msgid "Switching to “Show all admin notices” automatically restores notices previously hidden for your user account. Security, error, legal, and WordPress core notices can never be hidden."
+msgstr "„Alle Admin-Hinweise anzeigen“ blendet die zuvor für Ihr Benutzerkonto ausgeblendeten Hinweise wieder ein. Sicherheitswarnungen, Fehlermeldungen, rechtliche Hinweise und Hinweise des WordPress-Kerns bleiben immer sichtbar."
+
+#: contactpanda/includes/class-contactpanda-data-tools.php
 msgid "Allow me to hide non-critical reminders"
 msgstr "Ausblenden unkritischer Hinweise erlauben"
 
