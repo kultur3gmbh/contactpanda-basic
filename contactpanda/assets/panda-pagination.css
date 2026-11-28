@@ -1,0 +1,47 @@
+.panda-pagination {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+	margin: 14px 0;
+}
+
+.panda-pagination-steps {
+	display: inline-flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.panda-pagination .button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--panda-button-gap, 6px);
+	min-height: var(--panda-button-height, 42px);
+	white-space: nowrap;
+}
+
+.panda-pagination .button:disabled {
+	opacity: .5;
+	cursor: default;
+}
+
+.panda-pagination-summary {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	white-space: nowrap;
+}
+
+.panda-pagination-summary select {
+	width: auto;
+	min-height: var(--panda-button-height, 42px);
+}
+
+@media (max-width: 782px) {
+	.panda-pagination {
+		justify-content: flex-start;
+	}
+}

@@ -34,6 +34,8 @@
 		var search = wrapper.querySelector('.contactpanda-select-search'), select = wrapper.querySelector('select');
 		if (!search || !select) return;
 		wrapper.classList.add('is-enhanced');
+		search.setAttribute('form', '');
+		search.inputMode = 'search';
 		var toggle = document.createElement('button'); toggle.type = 'button'; toggle.className = 'contactpanda-searchable-toggle'; toggle.setAttribute('aria-expanded', 'false');
 		var toggleText = document.createElement('span'); var toggleIcon = document.createElement('span'); toggleIcon.className = 'dashicons dashicons-arrow-down-alt2'; toggle.appendChild(toggleText); toggle.appendChild(toggleIcon);
 		var panel = document.createElement('div'); panel.className = 'contactpanda-searchable-panel'; panel.hidden = true;
@@ -42,7 +44,7 @@
 		function renderOptions() {
 			var query = search.value.trim().toLocaleLowerCase(), found = 0; options.replaceChildren();
 			Array.prototype.forEach.call(select.options, function (option) {
-				if (query && option.text.toLocaleLowerCase().indexOf(query) === -1 && option.value !== select.value) return;
+				if (query && option.text.toLocaleLowerCase().indexOf(query) === -1) return;
 				var button = document.createElement('button'); button.type = 'button'; button.className = 'contactpanda-searchable-option' + (option.value === select.value ? ' is-selected' : ''); button.textContent = option.text; button.dataset.value = option.value;
 				button.addEventListener('click', function () { select.value = button.dataset.value; updateToggle(); select.dispatchEvent(new Event('change', {bubbles:true})); search.value = ''; panel.hidden = true; toggle.setAttribute('aria-expanded', 'false'); toggle.focus(); }); options.appendChild(button); found += 1;
 			});
@@ -52,7 +54,24 @@
 		toggle.addEventListener('click', function () { panel.hidden = !panel.hidden; toggle.setAttribute('aria-expanded', panel.hidden ? 'false' : 'true'); if (!panel.hidden) { search.value = ''; renderOptions(); search.focus(); } });
 		search.addEventListener('input', renderOptions);
 		select.addEventListener('change', updateToggle);
-		search.addEventListener('keydown', function (event) { if (event.key === 'Escape') { panel.hidden = true; toggle.setAttribute('aria-expanded', 'false'); toggle.focus(); } });
+		panel.addEventListener('keydown', function (event) {
+			if (event.key === 'Escape') {
+				event.preventDefault();
+				panel.hidden = true;
+				toggle.setAttribute('aria-expanded', 'false');
+				toggle.focus();
+			} else if (event.target === search && !event.isComposing && event.key === 'Enter') {
+				event.preventDefault();
+				options.querySelector('button')?.click();
+			} else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+				var items = Array.from(options.querySelectorAll('button'));
+				var index = items.indexOf(event.target);
+				var next = event.key === 'ArrowDown' ? index + 1 : index - 1;
+				event.preventDefault();
+				if (next < 0) search.focus();
+				else items[Math.min(next, items.length - 1)]?.focus();
+			}
+		});
 	});
 	var templateSelect = form.elements.template_id;
 	function copyTemplateSubject() { var option = templateSelect && templateSelect.options[templateSelect.selectedIndex]; if (option && option.dataset.subject && form.elements.subject) form.elements.subject.value = option.dataset.subject; }

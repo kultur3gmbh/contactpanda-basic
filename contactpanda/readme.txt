@@ -4,7 +4,7 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.9.124
+Stable tag: 0.9.125
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -12,7 +12,7 @@ Manage people, companies, consent, newsletters and customer history directly in 
 
 == Description ==
 
-ContactPanda Basic provides an independent contact and company database for WordPress. It provides read-only Groundhogg previews and a migration assistant, presents WooCommerce customer and order summaries without changing source orders, and reads supported event and ticket systems without modifying their records.
+ContactPanda Basic provides an independent contact and company database for WordPress. It provides a migration assistant with read-only previews of Groundhogg records, presents WooCommerce customer and order summaries without changing source orders, and reads supported event and ticket systems without modifying their records.
 
 Optional integrations are detected at runtime and remain hidden when their source plugin is unavailable. ContactPanda Basic remains fully usable without a paid ContactPanda extension.
 
@@ -42,6 +42,13 @@ To reproduce an expanded copy, use Prettier 3.6.2 with parser babel, singleQuote
 The WordPress.org distribution is prepared for community translations through translate.wordpress.org. Existing PO/MO catalogs remain maintained for separate distributions and are omitted only from the WordPress.org package. Before a WordPress language pack is available, untranslated strings fall back to English.
 
 == Changelog ==
+
+= 0.9.125 =
+* Close the image toolbar when switching blocks and add optional image links to emails.
+* Enable publishing after the first successful draft save.
+* Distinguish emails from saved templates, show the saved state with a star, and keep the current list after saving a template.
+* Match the people-list Trash action to the Edit and View actions.
+* Add a page picker to shared list navigation and distinguish search-only inputs from form fields.
 
 = 0.9.124 =
 * Translate the admin notice settings into German and improve the field and help text layout.

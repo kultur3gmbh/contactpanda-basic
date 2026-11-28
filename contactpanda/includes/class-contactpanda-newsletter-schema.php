@@ -13,7 +13,7 @@ final class ContactPanda_Newsletter_Schema {
 	private static $table_cache = array();
 	private static $column_cache = array();
 
-	const VERSION = '1.3.0';
+	const VERSION = '1.4.0';
 	const VERSION_OPTION = 'contactpanda_newsletter_db_version';
 
 	public static function table_names() {
@@ -135,12 +135,15 @@ final class ContactPanda_Newsletter_Schema {
 			content_width smallint unsigned NOT NULL DEFAULT 600,
 			external_source varchar(60) NOT NULL DEFAULT '',
 			external_id bigint(20) unsigned NOT NULL DEFAULT 0,
+			gallery_source_id bigint(20) unsigned DEFAULT NULL,
 			imported_readonly tinyint(1) unsigned NOT NULL DEFAULT 0,
 			created_by bigint(20) unsigned DEFAULT NULL,
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
 			PRIMARY KEY  (id),
+			UNIQUE KEY gallery_source_id (gallery_source_id),
 			KEY source_object (external_source,external_id),
+			KEY gallery_name (status,name),
 			KEY status (status),
 			KEY updated_at (updated_at)
 		) $charset;";
@@ -261,8 +264,38 @@ final class ContactPanda_Newsletter_Schema {
 		if ( $status['total'] !== $status['count'] || ! self::required_columns_exist() ) {
 			return new WP_Error( 'contactpanda_newsletter_schema_incomplete', __( 'ContactPanda could not create all required newsletter tables.', 'contactpanda' ) );
 		}
+		if ( $status['version'] && version_compare( $status['version'], '1.4.0', '<' ) ) {
+			self::link_existing_gallery_copies( $t['templates'] );
+		}
 		update_option( self::VERSION_OPTION, self::VERSION, false );
 		return true;
+	}
+
+	private static function link_existing_gallery_copies( $table ) {
+		global $wpdb;
+		// Older copies did not store their source. Match only unchanged snapshots with a single possible source.
+		$copies = $wpdb->get_results( $wpdb->prepare(
+			"SELECT gallery.id, MIN(source.id) AS source_id
+			FROM %i AS gallery
+			INNER JOIN %i AS source ON source.id < gallery.id AND source.name = gallery.name
+			WHERE gallery.status = 'template' AND gallery.gallery_source_id IS NULL
+				AND source.status NOT IN ('template','deleted')
+				AND source.created_at <= gallery.created_at AND source.updated_at <= gallery.created_at
+				AND HEX(source.name) = HEX(gallery.name) AND HEX(source.subject) = HEX(gallery.subject)
+				AND COALESCE(HEX(source.content_json), '') = COALESCE(HEX(gallery.content_json), '')
+				AND COALESCE(HEX(source.content_html), '') = COALESCE(HEX(gallery.content_html), '')
+			GROUP BY gallery.id HAVING COUNT(*) = 1 ORDER BY gallery.id",
+			$table,
+			$table
+		), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time migration of plugin-owned template metadata.
+		$linked = array_fill_keys( $wpdb->get_col( $wpdb->prepare( 'SELECT gallery_source_id FROM %i WHERE gallery_source_id IS NOT NULL', $table ) ), true ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time migration of plugin-owned template metadata.
+		foreach ( (array) $copies as $copy ) {
+			$source = (int) $copy['source_id'];
+			if ( ! isset( $linked[ $source ] ) ) {
+				$wpdb->update( $table, array( 'gallery_source_id' => $source ), array( 'id' => (int) $copy['id'], 'gallery_source_id' => null ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- One-time migration of plugin-owned template metadata.
+				$linked[ $source ] = true;
+			}
+		}
 	}
 
 	public static function drop_all() {
@@ -285,7 +318,7 @@ final class ContactPanda_Newsletter_Schema {
 	private static function required_columns_exist() {
 		$t = self::table_names();
 		$required = array(
-			'templates'       => array( 'content_json', 'content_html', 'status' ),
+			'templates'       => array( 'content_json', 'content_html', 'status', 'gallery_source_id' ),
 			'segments'        => array( 'entity_type', 'relation_mode', 'rules_json' ),
 			'campaign_groups' => array( 'name', 'description' ),
 			'campaigns'       => array( 'segment_id', 'manual_contact_ids', 'audience_mode', 'audience_source', 'recipient_search', 'ignore_marketing_consent', 'from_email', 'status', 'subject_b', 'ab_test_percent', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content' ),

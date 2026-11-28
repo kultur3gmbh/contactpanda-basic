@@ -5288,9 +5288,6 @@ msgid "Create new search"
 msgstr "Neue Suche erstellen"
 
 #: contactpanda/includes/class-contactpanda-newsletters.php:499
-msgid "Create reusable, responsive email templates independently of Groundhogg."
-msgstr "Erstellen Sie wiederverwendbare, responsive E-Mail-Vorlagen unabhängig von Groundhogg."
-
 #: contactpanda/includes/class-contactpanda-newsletters.php:499
 msgid "Create template"
 msgstr "Vorlage erstellen"
@@ -9739,3 +9736,198 @@ msgstr "Wählen Sie eine Seite mit Datenschutzhinweisen, damit der Link im Anmel
 
 msgid "Use {site_name} to insert the newsletter sender. This checkbox is required."
 msgstr "Verwenden Sie {site_name} für den Absender. Dieses Kontrollkästchen ist ein Pflichtfeld."
+
+msgid "A new email draft was created."
+msgstr "Ein neuer E-Mail-Entwurf wurde erstellt."
+
+msgid "Archive email"
+msgstr "E-Mail archivieren"
+
+msgid "Back to Emails & Templates"
+msgstr "Zurück zu E-Mails & Vorlagen"
+
+msgid "Company management is unavailable because the source company module is inactive."
+msgstr "Die Firmenverwaltung ist nicht verfügbar, weil das Firmenmodul des Quellsystems inaktiv ist."
+
+msgid "Contact from source system"
+msgstr "Kontakt aus dem Quellsystem"
+
+msgid "Contacts, company relationships, and marketing status in one view."
+msgstr "Kontakte, Firmenbeziehungen und Marketingstatus auf einen Blick."
+
+msgid "Contacts, orders, and marketing status in one view."
+msgstr "Kontakte, Bestellungen und Marketingstatus auf einen Blick."
+
+msgid "Create an email or change the search."
+msgstr "Erstellen Sie eine E-Mail oder ändern Sie die Suche."
+
+msgid "Create email"
+msgstr "E-Mail erstellen"
+
+msgid "Create reusable, responsive emails and save them as templates."
+msgstr "Erstellen Sie responsive E-Mails und speichern Sie sie als wiederverwendbare Vorlagen."
+
+msgid "Custom fields are managed by the selected source system."
+msgstr "Das ausgewählte Quellsystem verwaltet die individuellen Felder."
+
+msgid "Duplicate email"
+msgstr "E-Mail duplizieren"
+
+msgid "Edit email"
+msgstr "E-Mail bearbeiten"
+
+msgid "Email name"
+msgstr "Name der E-Mail"
+
+msgid "Email name and subject are required."
+msgstr "Name und Betreff der E-Mail sind erforderlich."
+
+msgid "Emails & Templates"
+msgstr "E-Mails & Vorlagen"
+
+msgid "Emails already sent in a broadcast are read only. Create an editable copy instead."
+msgstr "Bereits versendete E-Mails sind schreibgeschützt. Erstellen Sie eine bearbeitbare Kopie."
+
+msgid "Emails that are or were used cannot be archived."
+msgstr "E-Mails in laufenden oder früheren Aussendungen oder Automatisierungen können nicht archiviert werden."
+
+msgid "Filter options"
+msgstr "Auswahl filtern"
+
+msgid "Groundhogg migration"
+msgstr "Groundhogg-Migration"
+
+msgid "Groundhogg migration preview"
+msgstr "Vorschau der Groundhogg-Migration"
+
+msgid "Image link (optional)"
+msgstr "Link-Ziel (optional)"
+
+msgid "Imported emails are read-only. Create an editable copy to change the content."
+msgstr "Importierte E-Mails sind schreibgeschützt. Erstellen Sie zum Bearbeiten eine Kopie."
+
+msgid "Jump to page"
+msgstr "Zur Seite springen"
+
+msgid "Migration source"
+msgstr "Migrationsquelle"
+
+msgid "Migration source ID"
+msgstr "ID der Migrationsquelle"
+
+msgid "My Emails"
+msgstr "Meine E-Mails"
+
+msgid "No emails found"
+msgstr "Keine E-Mails gefunden"
+
+msgid "No saved templates found"
+msgstr "Keine gespeicherten Vorlagen gefunden"
+
+msgid "Only ContactPanda records are affected. WordPress users, orders, invoices, events, and source records are kept."
+msgstr "Nur ContactPanda-Datensätze sind betroffen. WordPress-Benutzer, Bestellungen, Rechnungen, Veranstaltungen und Quelldatensätze bleiben erhalten."
+
+msgid "Page %1$s of %2$s"
+msgstr "Seite %1$s von %2$s"
+
+msgid "Permanently delete ContactPanda customer data when uninstalling? Data from connected plugins will be kept."
+msgstr "ContactPanda-Kundendaten bei der Deinstallation endgültig löschen? Daten verbundener Plugins bleiben erhalten."
+
+msgid "Permanently delete all data from the ContactPanda database now? WordPress, WooCommerce, invoices, events, and external source records will remain untouched."
+msgstr "Jetzt alle Daten aus der ContactPanda-Datenbank endgültig löschen? WordPress, WooCommerce, Rechnungen, Veranstaltungen und externe Quelldatensätze bleiben erhalten."
+
+msgid "Protected migration email archive"
+msgstr "Geschütztes E-Mail-Migrationsarchiv"
+
+msgid "Record merging is available in standalone ContactPanda mode. Merge external records in the source system."
+msgstr "Das Zusammenführen ist im eigenständigen ContactPanda-Modus verfügbar. Externe Datensätze führen Sie im Quellsystem zusammen."
+
+msgid "Save a draft before publishing."
+msgstr "Speichern Sie zuerst einen Entwurf."
+
+msgid "Save an email as a template from My Emails."
+msgstr "Speichern Sie unter „Meine E-Mails“ eine E-Mail als Vorlage."
+
+msgid "Save as a template"
+msgstr "Als Vorlage speichern"
+
+msgid "Saved Templates"
+msgstr "Gespeicherte Vorlagen"
+
+msgid "Saved as a template"
+msgstr "Als Vorlage gespeichert"
+
+msgid "Search emails"
+msgstr "E-Mails durchsuchen"
+
+msgid "Search saved templates"
+msgstr "Gespeicherte Vorlagen durchsuchen"
+
+msgid "Source ID %d"
+msgstr "Quell-ID %d"
+
+msgid "Source company module"
+msgstr "Firmenmodul des Quellsystems"
+
+msgid "Source system"
+msgstr "Quellsystem"
+
+msgid "The ContactPanda database tables are missing or need an update. This operation only affects ContactPanda tables."
+msgstr "Die ContactPanda-Datenbanktabellen fehlen oder müssen aktualisiert werden. Der Vorgang betrifft nur ContactPanda-Tabellen."
+
+msgid "The email action could not be completed."
+msgstr "Die Aktion für die E-Mail konnte nicht ausgeführt werden."
+
+msgid "The email could not be saved."
+msgstr "Die E-Mail konnte nicht gespeichert werden."
+
+msgid "The email was archived."
+msgstr "Die E-Mail wurde archiviert."
+
+msgid "The email was not found."
+msgstr "Die E-Mail wurde nicht gefunden."
+
+msgid "The email was saved as a template."
+msgstr "Die E-Mail wurde als Vorlage gespeichert."
+
+msgid "The email was saved."
+msgstr "Die E-Mail wurde gespeichert."
+
+msgid "The selected migration source is inactive. ContactPanda has kept the current source setting."
+msgstr "Die ausgewählte Migrationsquelle ist inaktiv. ContactPanda hat die aktuelle Einstellung beibehalten."
+
+msgid "The source system could not change the marketing status."
+msgstr "Das Quellsystem konnte den Marketingstatus nicht ändern."
+
+msgid "The source system could not change the tag assignment."
+msgstr "Das Quellsystem konnte die Tag-Zuordnung nicht ändern."
+
+msgid "The source system could not create the tag."
+msgstr "Das Quellsystem konnte den Tag nicht anlegen."
+
+msgid "The source system could not save the change."
+msgstr "Das Quellsystem konnte die Änderung nicht speichern."
+
+msgid "The source system is unavailable. No user account was created."
+msgstr "Das Quellsystem ist nicht verfügbar. Es wurde kein Benutzerkonto erstellt."
+
+msgid "The source system returned no companies."
+msgstr "Das Quellsystem hat keine Firmen gefunden."
+
+msgid "The user account could not be linked to the source record. The new account was rolled back."
+msgstr "Das Benutzerkonto konnte nicht mit dem Quelldatensatz verknüpft werden. Die Kontoanlage wurde rückgängig gemacht."
+
+msgid "This email is already saved as a template."
+msgstr "Diese E-Mail ist bereits als Vorlage gespeichert."
+
+msgid "This email is still used by a broadcast or automation and cannot be archived."
+msgstr "Diese E-Mail wird noch in einer Aussendung oder Automatisierung verwendet und kann nicht archiviert werden."
+
+msgid "This imported original is read only. Duplicate it to create an editable ContactPanda email."
+msgstr "Das importierte Original ist schreibgeschützt. Duplizieren Sie es als bearbeitbare ContactPanda-E-Mail."
+
+msgid "Trash is available only for standalone ContactPanda records."
+msgstr "Der Papierkorb steht für eigenständige ContactPanda-Datensätze zur Verfügung."
+
+msgid "View email"
+msgstr "E-Mail ansehen"

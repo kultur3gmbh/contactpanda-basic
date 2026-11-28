@@ -108,13 +108,13 @@ final class ContactPanda_Trash {
 	public static function render() {
 		if ( ! current_user_can( 'manage_options' ) ) wp_die( esc_html__( 'This action requires an administrator and standalone ContactPanda mode.', 'contactpanda' ) );
 		echo '<div class="wrap"><h1>' . esc_html__( 'Trash', 'contactpanda' ) . '</h1>';
-		if ( ! self::available() ) { echo '<p>' . esc_html__( 'Trash is available only for standalone ContactPanda records. Groundhogg records cannot be deleted here.', 'contactpanda' ) . '</p></div>'; return; }
+		if ( ! self::available() ) { echo '<p>' . esc_html__( 'Trash is available only for standalone ContactPanda records.', 'contactpanda' ) . '</p></div>'; return; }
 		$entity = isset( $_GET['entity'] ) && 'companies' === $_GET['entity'] ? 'companies' : 'contacts'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Administrator-only display of sanitized trash filters/notices; changes run in handle() with capability, nonce and explicit purge confirmation.
 		$trashed = true;
 		$page = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Administrator-only display of sanitized trash filters/notices; changes run in handle() with capability, nonce and explicit purge confirmation.
 		$id = isset( $_GET['record'] ) ? absint( $_GET['record'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Administrator-only display of sanitized trash filters/notices; changes run in handle() with capability, nonce and explicit purge confirmation.
 		$search = isset( $_GET['s'] ) && is_string( $_GET['s'] ) ? sanitize_text_field( wp_unslash( $_GET['s'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Administrator-only display of sanitized trash filters/notices; changes run in handle() with capability, nonce and explicit purge confirmation.
-		echo '<p>' . esc_html__( 'Only ContactPanda records are affected. WordPress users, orders, invoices, events, Groundhogg records and external source data are never deleted.', 'contactpanda' ) . '</p>';
+		echo '<p>' . esc_html__( 'Only ContactPanda records are affected. WordPress users, orders, invoices, events, and source records are kept.', 'contactpanda' ) . '</p>';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		if ( isset( $_GET['changed'], $_GET['failed'] ) ) echo '<div class="notice notice-info"><p>' . esc_html( sprintf( __( 'Changed: %1$d. Failed or no longer in the required state: %2$d.', 'contactpanda' ), absint( $_GET['changed'] ), absint( $_GET['failed'] ) ) ) . '</p></div>'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Administrator-only display of sanitized trash filters/notices; changes run in handle() with capability, nonce and explicit purge confirmation.
 		echo '<p class="description">' . esc_html__( 'Move records to Trash from the People or Companies list. This page only restores or permanently deletes records that are already in Trash.', 'contactpanda' ) . '</p>';

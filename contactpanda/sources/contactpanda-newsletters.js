@@ -1009,13 +1009,13 @@
 			card.dataset.pandaEditorElement = block.id;
 			card.draggable = block.type !== 'text';
 			var inlineTools = '';
-			if (block.id === selectedId && block.type === 'text') {
+			if (block.type === 'text') {
 				inlineTools =
 					'<div class="contactpanda-inline-text-toolbar"><button type="button" data-command="bold" title="Bold"><strong>B</strong></button><button type="button" data-command="italic" title="Italic"><em>I</em></button><button type="button" data-command="createLink" title="' +
 					escapeHtml(i18n.insertLink) +
 					'"><span class="dashicons dashicons-admin-links"></span></button><button type="button" data-command="insertUnorderedList" title="List"><span class="dashicons dashicons-editor-ul"></span></button><button type="button" data-command="insertOrderedList" title="Numbered list"><span class="dashicons dashicons-editor-ol"></span></button><button type="button" data-command="justifyLeft"><span class="dashicons dashicons-editor-alignleft"></span></button><button type="button" data-command="justifyCenter"><span class="dashicons dashicons-editor-aligncenter"></span></button><button type="button" data-command="justifyRight"><span class="dashicons dashicons-editor-alignright"></span></button></div>';
 			}
-			if (block.id === selectedId && block.type === 'image') {
+			if (block.type === 'image') {
 				inlineTools =
 					'<div class="contactpanda-inline-image-toolbar"><div class="contactpanda-inline-align"><button type="button" data-image-align="left"><span class="dashicons dashicons-editor-alignleft"></span></button><button type="button" data-image-align="center"><span class="dashicons dashicons-editor-aligncenter"></span></button><button type="button" data-image-align="right"><span class="dashicons dashicons-editor-alignright"></span></button></div><label><span>' +
 					escapeHtml(i18n.width) +
@@ -1106,21 +1106,31 @@
 					render();
 				});
 			});
+			function selectCard() {
+				if (selectedId === block.id) return;
+				selectedId = block.id;
+				inspectorTab = 'content';
+				container
+					.querySelectorAll('.contactpanda-newsletter-block.is-selected')
+					.forEach(function (item) {
+						item.classList.remove('is-selected');
+					});
+				card.classList.add('is-selected');
+				renderInspector();
+				sync();
+			}
+			if (block.type !== 'text') card.tabIndex = 0;
+			card.addEventListener('focusin', function (event) {
+				if (event.target.closest('.contactpanda-column-child')) return;
+				var changed = selectedId !== block.id;
+				selectCard();
+				var editor = card.closest('[data-panda-editor]');
+				if (changed && editor && window.PandaEditorUI) {
+					window.PandaEditorUI.switchPanel(editor, 'edit');
+				}
+			});
 			var inlineEditor = card.querySelector('[data-inline-editor]');
 			if (inlineEditor) {
-				inlineEditor.addEventListener('focus', function () {
-					if (selectedId === block.id) return;
-					selectedId = block.id;
-					inspectorTab = 'content';
-					container
-						.querySelectorAll('.contactpanda-newsletter-block.is-selected')
-						.forEach(function (item) {
-							item.classList.remove('is-selected');
-						});
-					card.classList.add('is-selected');
-					renderInspector();
-					sync();
-				});
 				inlineEditor.addEventListener('input', function () {
 					var rich = inlineEditor.querySelector('.contactpanda-canvas-text');
 					block.content = rich ? rich.innerHTML : inlineEditor.innerHTML;
@@ -1198,8 +1208,7 @@
 					)
 				)
 					return;
-				selectedId = block.id;
-				render();
+				selectCard();
 			});
 			card.addEventListener('dragstart', function (event) {
 				if (event.target.closest('.contactpanda-column-child')) return;
@@ -1890,6 +1899,11 @@
 			inspector.appendChild(
 				field(i18n.alternativeText, 'text', block.alt, function (value) {
 					block.alt = value;
+				}),
+			);
+			inspector.appendChild(
+				field(i18n.imageLink, 'url', block.link || '', function (value) {
+					block.link = value;
 				}),
 			);
 			inspector.appendChild(alignmentField(block));

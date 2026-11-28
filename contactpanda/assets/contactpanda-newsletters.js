@@ -209,10 +209,10 @@
 			card.className = 'contactpanda-newsletter-block' + (block.id === selectedId ? ' is-selected' : '');
 			card.dataset.id = block.id; card.dataset.pandaEditorElement = block.id; card.draggable = block.type !== 'text';
 			var inlineTools = '';
-			if (block.id === selectedId && block.type === 'text') {
+			if (block.type === 'text') {
 				inlineTools = '<div class="contactpanda-inline-text-toolbar"><button type="button" data-command="bold" title="Bold"><strong>B</strong></button><button type="button" data-command="italic" title="Italic"><em>I</em></button><button type="button" data-command="createLink" title="' + escapeHtml(i18n.insertLink) + '"><span class="dashicons dashicons-admin-links"></span></button><button type="button" data-command="insertUnorderedList" title="List"><span class="dashicons dashicons-editor-ul"></span></button><button type="button" data-command="insertOrderedList" title="Numbered list"><span class="dashicons dashicons-editor-ol"></span></button><button type="button" data-command="justifyLeft"><span class="dashicons dashicons-editor-alignleft"></span></button><button type="button" data-command="justifyCenter"><span class="dashicons dashicons-editor-aligncenter"></span></button><button type="button" data-command="justifyRight"><span class="dashicons dashicons-editor-alignright"></span></button></div>';
 			}
-			if (block.id === selectedId && block.type === 'image') {
+			if (block.type === 'image') {
 				inlineTools = '<div class="contactpanda-inline-image-toolbar"><div class="contactpanda-inline-align"><button type="button" data-image-align="left"><span class="dashicons dashicons-editor-alignleft"></span></button><button type="button" data-image-align="center"><span class="dashicons dashicons-editor-aligncenter"></span></button><button type="button" data-image-align="right"><span class="dashicons dashicons-editor-alignright"></span></button></div><label><span>' + escapeHtml(i18n.width) + ' (px oder %)</span><input type="text" data-image-width value="' + Number(block.width) + escapeHtml(block.width_unit) + '"></label></div>';
 			}
 			var editable = block.type === 'text' ? ' contenteditable="true" data-inline-editor="true"' : '';
@@ -233,14 +233,29 @@
 					if (!added || added.type === 'columns') return; var list = block.children[columnIndex], target = list.findIndex(function(item){return item.id === childId;}); list.splice(target < 0 ? list.length : target + (after ? 1 : 0), 0, added); selectedId = added.id; render();
 				});
 			});
+			function selectCard() {
+				if (selectedId === block.id) return;
+				selectedId = block.id;
+				inspectorTab = 'content';
+				container.querySelectorAll('.contactpanda-newsletter-block.is-selected').forEach(function (item) {
+					item.classList.remove('is-selected');
+				});
+				card.classList.add('is-selected');
+				renderInspector();
+				sync();
+			}
+			if (block.type !== 'text') card.tabIndex = 0;
+			card.addEventListener('focusin', function (event) {
+				if (event.target.closest('.contactpanda-column-child')) return;
+				var changed = selectedId !== block.id;
+				selectCard();
+				var editor = card.closest('[data-panda-editor]');
+				if (changed && editor && window.PandaEditorUI) {
+					window.PandaEditorUI.switchPanel(editor, 'edit');
+				}
+			});
 			var inlineEditor = card.querySelector('[data-inline-editor]');
 			if (inlineEditor) {
-				inlineEditor.addEventListener('focus', function () {
-					if (selectedId === block.id) return;
-					selectedId = block.id; inspectorTab = 'content';
-					container.querySelectorAll('.contactpanda-newsletter-block.is-selected').forEach(function (item) { item.classList.remove('is-selected'); });
-					card.classList.add('is-selected'); renderInspector(); sync();
-				});
 				inlineEditor.addEventListener('input', function () {
 					var rich = inlineEditor.querySelector('.contactpanda-canvas-text'); block.content = rich ? rich.innerHTML : inlineEditor.innerHTML; sync();
 					var instance = window.tinymce && tinymce.get(editorId); var plain = document.getElementById(editorId); syncingInline = true;
@@ -264,7 +279,7 @@
 					render(); return;
 				}
 				if (event.target.closest('[data-inline-editor], .contactpanda-inline-text-toolbar, .contactpanda-inline-image-toolbar')) return;
-				selectedId = block.id; render();
+				selectCard();
 			});
 			card.addEventListener('dragstart', function (event) { if (event.target.closest('.contactpanda-column-child')) return; draggedId = block.id; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', block.id); card.classList.add('is-dragging'); });
 			card.addEventListener('dragend', function () { draggedId = ''; card.classList.remove('is-dragging'); });
@@ -439,7 +454,11 @@
 				var plain = document.getElementById(editorId); if (plain) plain.addEventListener('input', function () { block.content = plain.value; sync(); renderCanvas(); });
 			}, 0);
 		} else if (block.type === 'image') {
-			inspector.appendChild(imagePickerField(i18n.image, block.url, block.attachment_id, function (image) { block.url = image ? image.url : ''; block.attachment_id = image ? image.id : 0; if (image && !block.alt) block.alt = image.alt || ''; render(); })); inspector.appendChild(field(i18n.alternativeText, 'text', block.alt, function (value) { block.alt = value; })); inspector.appendChild(alignmentField(block)); inspector.appendChild(field(i18n.width, 'text', String(block.width) + block.width_unit, function (value) { var match = String(value).trim().match(/^(\d+(?:\.\d+)?)\s*(%|px)$/i); if (!match) return; block.width_unit = match[2].toLowerCase(); block.width = Math.max(1, Math.min(block.width_unit === 'px' ? 760 : 100, Number(match[1]))); })); inspector.appendChild(captionFields(block));
+			inspector.appendChild(imagePickerField(i18n.image, block.url, block.attachment_id, function (image) { block.url = image ? image.url : ''; block.attachment_id = image ? image.id : 0; if (image && !block.alt) block.alt = image.alt || ''; render(); })); inspector.appendChild(field(i18n.alternativeText, 'text', block.alt, function (value) { block.alt = value; }));
+			inspector.appendChild(field(i18n.imageLink, 'url', block.link || '', function (value) {
+				block.link = value;
+			}));
+ inspector.appendChild(alignmentField(block)); inspector.appendChild(field(i18n.width, 'text', String(block.width) + block.width_unit, function (value) { var match = String(value).trim().match(/^(\d+(?:\.\d+)?)\s*(%|px)$/i); if (!match) return; block.width_unit = match[2].toLowerCase(); block.width = Math.max(1, Math.min(block.width_unit === 'px' ? 760 : 100, Number(match[1]))); })); inspector.appendChild(captionFields(block));
 		} else if (block.type === 'hero') {
 			inspector.appendChild(imagePickerField(i18n.image, block.image_url, block.image_id, function (image) { block.image_url = image ? image.url : ''; block.image_id = image ? image.id : 0; render(); })); inspector.appendChild(field(i18n.heroHeading, 'text', block.heading, function (value) { block.heading = value; })); inspector.appendChild(field(i18n.heroText, 'textarea', block.content, function (value) { block.content = value; })); inspector.appendChild(field(i18n.buttonLabel, 'text', block.button_label, function (value) { block.button_label = value; })); inspector.appendChild(field(i18n.targetUrl, 'url', block.button_url, function (value) { block.button_url = value; })); inspector.appendChild(colorField(i18n.overlayColor, block.overlay_color, function (value) { block.overlay_color = value; })); inspector.appendChild(field(i18n.overlayOpacity, 'number', block.overlay_opacity, function (value) { block.overlay_opacity = Math.max(0, Math.min(90, Number(value || 0))); })); inspector.appendChild(colorField(i18n.textColor, block.text_color, function (value) { block.text_color = value; })); inspector.appendChild(alignmentField(block));
 		} else if (block.type === 'social') {

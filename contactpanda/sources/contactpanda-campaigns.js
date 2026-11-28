@@ -39,6 +39,8 @@
 			select = wrapper.querySelector('select');
 		if (!search || !select) return;
 		wrapper.classList.add('is-enhanced');
+		search.setAttribute('form', '');
+		search.inputMode = 'search';
 		var toggle = document.createElement('button');
 		toggle.type = 'button';
 		toggle.className = 'contactpanda-searchable-toggle';
@@ -66,12 +68,7 @@
 				found = 0;
 			options.replaceChildren();
 			Array.prototype.forEach.call(select.options, function (option) {
-				if (
-					query &&
-					option.text.toLocaleLowerCase().indexOf(query) === -1 &&
-					option.value !== select.value
-				)
-					return;
+				if (query && option.text.toLocaleLowerCase().indexOf(query) === -1) return;
 				var button = document.createElement('button');
 				button.type = 'button';
 				button.className =
@@ -109,11 +106,22 @@
 		});
 		search.addEventListener('input', renderOptions);
 		select.addEventListener('change', updateToggle);
-		search.addEventListener('keydown', function (event) {
+		panel.addEventListener('keydown', function (event) {
 			if (event.key === 'Escape') {
+				event.preventDefault();
 				panel.hidden = true;
 				toggle.setAttribute('aria-expanded', 'false');
 				toggle.focus();
+			} else if (event.target === search && !event.isComposing && event.key === 'Enter') {
+				event.preventDefault();
+				options.querySelector('button')?.click();
+			} else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+				var items = Array.from(options.querySelectorAll('button'));
+				var index = items.indexOf(event.target);
+				var next = event.key === 'ArrowDown' ? index + 1 : index - 1;
+				event.preventDefault();
+				if (next < 0) search.focus();
+				else items[Math.min(next, items.length - 1)]?.focus();
 			}
 		});
 	});

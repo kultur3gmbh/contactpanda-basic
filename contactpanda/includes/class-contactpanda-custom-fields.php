@@ -236,7 +236,7 @@ final class ContactPanda_Custom_Fields {
 
 	public static function handle_save_definition() {
 		if ( ! current_user_can( 'manage_options' ) ) wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ), '', array( 'response' => 403 ) );
-		if ( ! ContactPanda_Store::standalone() ) wp_die( esc_html__( 'Custom fields are managed by Groundhogg while Groundhogg is the leading data source.', 'contactpanda' ), '', array( 'response' => 403 ) );
+		if ( ! ContactPanda_Store::standalone() ) wp_die( esc_html__( 'Custom fields are managed by the selected source system.', 'contactpanda' ), '', array( 'response' => 403 ) );
 		check_admin_referer( 'contactpanda_save_custom_field' );
 		$id = sanitize_key( wp_unslash( $_POST['field_id'] ?? '' ) );
 		$key = sanitize_key( wp_unslash( $_POST['field_key'] ?? '' ) );
@@ -271,7 +271,7 @@ final class ContactPanda_Custom_Fields {
 
 	public static function handle_delete_definition() {
 		if ( ! current_user_can( 'manage_options' ) ) wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ), '', array( 'response' => 403 ) );
-		if ( ! ContactPanda_Store::standalone() ) wp_die( esc_html__( 'Custom fields are managed by Groundhogg while Groundhogg is the leading data source.', 'contactpanda' ), '', array( 'response' => 403 ) );
+		if ( ! ContactPanda_Store::standalone() ) wp_die( esc_html__( 'Custom fields are managed by the selected source system.', 'contactpanda' ), '', array( 'response' => 403 ) );
 		$id = sanitize_key( wp_unslash( $_POST['field_id'] ?? '' ) );
 		check_admin_referer( 'contactpanda_delete_custom_field_' . $id );
 		if ( '1' !== sanitize_key( wp_unslash( $_POST['confirmed'] ?? '' ) ) ) wp_die( esc_html__( 'Confirm the deletion first.', 'contactpanda' ), '', array( 'response' => 400 ) );
@@ -354,7 +354,7 @@ final class ContactPanda_Custom_Fields {
 
 	public static function handle_save_values() {
 		if ( ! current_user_can( 'edit_users' ) && ! current_user_can( 'manage_options' ) ) wp_die( esc_html__( 'You do not have permission.', 'contactpanda' ), '', array( 'response' => 403 ) );
-		if ( ! ContactPanda_Store::standalone() ) wp_die( esc_html__( 'Custom fields are managed by Groundhogg while Groundhogg is the leading data source.', 'contactpanda' ), '', array( 'response' => 403 ) );
+		if ( ! ContactPanda_Store::standalone() ) wp_die( esc_html__( 'Custom fields are managed by the selected source system.', 'contactpanda' ), '', array( 'response' => 403 ) );
 		$entity = self::normalize_entity( sanitize_key( wp_unslash( $_POST['entity'] ?? 'contacts' ) ) );
 		$id = absint( $_POST['record_id'] ?? 0 );
 		check_admin_referer( 'contactpanda_save_custom_values_' . $entity . '_' . $id );

@@ -535,7 +535,7 @@ final class ContactPanda_Data_Tools {
 	}
 
 	private static function render_merge_tool() {
-		if ( ! ContactPanda_Store::standalone() ) { echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Merge duplicates', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Record merging is available in standalone ContactPanda mode. Groundhogg records must be merged in Groundhogg so its source identifiers remain authoritative.', 'contactpanda' ) . '</p></section>'; return; }
+		if ( ! ContactPanda_Store::standalone() ) { echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Merge duplicates', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Record merging is available in standalone ContactPanda mode. Merge external records in the source system.', 'contactpanda' ) . '</p></section>'; return; }
 		$counts = ContactPanda_Store::counts();
 		if ( empty( $counts['contacts'] ) && empty( $counts['companies'] ) ) return;
 		$token = isset( $_GET['merge_token'] ) ? sanitize_key( wp_unslash( $_GET['merge_token'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- opaque transient reference.

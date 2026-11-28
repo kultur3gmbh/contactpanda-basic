@@ -762,8 +762,8 @@ The link is valid for 24 hours.',
 		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Leading data source', 'contactpanda' ) . '</h2><p>' . esc_html__( 'Only one system may be the leading source for contacts, companies, tags, and consent data.', 'contactpanda' ) . '</p><div class="contactpanda-source-options">';
 		$standalone_ready = ContactPanda_Store::ready();
 		echo '<label class="contactpanda-source-option' . ( $standalone_ready ? '' : ' is-disabled' ) . '"><input type="radio" name="' . esc_attr( self::GENERAL_OPTION ) . '[data_source]" value="standalone"' . checked( 'standalone', $settings['data_source'], false ) . ( $standalone_ready ? '' : ' disabled' ) . '><span><strong>' . esc_html__( 'ContactPanda database', 'contactpanda' ) . '</strong><small>' . esc_html__( 'ContactPanda stores independent changes in its own database. Groundhogg remains unchanged. A later reverse migration to Groundhogg is not provided.', 'contactpanda' ) . '</small></span></label>';
-		if ( $groundhogg ) echo '<label class="contactpanda-source-option"><input type="radio" name="' . esc_attr( self::GENERAL_OPTION ) . '[data_source]" value="groundhogg"' . checked( 'groundhogg', $settings['data_source'], false ) . '><span><strong>' . esc_html__( 'Groundhogg read-only preview', 'contactpanda' ) . '</strong><small>' . esc_html__( 'Preview existing Groundhogg records without changing them. Migrate to the ContactPanda database to edit contacts, forms and templates.', 'contactpanda' ) . '</small></span></label>';
-		elseif ( 'groundhogg' === $settings['data_source'] ) echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'Groundhogg is configured as the data source but is currently inactive. ContactPanda has not switched the data source automatically.', 'contactpanda' ) . '</p></div>';
+		if ( $groundhogg ) echo '<label class="contactpanda-source-option"><input type="radio" name="' . esc_attr( self::GENERAL_OPTION ) . '[data_source]" value="groundhogg"' . checked( 'groundhogg', $settings['data_source'], false ) . '><span><strong>' . esc_html__( 'Groundhogg migration preview', 'contactpanda' ) . '</strong><small>' . esc_html__( 'Preview existing Groundhogg records without changing them. Migrate to the ContactPanda database to edit contacts, forms and templates.', 'contactpanda' ) . '</small></span></label>';
+		elseif ( 'groundhogg' === $settings['data_source'] ) echo '<div class="notice notice-warning inline"><p>' . esc_html__( 'The selected migration source is inactive. ContactPanda has kept the current source setting.', 'contactpanda' ) . '</p></div>';
 		/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 		echo '</div><p class="description">' . esc_html( sprintf( __( '%1$d of %2$d ContactPanda database tables are present. Schema version: %3$s.', 'contactpanda' ), $schema['count'], $schema['total'], $schema['version'] ?: __( 'unknown', 'contactpanda' ) ) ) . '</p>';
 		submit_button( __( 'Save data source', 'contactpanda' ) ); echo '</section></form>';
@@ -1338,7 +1338,7 @@ The link is valid for 24 hours.',
 
 	private static function render_integrations_settings() {
 		$sections = array( 'woocommerce' => 'WooCommerce', 'messaging' => __( 'SMS and WhatsApp gateways', 'contactpanda' ) );
-		if ( self::groundhogg_active() || file_exists( WP_PLUGIN_DIR . '/groundhogg/groundhogg.php' ) ) $sections['groundhogg'] = 'Groundhogg';
+		if ( self::groundhogg_active() || file_exists( WP_PLUGIN_DIR . '/groundhogg/groundhogg.php' ) ) $sections['groundhogg'] = __( 'Groundhogg migration', 'contactpanda' );
 		$sections = (array) apply_filters( 'contactpanda_integration_sections', $sections );
 		$current = isset( $_GET['integration_section'] ) ? sanitize_key( wp_unslash( $_GET['integration_section'] ) ) : 'woocommerce'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- navigation only.
 		if ( 'email' === $current ) { ContactPanda_Basic_Newsletters::render_settings(); return; }
@@ -1354,7 +1354,7 @@ The link is valid for 24 hours.',
 			if ( self::groundhogg_active() ) {
 			$settings = self::general_settings();
 			$leading = 'groundhogg' === $settings['data_source'];
-			echo '<section class="contactpanda-card contactpanda-settings-card"><h2>Groundhogg</h2><p>' . esc_html( $leading ? __( 'Groundhogg is active and is currently the leading contact data source.', 'contactpanda' ) : __( 'Groundhogg is active but is currently not the leading contact data source.', 'contactpanda' ) ) . '</p><p>' . esc_html( $leading ? __( 'Groundhogg records are read-only. Editing and ongoing synchronization are not available. Use the migration assistant to create independent ContactPanda records.', 'contactpanda' ) : __( 'ContactPanda now stores new changes in its own database. These standalone changes cannot be migrated back to Groundhogg.', 'contactpanda' ) ) . '</p></section>';
+			echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'Groundhogg migration', 'contactpanda' ) . '</h2><p>' . esc_html( $leading ? __( 'Groundhogg is active and is currently the leading contact data source.', 'contactpanda' ) : __( 'Groundhogg is active but is currently not the leading contact data source.', 'contactpanda' ) ) . '</p><p>' . esc_html( $leading ? __( 'Groundhogg records are read-only. Editing and ongoing synchronization are not available. Use the migration assistant to create independent ContactPanda records.', 'contactpanda' ) : __( 'ContactPanda now stores new changes in its own database. These standalone changes cannot be migrated back to Groundhogg.', 'contactpanda' ) ) . '</p></section>';
 			}
 		}
 		if ( 'messaging' === $current && ! class_exists( 'ContactPanda_Plus_Messaging' ) ) {
@@ -1486,7 +1486,7 @@ The link is valid for 24 hours.',
 		$preview = get_transient( 'contactpanda_groundhogg_contacts_preview_' . get_current_user_id() );
 		echo '<section class="contactpanda-card contactpanda-settings-card"><h2>' . esc_html__( 'ContactPanda database', 'contactpanda' ) . '</h2>';
 		if ( ! ContactPanda_Store::ready() ) {
-			echo '<p>' . esc_html__( 'The ContactPanda database tables do not exist yet or require an update. Creating or updating them does not change Groundhogg or any connected plugin.', 'contactpanda' ) . '</p>';
+			echo '<p>' . esc_html__( 'The ContactPanda database tables are missing or need an update. This operation only affects ContactPanda tables.', 'contactpanda' ) . '</p>';
 			self::admin_action_form( 'contactpanda_setup_standalone', __( 'Create or update ContactPanda database and activate', 'contactpanda' ), 'button-primary' );
 		} else {
 			echo '<div class="contactpanda-database-counts"><span><strong>' . esc_html( $counts['contacts'] ) . '</strong>' . esc_html__( 'Contacts', 'contactpanda' ) . '</span><span><strong>' . esc_html( $counts['companies'] ) . '</strong>' . esc_html__( 'Companies', 'contactpanda' ) . '</span><span><strong>' . esc_html( $counts['tags'] ) . '</strong>' . esc_html__( 'Tags', 'contactpanda' ) . '</span><span><strong>' . esc_html( $counts['activities'] ) . '</strong>' . esc_html__( 'Activities', 'contactpanda' ) . '</span></div>';
@@ -1718,7 +1718,7 @@ The link is valid for 24 hours.',
 		}
 		$plugins = get_plugins();
 		$definitions = array(
-			array( 'name' => 'Groundhogg', 'needles' => array( 'groundhogg' ), 'message' => __( 'Groundhogg contacts, companies, tags, funnels, and activities remain untouched.', 'contactpanda' ) ),
+			array( 'name' => __( 'Groundhogg migration', 'contactpanda' ), 'needles' => array( 'groundhogg' ), 'message' => __( 'Groundhogg contacts, companies, tags, funnels, and activities remain untouched.', 'contactpanda' ) ),
 			array( 'name' => 'WooCommerce', 'needles' => array( 'woocommerce' ), 'message' => __( 'WordPress accounts, customer profiles, and orders remain untouched.', 'contactpanda' ) ),
 			array( 'name' => 'German Market', 'needles' => array( 'german market' ), 'message' => __( 'Invoices and invoice documents remain untouched.', 'contactpanda' ) ),
 			array( 'name' => 'B2B Market', 'needles' => array( 'b2b market' ), 'message' => __( 'Customer groups, roles, prices, and tax rules remain untouched.', 'contactpanda' ) ),
@@ -1786,7 +1786,6 @@ The link is valid for 24 hours.',
 		$catalog = array(
 			'wordpress' => array( 'name' => 'WordPress', 'description' => __( 'Benutzerkonten und Profildaten', 'contactpanda' ), 'active' => true, 'logo' => CONTACTPANDA_URL . 'assets/integration-logos/wordpress.png' ),
 			'woocommerce' => array( 'name' => 'WooCommerce', 'description' => __( 'Kunden-, Bestell- und Profildaten', 'contactpanda' ), 'active' => class_exists( 'WooCommerce' ), 'logo' => CONTACTPANDA_URL . 'assets/integration-logos/woocommerce.png' ),
-			'groundhogg' => array( 'name' => 'Groundhogg', 'description' => __( 'Kontakte, Tags und Einwilligungen', 'contactpanda' ), 'active' => self::groundhogg_active(), 'logo' => CONTACTPANDA_URL . 'assets/integration-logos/groundhogg.png' ),
 			'fluent-crm' => array( 'name' => 'FluentCRM', 'description' => __( 'Kontakte und Marketingdaten', 'contactpanda' ), 'active' => defined( 'FLUENTCRM' ) || class_exists( 'FluentCrm\App\App' ), 'logo' => CONTACTPANDA_URL . 'assets/integration-logos/fluent-crm.png' ),
 			'newsletter' => array( 'name' => 'The Newsletter Plugin', 'description' => __( 'Newsletter und Abonnenten', 'contactpanda' ), 'active' => self::newsletter_plugin_installed(), 'logo' => CONTACTPANDA_URL . 'assets/integration-logos/newsletter.png' ),
 			'contact-form-7' => array( 'name' => 'Contact Form 7', 'description' => __( 'Formulare und zentraler Spamschutz', 'contactpanda' ), 'active' => defined( 'WPCF7_VERSION' ), 'logo' => CONTACTPANDA_URL . 'assets/integration-logos/contact-form-7.png' ),

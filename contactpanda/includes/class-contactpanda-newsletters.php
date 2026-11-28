@@ -307,8 +307,8 @@ final class ContactPanda_Basic_Newsletters {
 	public static function menu() {
 		add_submenu_page(
 			'contactpanda',
-			__( 'Email templates', 'contactpanda' ),
-			__( 'Email templates', 'contactpanda' ),
+			__( 'Emails & Templates', 'contactpanda' ),
+			__( 'Emails & Templates', 'contactpanda' ),
 			self::capability(),
 			'contactpanda-newsletters',
 			array( __CLASS__, 'render_page' )
@@ -428,6 +428,7 @@ final class ContactPanda_Basic_Newsletters {
 					'removeColumnContent'=> __( 'The removed column contains blocks. Remove this column and its content?', 'contactpanda' ),
 					'buttonLabel'   => __( 'Label', 'contactpanda' ),
 					'targetUrl'     => __( 'Target URL', 'contactpanda' ),
+					'imageLink'     => __( 'Image link (optional)', 'contactpanda' ),
 					'spacerHeight'  => __( 'Height in pixels', 'contactpanda' ),
 					'dividerNote'   => __( 'A subtle divider line is inserted.', 'contactpanda' ),
 					'moveUp'        => __( 'Move up', 'contactpanda' ),
@@ -716,6 +717,11 @@ final class ContactPanda_Basic_Newsletters {
 		$allowed_orderby = array( 'name', 'created_at', 'updated_at' ); if ( ! in_array( $orderby, $allowed_orderby, true ) ) $orderby = 'updated_at';
 		$count_sql = "SELECT COUNT(*) FROM %i {$where}"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- internal table name.
 		$total = (int) $wpdb->get_var( $wpdb->prepare( $count_sql, $params ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.NotPrepared -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		$page = min( $page, max( 1, (int) ceil( $total / $per_page ) ) );
+		$list_url = self::list_url( array(
+			'template_view' => $list_view, 's' => $search, 'template_status' => $status_filter,
+			'template_date' => $date_filter, 'orderby' => $orderby, 'order' => strtolower( $order ),
+		) );
 		$query = "SELECT * FROM %i {$where} ORDER BY %i {$order} LIMIT %d OFFSET %d"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- allowlisted column/order and internal table name.
 		$rows = (array) $wpdb->get_results( $wpdb->prepare( $query, array_merge( $params, array( $orderby, $per_page, ( $page - 1 ) * $per_page ) ) ), ARRAY_A ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,PluginCheck.Security.DirectDB.UnescapedDBParameter,WordPress.DB.PreparedSQL.NotPrepared -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 		$notice = get_transient( 'contactpanda_newsletter_notice_' . get_current_user_id() );
@@ -723,12 +729,13 @@ final class ContactPanda_Basic_Newsletters {
 			delete_transient( 'contactpanda_newsletter_notice_' . get_current_user_id() );
 		}
 
-		echo '<div class="wrap contactpanda-wrap contactpanda-newsletter-page"><header class="contactpanda-heading"><div><p class="contactpanda-eyebrow">ContactPanda</p><h1>' . esc_html__( 'Email templates', 'contactpanda' ) . '</h1><p>' . esc_html__( 'Create reusable, responsive email templates independently of Groundhogg.', 'contactpanda' ) . '</p></div><a class="button button-primary contactpanda-heading-action" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters&action=new' ) ) . '"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>' . esc_html__( 'Create template', 'contactpanda' ) . '</a></header>';
+		echo '<div class="wrap contactpanda-wrap contactpanda-newsletter-page"><header class="contactpanda-heading"><div><p class="contactpanda-eyebrow">ContactPanda</p><h1>' . esc_html__( 'Emails & Templates', 'contactpanda' ) . '</h1><p>' . esc_html__( 'Create reusable, responsive emails and save them as templates.', 'contactpanda' ) . '</p></div><a class="button button-primary contactpanda-heading-action" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters&action=new' ) ) . '"><span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>' . esc_html__( 'Create email', 'contactpanda' ) . '</a></header>';
 		if ( is_array( $notice ) ) {
 			echo '<div class="notice notice-' . ( ! empty( $notice['success'] ) ? 'success' : 'error' ) . ' is-dismissible"><p>' . esc_html( $notice['message'] ) . '</p></div>';
 		}
-		echo '<nav class="nav-tab-wrapper contactpanda-template-tabs"><a class="nav-tab' . ( 'mine' === $list_view ? ' nav-tab-active' : '' ) . '" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters' ) ) . '">' . esc_html__( 'My templates', 'contactpanda' ) . '</a><a class="nav-tab' . ( 'gallery' === $list_view ? ' nav-tab-active' : '' ) . '" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters&template_view=gallery' ) ) . '">' . esc_html__( 'Template gallery', 'contactpanda' ) . '</a></nav>';
-		echo '<section class="contactpanda-card"><form method="get" class="contactpanda-newsletter-search"><input type="hidden" name="page" value="contactpanda-newsletters"><input type="hidden" name="template_view" value="' . esc_attr( $list_view ) . '"><label class="screen-reader-text" for="contactpanda-template-search">' . esc_html__( 'Search templates', 'contactpanda' ) . '</label><input id="contactpanda-template-search" type="search" name="s" value="' . esc_attr( $search ) . '" placeholder="' . esc_attr__( 'Search templates', 'contactpanda' ) . '">';
+		echo '<nav class="nav-tab-wrapper contactpanda-template-tabs"><a class="nav-tab' . ( 'mine' === $list_view ? ' nav-tab-active' : '' ) . '" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters' ) ) . '">' . esc_html__( 'My Emails', 'contactpanda' ) . '</a><a class="nav-tab' . ( 'gallery' === $list_view ? ' nav-tab-active' : '' ) . '" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters&template_view=gallery' ) ) . '">' . esc_html__( 'Saved Templates', 'contactpanda' ) . '</a></nav>';
+		$search_label = 'gallery' === $list_view ? __( 'Search saved templates', 'contactpanda' ) : __( 'Search emails', 'contactpanda' );
+		echo '<section class="contactpanda-card"><form method="get" class="contactpanda-newsletter-search"><input type="hidden" name="page" value="contactpanda-newsletters"><input type="hidden" name="template_view" value="' . esc_attr( $list_view ) . '"><input type="hidden" name="order" value="' . esc_attr( strtolower( $order ) ) . '"><label class="screen-reader-text" for="contactpanda-template-search">' . esc_html( $search_label ) . '</label><input id="contactpanda-template-search" type="search" autocomplete="off" name="s" value="' . esc_attr( $search ) . '" placeholder="' . esc_attr( $search_label ) . '">';
 		if ( 'mine' === $list_view ) echo '<select name="template_status"><option value="all">' . esc_html__( 'All statuses', 'contactpanda' ) . '</option>';
 		if ( 'mine' === $list_view ) {
 		foreach ( array( 'draft' => __( 'Draft', 'contactpanda' ), 'planned' => __( 'Planned', 'contactpanda' ), 'published' => __( 'Published', 'contactpanda' ), 'sent' => __( 'Sent', 'contactpanda' ), 'archived' => __( 'Archived', 'contactpanda' ) ) as $value => $label ) echo '<option value="' . esc_attr( $value ) . '"' . selected( $status_filter, $value, false ) . '>' . esc_html( $label ) . '</option>';
@@ -737,11 +744,12 @@ final class ContactPanda_Basic_Newsletters {
 		foreach ( array( 'this_month' => __( 'Created this month', 'contactpanda' ), 'last_month' => __( 'Created last month', 'contactpanda' ), 'this_year' => __( 'Created this year', 'contactpanda' ) ) as $value => $label ) echo '<option value="' . esc_attr( $value ) . '"' . selected( $date_filter, $value, false ) . '>' . esc_html( $label ) . '</option>';
 		echo '</select><select name="orderby"><option value="updated_at"' . selected( $orderby, 'updated_at', false ) . '>' . esc_html__( 'Last modified', 'contactpanda' ) . '</option><option value="created_at"' . selected( $orderby, 'created_at', false ) . '>' . esc_html__( 'Created', 'contactpanda' ) . '</option><option value="name"' . selected( $orderby, 'name', false ) . '>' . esc_html__( 'Name', 'contactpanda' ) . '</option></select><button class="button"><span class="dashicons dashicons-search" aria-hidden="true"></span> ' . esc_html__( 'Search', 'contactpanda' ) . '</button></form>';
 		if ( ! $rows ) {
-			echo '<div class="contactpanda-empty"><span class="dashicons dashicons-email-alt"></span><h3>' . esc_html__( 'No templates found', 'contactpanda' ) . '</h3><p>' . esc_html__( 'Create the first email template or change the search.', 'contactpanda' ) . '</p></div></section></div>';
+			echo '<div class="contactpanda-empty"><span class="dashicons dashicons-email-alt"></span><h3>' . esc_html( 'gallery' === $list_view ? __( 'No saved templates found', 'contactpanda' ) : __( 'No emails found', 'contactpanda' ) ) . '</h3><p>' . esc_html( 'gallery' === $list_view ? __( 'Save an email as a template from My Emails.', 'contactpanda' ) : __( 'Create an email or change the search.', 'contactpanda' ) ) . '</p></div></section></div>';
 			return;
 		}
+		$saved = 'mine' === $list_view ? self::gallery_sources( array_column( $rows, 'id' ) ) : array();
 		if ( 'gallery' === $list_view ) echo '<div class="contactpanda-template-gallery">';
-		else echo '<table class="widefat striped contactpanda-table contactpanda-template-table"><thead><tr><th>' . esc_html__( 'Name', 'contactpanda' ) . '</th><th>' . esc_html__( 'Subject', 'contactpanda' ) . '</th><th>' . esc_html__( 'Newsletter', 'contactpanda' ) . '</th><th>' . esc_html__( 'Autom.', 'contactpanda' ) . '</th><th>' . esc_html__( 'Status', 'contactpanda' ) . '</th><th>' . esc_html__( 'Last modified', 'contactpanda' ) . '</th><th>' . esc_html__( 'Actions', 'contactpanda' ) . '</th></tr></thead><tbody>';
+		else echo '<table class="widefat striped contactpanda-table contactpanda-template-table"><thead><tr><th>' . esc_html__( 'Name', 'contactpanda' ) . '</th><th>' . esc_html__( 'Subject', 'contactpanda' ) . '</th><th>' . esc_html__( 'Broadcasts', 'contactpanda' ) . '</th><th>' . esc_html__( 'Autom.', 'contactpanda' ) . '</th><th>' . esc_html__( 'Status', 'contactpanda' ) . '</th><th>' . esc_html__( 'Last modified', 'contactpanda' ) . '</th><th>' . esc_html__( 'Actions', 'contactpanda' ) . '</th></tr></thead><tbody>';
 		foreach ( $rows as $row ) {
 			$edit_url = admin_url( 'admin.php?page=contactpanda-newsletters&action=edit&template_id=' . absint( $row['id'] ) );
 			$view_url = admin_url( 'admin.php?page=contactpanda-newsletters&action=view&template_id=' . absint( $row['id'] ) );
@@ -757,21 +765,44 @@ final class ContactPanda_Basic_Newsletters {
 				continue;
 			}
 			echo '<tr><td><strong><a href="' . esc_url( $imported ? $view_url : $edit_url ) . '">' . esc_html( $row['name'] ) . '</a></strong></td><td>' . esc_html( $row['subject'] ?: '—' ) . '</td><td>' . esc_html( count( $usage['campaigns'] ) ) . '</td><td>' . esc_html( count( $usage['flows'] ) ) . '</td><td>' . esc_html( $status ) . '</td><td>' . esc_html( mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $row['updated_at'] ) ) . '</td><td class="contactpanda-template-actions">';
-			if ( ! $imported ) echo '<a class="contactpanda-list-action" href="' . esc_url( $edit_url ) . '" aria-label="' . esc_attr__( 'Edit template', 'contactpanda' ) . '" title="' . esc_attr__( 'Edit template', 'contactpanda' ) . '"><span class="dashicons dashicons-edit" aria-hidden="true"></span></a>';
-			else echo '<span class="contactpanda-list-action is-disabled" aria-label="' . esc_attr__( 'Imported templates are read-only. Create an editable copy to change the content.', 'contactpanda' ) . '" title="' . esc_attr__( 'Imported templates are read-only. Create an editable copy to change the content.', 'contactpanda' ) . '"><span class="dashicons dashicons-edit" aria-hidden="true"></span></span>';
-			echo '<a class="contactpanda-list-action" href="' . esc_url( $view_url ) . '" aria-label="' . esc_attr__( 'View template', 'contactpanda' ) . '" title="' . esc_attr__( 'View template', 'contactpanda' ) . '"><span class="dashicons dashicons-visibility" aria-hidden="true"></span></a>';
-			self::row_action_form( $row['id'], 'duplicate', __( 'Duplicate template', 'contactpanda' ), 'contactpanda-list-action-form is-duplicate' );
-			self::row_action_form( $row['id'], 'make_template', __( 'Add to template gallery', 'contactpanda' ), 'contactpanda-list-action-form is-template' );
-			if ( $deletable ) self::row_action_form( $row['id'], 'archive', __( 'Delete template', 'contactpanda' ), 'contactpanda-archive-template contactpanda-list-action-form' );
-			else echo '<span class="contactpanda-list-action is-disabled" aria-label="' . esc_attr__( 'Templates that are or were used cannot be deleted.', 'contactpanda' ) . '" title="' . esc_attr__( 'Templates that are or were used cannot be deleted.', 'contactpanda' ) . '"><span class="dashicons dashicons-trash" aria-hidden="true"></span></span>';
+			if ( ! $imported ) echo '<a class="contactpanda-list-action" href="' . esc_url( $edit_url ) . '" aria-label="' . esc_attr__( 'Edit email', 'contactpanda' ) . '" title="' . esc_attr__( 'Edit email', 'contactpanda' ) . '"><span class="dashicons dashicons-edit" aria-hidden="true"></span></a>';
+			else echo '<span class="contactpanda-list-action is-disabled" aria-label="' . esc_attr__( 'Imported emails are read-only. Create an editable copy to change the content.', 'contactpanda' ) . '" title="' . esc_attr__( 'Imported emails are read-only. Create an editable copy to change the content.', 'contactpanda' ) . '"><span class="dashicons dashicons-edit" aria-hidden="true"></span></span>';
+			echo '<a class="contactpanda-list-action" href="' . esc_url( $view_url ) . '" aria-label="' . esc_attr__( 'View email', 'contactpanda' ) . '" title="' . esc_attr__( 'View email', 'contactpanda' ) . '"><span class="dashicons dashicons-visibility" aria-hidden="true"></span></a>';
+			self::row_action_form( $row['id'], 'duplicate', __( 'Duplicate email', 'contactpanda' ), 'contactpanda-list-action-form is-duplicate' );
+			if ( isset( $saved[ $row['id'] ] ) ) {
+				$saved_label = __( 'Saved as a template', 'contactpanda' );
+				echo '<span class="contactpanda-list-action is-template-saved" role="img" aria-label="' . esc_attr( $saved_label ) . '" title="' . esc_attr( $saved_label ) . '"><span class="dashicons dashicons-star-filled" aria-hidden="true"></span></span>';
+			} else {
+				self::row_action_form( $row['id'], 'make_template', __( 'Save as a template', 'contactpanda' ), 'contactpanda-list-action-form is-template', add_query_arg( 'paged', $page, $list_url ) );
+			}
+			if ( $deletable ) self::row_action_form( $row['id'], 'archive', __( 'Archive email', 'contactpanda' ), 'contactpanda-archive-template contactpanda-list-action-form' );
+			else echo '<span class="contactpanda-list-action is-disabled" aria-label="' . esc_attr__( 'Emails that are or were used cannot be archived.', 'contactpanda' ) . '" title="' . esc_attr__( 'Emails that are or were used cannot be archived.', 'contactpanda' ) . '"><span class="dashicons dashicons-trash" aria-hidden="true"></span></span>';
 			echo '</td></tr>';
 		}
 		echo ( 'gallery' === $list_view ? '</div>' : '</tbody></table>' );
 		if ( $total > $per_page ) {
-			$base = add_query_arg( array( 'page' => 'contactpanda-newsletters', 'template_view' => $list_view, 's' => $search, 'paged' => '%#%' ), admin_url( 'admin.php' ) );
-			ContactPanda_Pagination::render( $page, $total, $per_page, remove_query_arg( 'paged', $base ), 'paged' );
+			ContactPanda_Pagination::render( $page, $total, $per_page, $list_url, 'paged' );
 		}
 		echo '</section></div>';
+	}
+
+	private static function list_url( $filters = array() ) {
+		$args = array( 'page' => 'contactpanda-newsletters' );
+		foreach ( array( 'template_view', 's', 'template_status', 'template_date', 'orderby', 'order', 'paged' ) as $key ) {
+			if ( isset( $filters[ $key ] ) && is_scalar( $filters[ $key ] ) ) {
+				$args[ $key ] = rawurlencode( sanitize_text_field( (string) $filters[ $key ] ) );
+			}
+		}
+		return add_query_arg( $args, admin_url( 'admin.php' ) );
+	}
+
+	private static function gallery_sources( $ids ) {
+		global $wpdb;
+		$table = ContactPanda_Newsletter_Schema::table_names()['templates'];
+		$placeholders = implode( ',', array_fill( 0, count( $ids ), '%d' ) );
+		$query = "SELECT gallery_source_id FROM %i WHERE status = 'template' AND gallery_source_id IN ({$placeholders})"; // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Only generated placeholders.
+		$sources = $wpdb->get_col( $wpdb->prepare( $query, array_merge( array( $table ), $ids ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.NotPrepared -- Indexed lookup on the owned template table; observes copies added or archived in other requests.
+		return array_fill_keys( $sources, true );
 	}
 
 	public static function template_usage( $template_id ) {
@@ -799,20 +830,25 @@ final class ContactPanda_Basic_Newsletters {
 		return (bool) $wpdb->get_var( $wpdb->prepare( "SELECT id FROM %i WHERE template_id=%d AND sent_count=0 AND status IN ('scheduled','planned') LIMIT 1", $table, absint( $template_id ) ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
 	}
 
-	private static function row_action_form( $id, $operation, $label, $class = '' ) {
+	private static function row_action_form( $id, $operation, $label, $class = '', $return_url = '' ) {
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" class="contactpanda-inline-row-action ' . esc_attr( $class ) . '"><input type="hidden" name="action" value="contactpanda_template_action"><input type="hidden" name="operation" value="' . esc_attr( $operation ) . '"><input type="hidden" name="template_id" value="' . esc_attr( $id ) . '">';
 		wp_nonce_field( self::NONCE_ACTION );
+		if ( $return_url ) {
+			echo '<input type="hidden" name="return_url" value="' . esc_attr( $return_url ) . '">';
+		}
 		$is_icon = false !== strpos( $class, 'contactpanda-list-action-form' );
-		$icons = array( 'archive' => 'trash', 'duplicate' => 'admin-page', 'make_template' => 'star-filled' );
+		$icons = array( 'archive' => 'trash', 'duplicate' => 'admin-page', 'make_template' => 'star-empty' );
 		$icon = $icons[ $operation ] ?? 'admin-generic';
-		echo '<button type="submit" class="' . ( $is_icon ? 'contactpanda-list-action' . ( 'archive' === $operation ? ' button-link-delete' : '' ) : 'button-link' ) . '" aria-label="' . esc_attr( $label ) . '" title="' . esc_attr( $label ) . '">' . ( $is_icon ? '<span class="dashicons dashicons-' . esc_attr( $icon ) . '" aria-hidden="true"></span>' : esc_html( $label ) ) . '</button></form>';
+		$action_overrides = array( 'make_template' => 'saveTemplate', 'archive' => 'delete' );
+		$action = isset( $action_overrides[ $operation ] ) ? ' data-contactpanda-action="' . esc_attr( $action_overrides[ $operation ] ) . '" data-contactpanda-action-mode="icon"' : '';
+		echo '<button type="submit" class="' . ( $is_icon ? 'contactpanda-list-action' . ( 'archive' === $operation ? ' button-link-delete' : '' ) : 'button-link' ) . '"' . $action . ' aria-label="' . esc_attr( $label ) . '" title="' . esc_attr( $label ) . '">' . ( $is_icon ? '<span class="dashicons dashicons-' . esc_attr( $icon ) . '" aria-hidden="true"></span>' : esc_html( $label ) ) . '</button></form>';
 	}
 
 	private static function render_template_preview() {
 		$id = isset( $_GET['template_id'] ) ? absint( $_GET['template_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only preview route.
 		$template = $id ? self::get_template( $id ) : false;
-		if ( ! $template ) wp_die( esc_html__( 'The email template was not found.', 'contactpanda' ) );
-		echo '<div class="wrap contactpanda-wrap contactpanda-newsletter-page"><header class="contactpanda-heading"><div><p class="contactpanda-eyebrow">ContactPanda</p><h1>' . esc_html( $template['name'] ) . '</h1><p>' . esc_html__( 'Email template preview', 'contactpanda' ) . '</p></div><a class="button contactpanda-heading-action" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters' ) ) . '">' . esc_html__( 'Back to templates', 'contactpanda' ) . '</a></header>';
+		if ( ! $template ) wp_die( esc_html__( 'The email was not found.', 'contactpanda' ) );
+		echo '<div class="wrap contactpanda-wrap contactpanda-newsletter-page"><header class="contactpanda-heading"><div><p class="contactpanda-eyebrow">ContactPanda</p><h1>' . esc_html( $template['name'] ) . '</h1><p>' . esc_html__( 'Email template preview', 'contactpanda' ) . '</p></div><a class="button contactpanda-heading-action" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters' ) ) . '">' . esc_html__( 'Back to Emails & Templates', 'contactpanda' ) . '</a></header>';
 		echo '<section class="contactpanda-card"><p><strong>' . esc_html__( 'Subject', 'contactpanda' ) . ':</strong> ' . esc_html( $template['subject'] ?: '—' ) . '</p><div class="contactpanda-newsletter-preview-stage"><iframe sandbox="allow-popups allow-popups-to-escape-sandbox" style="width:100%;min-height:680px;border:1px solid #dcdcde;background:#fff" title="' . esc_attr__( 'Email template preview', 'contactpanda' ) . '" srcdoc="' . esc_attr( $template['content_html'] ) . '"></iframe></div></section></div>';
 	}
 
@@ -820,7 +856,7 @@ final class ContactPanda_Basic_Newsletters {
 		$id = isset( $_GET['template_id'] ) ? absint( $_GET['template_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only editor route.
 		$template = $id ? self::get_template( $id ) : false;
 		if ( $id && ! $template ) {
-			wp_die( esc_html__( 'The email template was not found.', 'contactpanda' ) );
+			wp_die( esc_html__( 'The email was not found.', 'contactpanda' ) );
 		}
 		if ( $template && ! empty( $template['imported_readonly'] ) ) {
 			self::render_imported_template( $template );
@@ -845,7 +881,7 @@ final class ContactPanda_Basic_Newsletters {
 		if ( ! is_array( $blocks ) ) {
 			$blocks = array();
 		}
-		echo '<div class="wrap contactpanda-wrap contactpanda-newsletter-editor-page"><header class="contactpanda-heading"><div><p class="contactpanda-eyebrow">ContactPanda</p><h1>' . esc_html( $id ? __( 'Edit email template', 'contactpanda' ) : __( 'Create email template', 'contactpanda' ) ) . '</h1><p>' . esc_html__( 'Build a reusable email from responsive content blocks.', 'contactpanda' ) . '</p></div><a class="button contactpanda-heading-action" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters' ) ) . '">' . esc_html__( 'Back to templates', 'contactpanda' ) . '</a></header>';
+		echo '<div class="wrap contactpanda-wrap contactpanda-newsletter-editor-page"><header class="contactpanda-heading"><div><p class="contactpanda-eyebrow">ContactPanda</p><h1>' . esc_html( $id ? __( 'Edit email', 'contactpanda' ) : __( 'Create email', 'contactpanda' ) ) . '</h1><p>' . esc_html__( 'Build a reusable email from responsive content blocks.', 'contactpanda' ) . '</p></div><a class="button contactpanda-heading-action" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters' ) ) . '">' . esc_html__( 'Back to Emails & Templates', 'contactpanda' ) . '</a></header>';
 		$notice = get_transient( 'contactpanda_newsletter_notice_' . get_current_user_id() );
 		if ( is_array( $notice ) ) {
 			delete_transient( 'contactpanda_newsletter_notice_' . get_current_user_id() );
@@ -854,11 +890,11 @@ final class ContactPanda_Basic_Newsletters {
 		echo '<form id="contactpanda-newsletter-editor" method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_save_template"><input type="hidden" name="template_id" value="' . esc_attr( $template['id'] ) . '"><input type="hidden" name="from_name" value="' . esc_attr( $template['from_name'] ) . '"><input type="hidden" name="reply_to" value="' . esc_attr( $template['reply_to'] ) . '"><input type="hidden" id="contactpanda-content-json" name="content_json" value="' . esc_attr( wp_json_encode( $blocks ) ) . '">';
 		wp_nonce_field( self::NONCE_ACTION );
 		echo '<section class="contactpanda-card contactpanda-newsletter-topbar"><div class="contactpanda-newsletter-meta"><div class="contactpanda-newsletter-primary-fields">';
-		self::editor_field( 'name', __( 'Template name', 'contactpanda' ), $template['name'], 'text', true );
+		self::editor_field( 'name', __( 'Email name', 'contactpanda' ), $template['name'], 'text', true );
 		self::editor_field( 'subject', __( 'Email subject', 'contactpanda' ), $template['subject'], 'text', true );
 		self::editor_field( 'preview_text', __( 'Preview text', 'contactpanda' ), $template['preview_text'] );
 		$published = 'published' === ( $template['status'] ?? 'draft' );
-		echo '<div class="contactpanda-newsletter-editor-actions"><div class="contactpanda-newsletter-primary-buttons"><button type="submit" name="template_status" value="draft" class="button">' . esc_html__( 'Save draft', 'contactpanda' ) . '</button><button type="submit" name="template_status" value="published" class="button button-primary">' . esc_html( $published ? __( 'Update', 'contactpanda' ) : __( 'Publish', 'contactpanda' ) ) . '</button><button type="button" class="button" id="contactpanda-preview-template">' . esc_html__( 'Preview', 'contactpanda' ) . '</button></div><div class="contactpanda-newsletter-test-row"><label><span>' . esc_html__( 'Test recipient', 'contactpanda' ) . '</span><input type="email" id="contactpanda-test-email" value="' . esc_attr( wp_get_current_user()->user_email ) . '"></label><button type="button" class="button" id="contactpanda-send-test">' . esc_html__( 'Send test', 'contactpanda' ) . '</button></div><p id="contactpanda-test-message" class="contactpanda-newsletter-message" aria-live="polite"></p></div>';
+		echo '<div class="contactpanda-newsletter-editor-actions"><div class="contactpanda-newsletter-primary-buttons"><button type="submit" name="template_status" value="draft" class="button">' . esc_html__( 'Save draft', 'contactpanda' ) . '</button><button type="submit" name="template_status" value="published" class="button button-primary"' . ( $id ? '' : ' disabled aria-describedby="contactpanda-publish-hint"' ) . '>' . esc_html( $published ? __( 'Update', 'contactpanda' ) : __( 'Publish', 'contactpanda' ) ) . '</button><button type="button" class="button" id="contactpanda-preview-template">' . esc_html__( 'Preview', 'contactpanda' ) . '</button></div>' . ( $id ? '' : '<p id="contactpanda-publish-hint" class="description">' . esc_html__( 'Save a draft before publishing.', 'contactpanda' ) . '</p>' ) . '<div class="contactpanda-newsletter-test-row"><label><span>' . esc_html__( 'Test recipient', 'contactpanda' ) . '</span><input type="email" id="contactpanda-test-email" value="' . esc_attr( wp_get_current_user()->user_email ) . '"></label><button type="button" class="button" id="contactpanda-send-test">' . esc_html__( 'Send test', 'contactpanda' ) . '</button></div><p id="contactpanda-test-message" class="contactpanda-newsletter-message" aria-live="polite"></p></div>';
 		$placeholder_labels = array(
 			'{salutation}'       => __( 'Salutation', 'contactpanda' ),
 			'{title_prefix}'     => __( 'Title before the name', 'contactpanda' ),
@@ -898,14 +934,14 @@ final class ContactPanda_Basic_Newsletters {
 	}
 
 	private static function render_imported_template( $template ) {
-		echo '<div class="wrap contactpanda-wrap contactpanda-newsletter-page"><header class="contactpanda-heading"><div><p class="contactpanda-eyebrow">ContactPanda</p><h1>' . esc_html( $template['name'] ) . '</h1><p>' . esc_html__( 'Protected Groundhogg email archive', 'contactpanda' ) . '</p></div><a class="button contactpanda-heading-action" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters' ) ) . '">' . esc_html__( 'Back to templates', 'contactpanda' ) . '</a></header>';
-		echo '<section class="contactpanda-card"><div class="notice notice-info inline"><p>' . esc_html__( 'This imported original is read only. Duplicate it to create an editable ContactPanda template.', 'contactpanda' ) . '</p></div><p><strong>' . esc_html__( 'Subject', 'contactpanda' ) . ':</strong> ' . esc_html( $template['subject'] ?: '—' ) . '</p><p><strong>' . esc_html__( 'Groundhogg ID', 'contactpanda' ) . ':</strong> ' . esc_html( $template['external_id'] ) . '</p>';
+		echo '<div class="wrap contactpanda-wrap contactpanda-newsletter-page"><header class="contactpanda-heading"><div><p class="contactpanda-eyebrow">ContactPanda</p><h1>' . esc_html( $template['name'] ) . '</h1><p>' . esc_html__( 'Protected migration email archive', 'contactpanda' ) . '</p></div><a class="button contactpanda-heading-action" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters' ) ) . '">' . esc_html__( 'Back to Emails & Templates', 'contactpanda' ) . '</a></header>';
+		echo '<section class="contactpanda-card"><div class="notice notice-info inline"><p>' . esc_html__( 'This imported original is read only. Duplicate it to create an editable ContactPanda email.', 'contactpanda' ) . '</p></div><p><strong>' . esc_html__( 'Subject', 'contactpanda' ) . ':</strong> ' . esc_html( $template['subject'] ?: '—' ) . '</p><p><strong>' . esc_html__( 'Migration source ID', 'contactpanda' ) . ':</strong> ' . esc_html( $template['external_id'] ) . '</p>';
 		self::row_action_form( $template['id'], 'duplicate', __( 'Create editable copy', 'contactpanda' ) );
 		echo '<div class="contactpanda-newsletter-preview-stage" style="margin-top:20px"><iframe sandbox="allow-popups allow-popups-to-escape-sandbox" style="width:100%;min-height:680px;border:1px solid #dcdcde;background:#fff" title="' . esc_attr__( 'Imported email preview', 'contactpanda' ) . '" srcdoc="' . esc_attr( $template['content_html'] ) . '"></iframe></div></section></div>';
 	}
 
 	private static function render_locked_template( $template ) {
-		echo '<div class="wrap contactpanda-wrap contactpanda-newsletter-page"><header class="contactpanda-heading"><div><p class="contactpanda-eyebrow">ContactPanda</p><h1>' . esc_html( $template['name'] ) . '</h1><p>' . esc_html__( 'Sent newsletter template', 'contactpanda' ) . '</p></div><a class="button contactpanda-heading-action" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters' ) ) . '">' . esc_html__( 'Back to templates', 'contactpanda' ) . '</a></header>';
+		echo '<div class="wrap contactpanda-wrap contactpanda-newsletter-page"><header class="contactpanda-heading"><div><p class="contactpanda-eyebrow">ContactPanda</p><h1>' . esc_html( $template['name'] ) . '</h1><p>' . esc_html__( 'Sent newsletter template', 'contactpanda' ) . '</p></div><a class="button contactpanda-heading-action" href="' . esc_url( admin_url( 'admin.php?page=contactpanda-newsletters' ) ) . '">' . esc_html__( 'Back to Emails & Templates', 'contactpanda' ) . '</a></header>';
 		echo '<section class="contactpanda-card"><div class="notice notice-info inline"><p>' . esc_html__( 'This template has already been sent as a newsletter and is permanently read only. Create an editable copy for further changes.', 'contactpanda' ) . '</p></div><p><strong>' . esc_html__( 'Subject', 'contactpanda' ) . ':</strong> ' . esc_html( $template['subject'] ?: '—' ) . '</p>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '"><input type="hidden" name="action" value="contactpanda_template_action"><input type="hidden" name="operation" value="duplicate"><input type="hidden" name="template_id" value="' . esc_attr( $template['id'] ) . '">';
 		wp_nonce_field( self::NONCE_ACTION );
@@ -967,18 +1003,25 @@ final class ContactPanda_Basic_Newsletters {
 		ContactPanda_Newsletter_Schema::install();
 		$table = ContactPanda_Newsletter_Schema::table_names()['templates'];
 		$id = isset( $_POST['template_id'] ) ? absint( $_POST['template_id'] ) : 0;
+		$publish = isset( $_POST['template_status'] ) && 'published' === sanitize_key( wp_unslash( $_POST['template_status'] ) );
+		if ( $publish && ! $id ) {
+			self::notice_redirect( false, __( 'Save a draft before publishing.', 'contactpanda' ), 0, true );
+		}
 		if ( $id ) {
 			$existing = self::get_template( $id );
+			if ( ! $existing ) {
+				self::notice_redirect( false, __( 'The email was not found.', 'contactpanda' ) );
+			}
 			self::require_content_operation( $existing );
 			if ( $existing && ! empty( $existing['imported_readonly'] ) ) {
 				self::notice_redirect( false, __( 'Imported originals are read only. Duplicate the template before editing it.', 'contactpanda' ), $id );
 			}
-			if ( $existing && self::template_sent_as_newsletter( $id ) ) self::notice_redirect( false, __( 'Templates already sent as a newsletter are permanently read only. Create an editable copy instead.', 'contactpanda' ), $id );
+			if ( $existing && self::template_sent_as_newsletter( $id ) ) self::notice_redirect( false, __( 'Emails already sent in a broadcast are read only. Create an editable copy instead.', 'contactpanda' ), $id );
 		}
 		$name = isset( $_POST['name'] ) ? sanitize_text_field( wp_unslash( $_POST['name'] ) ) : '';
 		$subject = isset( $_POST['subject'] ) ? sanitize_text_field( wp_unslash( $_POST['subject'] ) ) : '';
 		if ( '' === $name || '' === $subject ) {
-			self::notice_redirect( false, __( 'Template name and subject are required.', 'contactpanda' ), $id );
+			self::notice_redirect( false, __( 'Email name and subject are required.', 'contactpanda' ), $id, true );
 		}
 		$blocks = self::sanitize_blocks( isset( $_POST['content_json'] ) && is_string( $_POST['content_json'] ) ? wp_unslash( $_POST['content_json'] ) : '[]' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- String-only JSON is bounded/decoded in sanitize_blocks; allowed block types and every stored value are sanitized there, preserving permitted rich text via wp_kses_post.
 		self::require_content_operation( $blocks );
@@ -995,7 +1038,8 @@ final class ContactPanda_Basic_Newsletters {
 			'preview_text' => isset( $_POST['preview_text'] ) ? sanitize_text_field( wp_unslash( $_POST['preview_text'] ) ) : '',
 			'from_name' => isset( $_POST['from_name'] ) ? sanitize_text_field( wp_unslash( $_POST['from_name'] ) ) : '',
 			'reply_to' => isset( $_POST['reply_to'] ) ? sanitize_email( wp_unslash( $_POST['reply_to'] ) ) : '',
-			'status' => isset( $_POST['template_status'] ) && 'published' === sanitize_key( wp_unslash( $_POST['template_status'] ) ) ? 'published' : 'draft',
+			'status' => $publish ? 'published' : 'draft',
+			'gallery_source_id' => null,
 			'content_json' => wp_json_encode( $blocks ),
 			'email_background' => $email_background,
 			'accent_color' => $accent_color, 'content_background' => $content_background, 'text_color' => $text_color, 'font_family' => $font_family,
@@ -1009,9 +1053,9 @@ final class ContactPanda_Basic_Newsletters {
 			$data['created_by'] = get_current_user_id();
 			$data['created_at'] = current_time( 'mysql' );
 			$success = false !== $wpdb->insert( $table, $data ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points.
-			$id = (int) $wpdb->insert_id;
+			$id = $success ? (int) $wpdb->insert_id : 0;
 		}
-		self::notice_redirect( $success, $success ? __( 'The email template was saved.', 'contactpanda' ) : __( 'The email template could not be saved.', 'contactpanda' ), $id );
+		self::notice_redirect( $success && $id, $success && $id ? __( 'The email was saved.', 'contactpanda' ) : __( 'The email could not be saved.', 'contactpanda' ), $id, true );
 	}
 
 	public static function template_action() {
@@ -1022,16 +1066,21 @@ final class ContactPanda_Basic_Newsletters {
 		$operation = isset( $_POST['operation'] ) ? sanitize_key( wp_unslash( $_POST['operation'] ) ) : '';
 		$template = self::get_template( $id );
 		$success = false;
-		$message = __( 'The template action could not be completed.', 'contactpanda' );
+		$message = __( 'The email action could not be completed.', 'contactpanda' );
 		if ( in_array( $operation, array( 'duplicate', 'make_template', 'use_template', 'restore' ), true ) ) self::require_content_operation( $template );
 		if ( $template && 'archive' === $operation ) {
 			$usage = self::template_usage( $id );
-			if ( $usage['campaigns'] || $usage['flows'] ) { $message = __( 'This template is still used by a newsletter or automation and cannot be archived.', 'contactpanda' ); }
-			else { $success = false !== $wpdb->update( $table, array( 'status' => 'archived', 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); $message = $success ? __( 'The template was archived.', 'contactpanda' ) : $message; } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+			if ( $usage['campaigns'] || $usage['flows'] ) { $message = __( 'This email is still used by a broadcast or automation and cannot be archived.', 'contactpanda' ); }
+			else { $success = false !== $wpdb->update( $table, array( 'status' => 'archived', 'gallery_source_id' => null, 'updated_at' => current_time( 'mysql' ) ), array( 'id' => $id ) ); $message = $success ? __( 'The email was archived.', 'contactpanda' ) : $message; } // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points. Fresh CRM/recipient/import state is required for the next decision; no persistent result cache is used because consent, suppression, merges and external writers must be observed immediately.
+		} elseif ( $template && 'make_template' === $operation && self::gallery_sources( array( $id ) ) ) {
+			$success = true;
+			$message = __( 'This email is already saved as a template.', 'contactpanda' );
 		} elseif ( $template && in_array( $operation, array( 'duplicate', 'make_template', 'use_template' ), true ) ) {
 			unset( $template['id'] );
+			$template['gallery_source_id'] = null;
 			if ( 'make_template' === $operation ) {
 				$template['status'] = 'template';
+				$template['gallery_source_id'] = $id;
 			} else {
 				/* translators: Placeholder values are replaced with the record-specific values shown in this message. */
 				$template['name'] = sprintf( __( '%s (copy)', 'contactpanda' ), $template['name'] );
@@ -1043,12 +1092,29 @@ final class ContactPanda_Basic_Newsletters {
 			$template['created_by'] = get_current_user_id();
 			$template['created_at'] = current_time( 'mysql' );
 			$template['updated_at'] = current_time( 'mysql' );
-			$success = false !== $wpdb->insert( $table, $template ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Owned ContactPanda tables have no WordPress object API; this repository method uses wpdb CRUD escaping or prepared identifiers/values, with authorization enforced at its entry points.
-			if ( $success ) $id = (int) $wpdb->insert_id;
-			$message = $success ? ( 'make_template' === $operation ? __( 'The template was added to the template gallery.', 'contactpanda' ) : __( 'The template was duplicated.', 'contactpanda' ) ) : $message;
+			// A second request can race the initial lookup. The unique key protects the first copy.
+			$suppress_errors = $wpdb->suppress_errors( true );
+			$success = false !== $wpdb->insert( $table, $template ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Owned table with authorized, nonce-protected entry.
+			$wpdb->suppress_errors( $suppress_errors );
+			if ( 'make_template' === $operation ) {
+				$success = $success || self::gallery_sources( array( $id ) );
+				if ( $success ) $message = __( 'The email was saved as a template.', 'contactpanda' );
+			} elseif ( $success ) {
+				$id = (int) $wpdb->insert_id;
+				$message = __( 'A new email draft was created.', 'contactpanda' );
+			}
 		}
 		set_transient( 'contactpanda_newsletter_notice_' . get_current_user_id(), array( 'success' => $success, 'message' => $message ), MINUTE_IN_SECONDS );
-		wp_safe_redirect( $success && in_array( $operation, array( 'duplicate', 'use_template' ), true ) ? admin_url( 'admin.php?page=contactpanda-newsletters&action=edit&template_id=' . $id ) : admin_url( 'admin.php?page=contactpanda-newsletters' . ( 'make_template' === $operation ? '&template_view=gallery' : '' ) ) );
+		$url = self::list_url();
+		if ( $success && in_array( $operation, array( 'duplicate', 'use_template' ), true ) ) {
+			$url = admin_url( 'admin.php?page=contactpanda-newsletters&action=edit&template_id=' . $id );
+		} elseif ( 'make_template' === $operation && isset( $_POST['return_url'] ) && is_string( $_POST['return_url'] ) ) {
+			$query = wp_parse_url( sanitize_url( wp_unslash( $_POST['return_url'] ) ), PHP_URL_QUERY );
+			wp_parse_str( (string) $query, $filters );
+			$filters['template_view'] = 'mine';
+			$url = self::list_url( $filters );
+		}
+		wp_safe_redirect( $url );
 		exit;
 	}
 
@@ -1174,6 +1240,8 @@ final class ContactPanda_Basic_Newsletters {
 			} elseif ( 'image' === $type ) {
 				$clean['url'] = isset( $block['url'] ) ? esc_url_raw( $block['url'] ) : '';
 				$clean['alt'] = isset( $block['alt'] ) ? sanitize_text_field( $block['alt'] ) : '';
+				$link = is_string( $block['link'] ?? null ) ? esc_url_raw( $block['link'], array( 'http', 'https' ) ) : '';
+				$clean['link'] = wp_parse_url( $link, PHP_URL_SCHEME ) && wp_parse_url( $link, PHP_URL_HOST ) ? $link : '';
 				$clean['attachment_id'] = isset( $block['attachment_id'] ) ? absint( $block['attachment_id'] ) : 0;
 				$clean['width_unit'] = isset( $block['width_unit'] ) && 'px' === $block['width_unit'] ? 'px' : '%';
 				$maximum = 'px' === $clean['width_unit'] ? 760 : 100;
@@ -1351,6 +1419,11 @@ final class ContactPanda_Basic_Newsletters {
 		return '<span class="contactpanda-email-caption" style="position:absolute;z-index:2;left:50%;' . esc_attr( $position_style . $transform ) . 'display:inline-block;box-sizing:border-box;max-width:calc(100% - 10px);padding:5px 9px;background:' . self::sanitize_css_color( $source['caption_background'] ?? '', 'rgba(0,0,0,0.65)' ) . ';color:' . self::sanitize_css_color( $source['caption_color'] ?? '', '#ffffff' ) . ';border-radius:' . absint( $source['caption_radius'] ?? 4 ) . 'px;font:' . esc_attr( $source['caption_weight'] ?? '600' ) . ' ' . absint( $source['caption_size'] ?? 14 ) . 'px/1.25 ' . esc_attr( $font ) . ';text-align:center;text-transform:' . ( ! empty( $source['caption_uppercase'] ) ? 'uppercase' : 'none' ) . ';white-space:normal">' . esc_html( $source['caption'] ) . '</span>';
 	}
 
+	private static function link_image( $image, $url ) {
+		$href = esc_url( $url );
+		return $href ? '<a href="' . $href . '" target="_blank" rel="noopener noreferrer" style="display:block;text-decoration:none">' . $image . '</a>' : $image;
+	}
+
 	private static function render_fragment( $blocks, $settings ) {
 		$html = self::render_email( $blocks, '', $settings );
 		$styles = '';
@@ -1393,7 +1466,8 @@ final class ContactPanda_Basic_Newsletters {
 				$body .= '<div style="' . esc_attr( $box_style ) . 'text-align:' . esc_attr( $alignment ) . '">' . ( ! empty( $block['label'] ) ? '<p style="margin:0 0 8px;color:' . esc_attr( $text_color ) . ';font:15px/1.4 ' . $font . '">' . esc_html( $block['label'] ) . '</p>' : '' ) . $icons . '</div>';
 			} elseif ( 'image' === $type && ! empty( $block['url'] ) ) {
 				$unit = isset( $block['width_unit'] ) && 'px' === $block['width_unit'] ? 'px' : '%';
-				$body .= '<p style="' . esc_attr( $box_style ) . 'text-align:' . esc_attr( $alignment ) . '"><span style="position:relative;display:inline-block;width:' . absint( $block['width'] ?? 100 ) . $unit . ';max-width:100%"><img src="' . esc_url( $block['url'] ) . '" alt="' . esc_attr( $block['alt'] ) . '" style="display:block;width:100%;max-width:100%;height:auto;border:0">' . self::caption_html( $block, $font ) . '</span></p>';
+				$image = '<img src="' . esc_url( $block['url'] ) . '" alt="' . esc_attr( $block['alt'] ) . '" style="display:block;width:100%;max-width:100%;height:auto;border:0">';
+				$body .= '<p style="' . esc_attr( $box_style ) . 'text-align:' . esc_attr( $alignment ) . '"><span style="position:relative;display:inline-block;width:' . absint( $block['width'] ?? 100 ) . $unit . ';max-width:100%">' . self::link_image( $image, $block['link'] ?? '' ) . self::caption_html( $block, $font ) . '</span></p>';
 			} elseif ( 'video' === $type && ! empty( $block['url'] ) ) {
 				$thumbnail = $block['thumbnail_url'] ?? '';
 				if ( ! $thumbnail && preg_match( '~(?:youtu\\.be/|youtube(?:-nocookie)?\\.com/(?:watch\\?v=|embed/|shorts/))([A-Za-z0-9_-]{6,})~', $block['url'], $match ) ) $thumbnail = 'https://i.ytimg.com/vi/' . rawurlencode( $match[1] ) . '/hqdefault.jpg';
@@ -1418,7 +1492,7 @@ final class ContactPanda_Basic_Newsletters {
 					$attributes = $fixed ? ' height="' . absint( $fixed_height ) . '"' : '';
 					$style = 'display:block;width:100%;max-width:100%;' . ( $fixed ? 'height:' . absint( $fixed_height ) . 'px;object-fit:' . ( 'contain' === ( $block['image_fit'] ?? '' ) ? 'contain' : 'cover' ) . ';' : 'height:auto;' ) . 'border:0';
 					$html = '<span style="position:relative;display:block"><img src="' . esc_url( $image['url'] ) . '" alt="' . esc_attr( $image['alt'] ) . '"' . $attributes . ' style="' . esc_attr( $style ) . '">' . self::caption_html( $image, $font ) . '</span>';
-					return ! empty( $image['link'] ) ? '<a href="' . esc_url( $image['link'] ) . '" target="_blank" rel="noopener noreferrer" style="display:block;text-decoration:none">' . $html . '</a>' : $html;
+					return self::link_image( $html, $image['link'] ?? '' );
 				};
 				if ( 'masonry' === ( $block['layout'] ?? 'grid' ) ) { $body .= '<div class="' . esc_attr( $gallery_class ) . ' is-masonry" style="' . esc_attr( $box_style ) . 'column-count:' . absint( $columns ) . ';column-gap:8px">'; foreach ( $block['images'] as $image ) $body .= '<div style="break-inside:avoid;margin:0 0 8px">' . $image_html( $image ) . '</div>'; $body .= '</div>'; }
 				else { $body .= '<div class="' . esc_attr( $gallery_class ) . '" style="' . esc_attr( $box_style ) . 'font-size:0">'; foreach ( $block['images'] as $image ) $body .= '<div class="contactpanda-gallery-item" style="display:inline-block;box-sizing:border-box;width:' . esc_attr( $width ) . '%;padding:4px;vertical-align:top">' . $image_html( $image ) . '</div>'; $body .= '</div>'; }
@@ -1726,9 +1800,12 @@ final class ContactPanda_Basic_Newsletters {
 		return self::NONCE_ACTION;
 	}
 
-	private static function notice_redirect( $success, $message, $id = 0 ) {
+	private static function notice_redirect( $success, $message, $id = 0, $return_to_editor = false ) {
 		set_transient( 'contactpanda_newsletter_notice_' . get_current_user_id(), array( 'success' => $success, 'message' => $message ), MINUTE_IN_SECONDS );
 		$url = $id ? admin_url( 'admin.php?page=contactpanda-newsletters&action=edit&template_id=' . absint( $id ) ) : admin_url( 'admin.php?page=contactpanda-newsletters' );
+		if ( ! $id && $return_to_editor ) {
+			$url = add_query_arg( 'action', 'new', $url );
+		}
 		wp_safe_redirect( $url );
 		exit;
 	}

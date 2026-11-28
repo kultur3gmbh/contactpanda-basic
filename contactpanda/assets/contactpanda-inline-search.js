@@ -44,7 +44,7 @@
 				var chosen = (field.options || []).find(function (option) { return String(option.value) === String(rule.value); });
 				return '<div class="contactpanda-option-picker"><input type="hidden" class="contactpanda-inline-value" value="' + escapeHtml(rule.value || '') + '">' +
 					'<button type="button" class="button contactpanda-option-picker-toggle"><span>' + escapeHtml(chosen ? chosen.label : tr('chooseValue', 'Please select')) + '</span><span class="dashicons dashicons-arrow-down-alt2"></span></button>' +
-					'<div class="contactpanda-option-picker-panel" hidden><input type="search" class="contactpanda-option-picker-search" placeholder="' + escapeHtml(field.key === 'event' ? tr('searchEvents', 'Search events') : tr('searchProducts', 'Search products')) + '"><div class="contactpanda-option-picker-results">' + pickerOptions(field, rule.value, '') + '</div></div></div>';
+					'<div class="contactpanda-option-picker-panel" hidden><input type="search" autocomplete="off" inputmode="search" form="" class="contactpanda-option-picker-search" placeholder="' + escapeHtml(field.key === 'event' ? tr('searchEvents', 'Search events') : tr('searchProducts', 'Search products')) + '"><div class="contactpanda-option-picker-results">' + pickerOptions(field, rule.value, '') + '</div></div></div>';
 			}
 			var html = '<select class="contactpanda-inline-value"><option value="">' + escapeHtml(tr('chooseValue', 'Please select')) + '</option>';
 			(field.options || []).forEach(function (option) {

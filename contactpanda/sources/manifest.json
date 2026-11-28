@@ -4,7 +4,7 @@
     {
       "runtime": "assets/contactpanda-admin-ui.js",
       "readable": "sources/contactpanda-admin-ui.js",
-      "sha256": "aad3a911790b658276e5f3c18c45a039d9014f9ebd24050c094a5a49839bbc9e",
+      "sha256": "7268f89a2d3bda3ee49537c7db2a43b5bb73ae8a48a656358de64323aa2690e9",
       "syntax_tree_matches": true
     },
     {
@@ -16,19 +16,19 @@
     {
       "runtime": "assets/contactpanda-campaigns.js",
       "readable": "sources/contactpanda-campaigns.js",
-      "sha256": "1169f879f59751cb3cf2ac299bbcd6ebb6490bc95b9cb18e5d787d804ad96bbb",
+      "sha256": "85b7136a571874e8ccd2bf891197833aa8f7b9646fbe0645f859a5d4dd89869a",
       "syntax_tree_matches": true
     },
     {
       "runtime": "assets/contactpanda-inline-search.js",
       "readable": "sources/contactpanda-inline-search.js",
-      "sha256": "e71f91875e9eaf5cf2f9f16609a085db2ab4f3c822eee106aab93cfe07626f8a",
+      "sha256": "c2b840132edd0b3bfdc03f8cc830196143b92440a2ad2006dae418cc3eb9b5a9",
       "syntax_tree_matches": true
     },
     {
       "runtime": "assets/contactpanda-newsletters.js",
       "readable": "sources/contactpanda-newsletters.js",
-      "sha256": "32852297d7bb7aa6b60d851f1f51fe47970790386917aa6947b3e55c6be4b1ce",
+      "sha256": "f4ae7fab57d70679fa1c923743b1069f83928b17a1b738dbe474c3279ad9a5d7",
       "syntax_tree_matches": true
     },
     {

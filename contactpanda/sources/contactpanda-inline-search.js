@@ -76,7 +76,7 @@
 					'<button type="button" class="button contactpanda-option-picker-toggle"><span>' +
 					escapeHtml(chosen ? chosen.label : tr('chooseValue', 'Please select')) +
 					'</span><span class="dashicons dashicons-arrow-down-alt2"></span></button>' +
-					'<div class="contactpanda-option-picker-panel" hidden><input type="search" class="contactpanda-option-picker-search" placeholder="' +
+					'<div class="contactpanda-option-picker-panel" hidden><input type="search" autocomplete="off" inputmode="search" form="" class="contactpanda-option-picker-search" placeholder="' +
 					escapeHtml(
 						field.key === 'event'
 							? tr('searchEvents', 'Search events')

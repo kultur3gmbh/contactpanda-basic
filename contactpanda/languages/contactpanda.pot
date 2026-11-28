@@ -5705,9 +5705,6 @@ msgid "Create new search"
 msgstr ""
 
 #: contactpanda/includes/class-contactpanda-newsletters.php:499
-msgid "Create reusable, responsive email templates independently of Groundhogg."
-msgstr ""
-
 #: contactpanda/includes/class-contactpanda-newsletters.php:499
 msgid "Create template"
 msgstr ""
@@ -10763,4 +10760,199 @@ msgid "Select a privacy policy page to show the link on the signup form."
 msgstr ""
 
 msgid "Use {site_name} to insert the newsletter sender. This checkbox is required."
+msgstr ""
+
+msgid "A new email draft was created."
+msgstr ""
+
+msgid "Archive email"
+msgstr ""
+
+msgid "Back to Emails & Templates"
+msgstr ""
+
+msgid "Company management is unavailable because the source company module is inactive."
+msgstr ""
+
+msgid "Contact from source system"
+msgstr ""
+
+msgid "Contacts, company relationships, and marketing status in one view."
+msgstr ""
+
+msgid "Contacts, orders, and marketing status in one view."
+msgstr ""
+
+msgid "Create an email or change the search."
+msgstr ""
+
+msgid "Create email"
+msgstr ""
+
+msgid "Create reusable, responsive emails and save them as templates."
+msgstr ""
+
+msgid "Custom fields are managed by the selected source system."
+msgstr ""
+
+msgid "Duplicate email"
+msgstr ""
+
+msgid "Edit email"
+msgstr ""
+
+msgid "Email name"
+msgstr ""
+
+msgid "Email name and subject are required."
+msgstr ""
+
+msgid "Emails & Templates"
+msgstr ""
+
+msgid "Emails already sent in a broadcast are read only. Create an editable copy instead."
+msgstr ""
+
+msgid "Emails that are or were used cannot be archived."
+msgstr ""
+
+msgid "Filter options"
+msgstr ""
+
+msgid "Groundhogg migration"
+msgstr ""
+
+msgid "Groundhogg migration preview"
+msgstr ""
+
+msgid "Image link (optional)"
+msgstr ""
+
+msgid "Imported emails are read-only. Create an editable copy to change the content."
+msgstr ""
+
+msgid "Jump to page"
+msgstr ""
+
+msgid "Migration source"
+msgstr ""
+
+msgid "Migration source ID"
+msgstr ""
+
+msgid "My Emails"
+msgstr ""
+
+msgid "No emails found"
+msgstr ""
+
+msgid "No saved templates found"
+msgstr ""
+
+msgid "Only ContactPanda records are affected. WordPress users, orders, invoices, events, and source records are kept."
+msgstr ""
+
+msgid "Page %1$s of %2$s"
+msgstr ""
+
+msgid "Permanently delete ContactPanda customer data when uninstalling? Data from connected plugins will be kept."
+msgstr ""
+
+msgid "Permanently delete all data from the ContactPanda database now? WordPress, WooCommerce, invoices, events, and external source records will remain untouched."
+msgstr ""
+
+msgid "Protected migration email archive"
+msgstr ""
+
+msgid "Record merging is available in standalone ContactPanda mode. Merge external records in the source system."
+msgstr ""
+
+msgid "Save a draft before publishing."
+msgstr ""
+
+msgid "Save an email as a template from My Emails."
+msgstr ""
+
+msgid "Save as a template"
+msgstr ""
+
+msgid "Saved Templates"
+msgstr ""
+
+msgid "Saved as a template"
+msgstr ""
+
+msgid "Search emails"
+msgstr ""
+
+msgid "Search saved templates"
+msgstr ""
+
+msgid "Source ID %d"
+msgstr ""
+
+msgid "Source company module"
+msgstr ""
+
+msgid "Source system"
+msgstr ""
+
+msgid "The ContactPanda database tables are missing or need an update. This operation only affects ContactPanda tables."
+msgstr ""
+
+msgid "The email action could not be completed."
+msgstr ""
+
+msgid "The email could not be saved."
+msgstr ""
+
+msgid "The email was archived."
+msgstr ""
+
+msgid "The email was not found."
+msgstr ""
+
+msgid "The email was saved as a template."
+msgstr ""
+
+msgid "The email was saved."
+msgstr ""
+
+msgid "The selected migration source is inactive. ContactPanda has kept the current source setting."
+msgstr ""
+
+msgid "The source system could not change the marketing status."
+msgstr ""
+
+msgid "The source system could not change the tag assignment."
+msgstr ""
+
+msgid "The source system could not create the tag."
+msgstr ""
+
+msgid "The source system could not save the change."
+msgstr ""
+
+msgid "The source system is unavailable. No user account was created."
+msgstr ""
+
+msgid "The source system returned no companies."
+msgstr ""
+
+msgid "The user account could not be linked to the source record. The new account was rolled back."
+msgstr ""
+
+msgid "This email is already saved as a template."
+msgstr ""
+
+msgid "This email is still used by a broadcast or automation and cannot be archived."
+msgstr ""
+
+msgid "This imported original is read only. Duplicate it to create an editable ContactPanda email."
+msgstr ""
+
+msgid "Trash is available only for standalone ContactPanda records."
+msgstr ""
+
+msgid "View email"
 msgstr ""
