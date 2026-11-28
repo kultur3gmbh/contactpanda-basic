@@ -172,26 +172,67 @@
 		return events.slice(0, Number(block.count || 2));
 	}
 	function eventDate(value) { return new Date(String(value || '').replace(' ', 'T')); }
+	function refreshProductPreview(block, products) {
+		productPreviewCache[block.id] = products;
+		var id = CSS.escape(block.id);
+		var target = container.querySelector(
+			'[data-id="' + id + '"] > .contactpanda-block-preview, ' +
+			'[data-child-id="' + id + '"] > .contactpanda-column-child-content'
+		);
+		if (target) target.innerHTML = preview(block);
+	}
 	function loadProductPreview(block) {
 		if (!config.woocommerce || block.type !== 'products') return;
 		window.clearTimeout(productPreviewTimers[block.id]);
 		productPreviewTimers[block.id] = window.setTimeout(function () {
 			var data = new FormData(); data.append('action', 'contactpanda_newsletter_products'); data.append('nonce', config.nonce); data.append('block', JSON.stringify(block));
 			fetch(config.ajaxUrl, {method: 'POST', credentials: 'same-origin', body: data}).then(function (response) { return response.json(); }).then(function (result) {
-				productPreviewCache[block.id] = result.success && result.data ? result.data.products || [] : [];
-				renderCanvas();
-			}).catch(function () { productPreviewCache[block.id] = []; renderCanvas(); });
+				refreshProductPreview(block, result.success && result.data ? result.data.products || [] : []);
+			}).catch(function () { refreshProductPreview(block, []); });
 		}, 250);
 	}
+	function isInlineBlock(block) {
+		return block.type === 'heading' || block.type === 'text';
+	}
+	function inlineAttributes(block) {
+		var multiline = block.type === 'text';
+		return ' contenteditable="' + (multiline ? 'true' : 'plaintext-only') +
+			'" data-inline-editor="true" role="textbox" aria-multiline="' + multiline +
+			'" aria-label="' + escapeHtml(label(block.type)).replace(/"/g, '&quot;') + '"';
+	}
 	function preview(block) {
-		if (block.type === 'heading') { var headingTag = block.level || 'h2'; return '<' + headingTag + ' style="color:' + escapeHtml(block.text_color || 'inherit') + '">' + escapeHtml(block.content || label('heading')) + '</' + headingTag + '>'; }
-		if (block.type === 'text') return '<div class="contactpanda-canvas-text">' + safeRich(block.content || '<p>' + escapeHtml(label('text')) + '</p>') + '</div>';
+		if (block.type === 'heading') {
+			var headingTag = block.level || 'h2';
+			return '<' + headingTag + inlineAttributes(block) + ' style="color:' +
+				escapeHtml(block.text_color || 'inherit') + '">' + escapeHtml(block.content || '') + '</' + headingTag + '>';
+		}
+		if (block.type === 'text') {
+			return '<div class="contactpanda-canvas-text"' + inlineAttributes(block) + '>' + safeRich(block.content || '') + '</div>';
+		}
 		if (block.type === 'hero') { var overlay = Math.max(0, Math.min(90, Number(block.overlay_opacity || 45))) / 100; var overlayRgba = hexToRgba(block.overlay_color, overlay); var heroBackground = block.image_url ? 'linear-gradient(' + overlayRgba + ',' + overlayRgba + '),url(' + escapeHtml(block.image_url) + ')' : escapeHtml(block.overlay_color || '#182433'); return '<div class="contactpanda-hero-preview" style="background:' + heroBackground + ';background-size:cover;background-position:center;color:' + escapeHtml(block.text_color || '#fff') + ';text-align:' + escapeHtml(block.alignment || 'center') + '"><strong>' + escapeHtml(block.heading || i18n.heroHeading) + '</strong><div>' + safeRich(block.content || '') + '</div>' + (block.button_label ? '<span>' + escapeHtml(block.button_label) + '</span>' : '') + '</div>'; }
 		if (block.type === 'social') { var socialNames = {website:'WWW',facebook:'f',instagram:'◎',linkedin:'in',x:'X',whatsapp:'WA',email:'@',youtube:'▶',tiktok:'♪'}; var socialIcons = Object.keys(socialNames).filter(function (network) { return block.links[network]; }).map(function (network) { return '<span style="color:' + escapeHtml(block.icon_color || '#4253b5') + ';background:' + escapeHtml(block.icon_background || '#ffffff') + ';border:1px solid ' + escapeHtml(block.border_color || 'transparent') + ';border-radius:' + Number(block.border_radius || 0) + '%">' + socialNames[network] + '</span>'; }).join(''); return '<div class="contactpanda-social-preview" style="text-align:' + escapeHtml(block.alignment || 'center') + '">' + (block.label ? '<p>' + escapeHtml(block.label) + '</p>' : '') + (socialIcons || '<em>' + escapeHtml(i18n.social) + '</em>') + '</div>'; }
 		if (block.type === 'image') return block.url ? '<span class="contactpanda-single-image-preview" style="width:' + block.width + block.width_unit + ';max-width:100%"><img src="' + escapeHtml(block.url) + '" alt="' + escapeHtml(block.alt) + '">' + captionMarkup(block) + '</span>' : '<div class="contactpanda-image-placeholder"><span class="dashicons dashicons-format-image"></span>' + label('image') + '</div>';
 		if (block.type === 'video') { var thumb = block.thumbnail_url || youtubeThumbnail(block.url); var provider = videoProvider(block.url); return '<div class="contactpanda-video-preview">' + (thumb ? '<img src="' + escapeHtml(thumb) + '" alt="' + escapeHtml(block.title || '') + '">' : '<span class="dashicons dashicons-video-alt3"></span>') + (provider && block.show_provider_badge ? '<em class="contactpanda-video-provider is-' + block.badge_position + '">' + escapeHtml(provider) + '</em>' : '') + (block.show_button ? '<strong>▶ ' + escapeHtml(block.button_label || i18n.videoButton) + '</strong>' : '') + '</div>'; }
 		if (block.type === 'gallery') return galleryPreview(block);
-		if (block.type === 'columns') return '<div class="contactpanda-columns-preview" style="grid-template-columns:repeat(' + block.columns + ',minmax(0,1fr))">' + block.children.map(function (children, columnIndex) { return '<div class="contactpanda-column-dropzone" data-column-index="' + columnIndex + '">' + (children.length ? children.map(function (child) { return '<div class="contactpanda-column-child' + (child.id === selectedId ? ' is-selected' : '') + '" draggable="true" data-child-id="' + escapeHtml(child.id) + '"><span class="contactpanda-column-child-label">' + escapeHtml(label(child.type)) + '</span><div class="contactpanda-column-child-content" style="' + blockStyle(child) + '">' + preview(child) + '</div><button type="button" data-child-remove="' + escapeHtml(child.id) + '" title="' + escapeHtml(i18n.remove) + '"><span class="dashicons dashicons-trash"></span></button></div>'; }).join('') : '<span class="contactpanda-column-empty">' + escapeHtml(i18n.dropBlockHere) + '</span>') + '</div>'; }).join('') + '</div>';
+		if (block.type === 'columns') {
+			var columns = block.children.map(function (children, columnIndex) {
+				var items = children.map(function (child) {
+					var editable = isInlineBlock(child);
+					return '<div class="contactpanda-column-child' + (child.id === selectedId ? ' is-selected' : '') +
+						'" draggable="' + !editable + '" data-child-id="' + escapeHtml(child.id) + '">' +
+						textToolbar(child) + '<span class="contactpanda-column-child-label" draggable="true">' +
+						escapeHtml(label(child.type)) + '</span><div class="contactpanda-column-child-content" style="' +
+						blockStyle(child) + '">' + preview(child) + '</div><button type="button" data-child-remove="' +
+						escapeHtml(child.id) + '" title="' + escapeHtml(i18n.remove) +
+						'"><span class="dashicons dashicons-trash"></span></button></div>';
+				}).join('');
+				return '<div class="contactpanda-column-dropzone" data-column-index="' + columnIndex + '">' +
+					(items || '<span class="contactpanda-column-empty">' + escapeHtml(i18n.dropBlockHere) + '</span>') +
+					'</div>';
+			}).join('');
+			return '<div class="contactpanda-columns-preview" style="grid-template-columns:repeat(' +
+				block.columns + ',minmax(0,1fr))">' + columns + '</div>';
+		}
 		if (['phone_button', 'email_button', 'whatsapp_button'].indexOf(block.type) >= 0) { var icons = {phone_button: '☎', email_button: '✉', whatsapp_button: '◉'}; return '<span class="contactpanda-canvas-button" style="background:' + escapeHtml(block.button_color || '#4253b5') + ';color:' + escapeHtml(block.text_color || '#fff') + ';display:' + (block.full_width ? 'block' : 'inline-block') + '"><span aria-hidden="true">' + icons[block.type] + '</span> ' + escapeHtml(block.label) + '</span>'; }
 		if (block.type === 'button') return '<span class="contactpanda-canvas-button" style="background:' + escapeHtml(block.button_color || '#4253b5') + ';border:1px solid ' + escapeHtml(block.border_color || block.button_color || '#4253b5') + ';color:' + escapeHtml(block.text_color || '#fff') + ';display:' + (block.full_width ? 'block' : 'inline-block') + ';text-transform:' + (block.uppercase ? 'uppercase' : 'none') + '">' + escapeHtml(block.label || i18n.buttonLabel) + '</span>';
 		if (block.type === 'divider') return '<hr style="border:0;border-top:' + Number(block.line_width || 1) + 'px ' + escapeHtml(block.line_style || 'solid') + ' ' + escapeHtml(block.line_color || '#d9dee4') + '">';
@@ -201,24 +242,101 @@
 		if (block.type === 'posts') return postPreview(block);
 		return '';
 	}
+	function textToolbar(block) {
+		if (block.type !== 'text') return '';
+		return '<div class="contactpanda-inline-text-toolbar"><button type="button" data-command="bold" title="Bold"><strong>B</strong></button><button type="button" data-command="italic" title="Italic"><em>I</em></button><button type="button" data-command="createLink" title="' + escapeHtml(i18n.insertLink) + '"><span class="dashicons dashicons-admin-links"></span></button><button type="button" data-command="insertUnorderedList" title="List"><span class="dashicons dashicons-editor-ul"></span></button><button type="button" data-command="insertOrderedList" title="Numbered list"><span class="dashicons dashicons-editor-ol"></span></button><button type="button" data-command="justifyLeft"><span class="dashicons dashicons-editor-alignleft"></span></button><button type="button" data-command="justifyCenter"><span class="dashicons dashicons-editor-aligncenter"></span></button><button type="button" data-command="justifyRight"><span class="dashicons dashicons-editor-alignright"></span></button></div>';
+	}
+	function selectCanvasBlock(card, block, showInspector) {
+		if (selectedId === block.id) return;
+		selectedId = block.id;
+		inspectorTab = 'content';
+		container.querySelectorAll('.contactpanda-newsletter-block.is-selected, .contactpanda-column-child.is-selected').forEach(function (item) {
+			item.classList.remove('is-selected');
+		});
+		card.classList.add('is-selected');
+		renderInspector();
+		sync();
+
+		var editor = card.closest('[data-panda-editor]');
+		if (showInspector && editor && window.PandaEditorUI) {
+			window.PandaEditorUI.switchPanel(editor, 'edit');
+		}
+	}
+	function bindInlineEditor(card, editor, block) {
+		if (!editor) return;
+		var heading = block.type === 'heading';
+
+		editor.addEventListener('focus', function () { selectCanvasBlock(card, block, true); });
+		editor.addEventListener('beforeinput', function (event) {
+			if (heading && (event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak')) {
+				event.preventDefault();
+			}
+		});
+		editor.addEventListener('input', function () {
+			block.content = heading ? editor.innerText.replace(/\s*[\r\n]+\s*/g, ' ') : editor.innerHTML;
+			sync();
+
+			if (selectedId !== block.id) return;
+			if (heading) {
+				var headingField = inspector.querySelector('[data-inline-heading-content]');
+				if (headingField) headingField.value = block.content;
+				return;
+			}
+			var plain = document.getElementById(editorId);
+			var instance = window.tinymce && tinymce.get(editorId);
+			syncingInline = true;
+			try {
+				if (instance && instance.getContent() !== block.content) instance.setContent(block.content);
+				if (plain) plain.value = block.content;
+			} finally {
+				syncingInline = false;
+			}
+		});
+		card.querySelectorAll(':scope > .contactpanda-inline-text-toolbar [data-command]').forEach(function (button) {
+			button.addEventListener('mousedown', function (event) { event.preventDefault(); });
+			button.addEventListener('click', function (event) {
+				event.stopPropagation();
+				editor.focus();
+				var value = null;
+				if (button.dataset.command === 'createLink') {
+					value = window.prompt(i18n.targetUrl, 'https://');
+					if (!value) return;
+				}
+				document.execCommand(button.dataset.command, false, value);
+				editor.dispatchEvent(new Event('input'));
+			});
+		});
+	}
 	function renderCanvas() {
 		container.replaceChildren();
 		var header = document.createElement('div'); header.className = 'contactpanda-canvas-header'; header.innerHTML = config.logoUrl ? '<img src="' + escapeHtml(config.logoUrl) + '" alt="">' : '<span>' + escapeHtml(i18n.heading || 'ContactPanda') + '</span>'; container.appendChild(header);
 		blocks.forEach(function (block, index) {
 			var card = document.createElement('section');
 			card.className = 'contactpanda-newsletter-block' + (block.id === selectedId ? ' is-selected' : '');
-			card.dataset.id = block.id; card.dataset.pandaEditorElement = block.id; card.draggable = block.type !== 'text';
-			var inlineTools = '';
-			if (block.type === 'text') {
-				inlineTools = '<div class="contactpanda-inline-text-toolbar"><button type="button" data-command="bold" title="Bold"><strong>B</strong></button><button type="button" data-command="italic" title="Italic"><em>I</em></button><button type="button" data-command="createLink" title="' + escapeHtml(i18n.insertLink) + '"><span class="dashicons dashicons-admin-links"></span></button><button type="button" data-command="insertUnorderedList" title="List"><span class="dashicons dashicons-editor-ul"></span></button><button type="button" data-command="insertOrderedList" title="Numbered list"><span class="dashicons dashicons-editor-ol"></span></button><button type="button" data-command="justifyLeft"><span class="dashicons dashicons-editor-alignleft"></span></button><button type="button" data-command="justifyCenter"><span class="dashicons dashicons-editor-aligncenter"></span></button><button type="button" data-command="justifyRight"><span class="dashicons dashicons-editor-alignright"></span></button></div>';
-			}
+			card.dataset.id = block.id;
+			card.dataset.pandaEditorElement = block.id;
+			card.draggable = !isInlineBlock(block) && block.type !== 'columns';
+			var inlineTools = textToolbar(block);
 			if (block.type === 'image') {
 				inlineTools = '<div class="contactpanda-inline-image-toolbar"><div class="contactpanda-inline-align"><button type="button" data-image-align="left"><span class="dashicons dashicons-editor-alignleft"></span></button><button type="button" data-image-align="center"><span class="dashicons dashicons-editor-aligncenter"></span></button><button type="button" data-image-align="right"><span class="dashicons dashicons-editor-alignright"></span></button></div><label><span>' + escapeHtml(i18n.width) + ' (px oder %)</span><input type="text" data-image-width value="' + Number(block.width) + escapeHtml(block.width_unit) + '"></label></div>';
 			}
-			var editable = block.type === 'text' ? ' contenteditable="true" data-inline-editor="true"' : '';
-			card.innerHTML = inlineTools + '<div class="contactpanda-block-grip" draggable="true"><span class="dashicons dashicons-move"></span></div><div class="contactpanda-block-preview"' + editable + ' style="' + blockStyle(block) + '">' + preview(block) + '</div><div class="contactpanda-block-actions"><button type="button" data-action="duplicate" title="' + escapeHtml(i18n.duplicate) + '"><span class="dashicons dashicons-admin-page"></span></button><button type="button" data-action="remove" title="' + escapeHtml(i18n.remove) + '"><span class="dashicons dashicons-trash"></span></button></div>';
+			card.innerHTML = inlineTools + '<div class="contactpanda-block-grip" draggable="true"><span class="dashicons dashicons-move"></span></div><div class="contactpanda-block-preview" style="' + blockStyle(block) + '">' + preview(block) + '</div><div class="contactpanda-block-actions"><button type="button" data-action="duplicate" title="' + escapeHtml(i18n.duplicate) + '"><span class="dashicons dashicons-admin-page"></span></button><button type="button" data-action="remove" title="' + escapeHtml(i18n.remove) + '"><span class="dashicons dashicons-trash"></span></button></div>';
+			bindInlineEditor(card, card.querySelector(':scope > .contactpanda-block-preview > [data-inline-editor]'), block);
 			card.querySelectorAll('.contactpanda-column-child').forEach(function (childCard) {
-				childCard.addEventListener('click', function (event) { event.stopPropagation(); var remove = event.target.closest('[data-child-remove]'); if (remove) { var target = locateBlock(remove.dataset.childRemove); if (target) target.list.splice(target.index, 1); selectedId = block.id; render(); return; } selectedId = childCard.dataset.childId; inspectorTab = 'content'; render(); });
+				var child = locateBlock(childCard.dataset.childId).block;
+				bindInlineEditor(childCard, childCard.querySelector('[data-inline-editor]'), child);
+				childCard.addEventListener('click', function (event) {
+					event.stopPropagation();
+					var remove = event.target.closest('[data-child-remove]');
+					if (remove) {
+						var target = locateBlock(remove.dataset.childRemove);
+						if (target) target.list.splice(target.index, 1);
+						selectedId = block.id;
+						render();
+						return;
+					}
+					if (!event.target.closest('[data-inline-editor]')) selectCanvasBlock(childCard, child, true);
+				});
 				childCard.addEventListener('dragstart', function (event) { event.stopPropagation(); draggedId = childCard.dataset.childId; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', draggedId); childCard.classList.add('is-dragging'); });
 				childCard.addEventListener('dragend', function (event) { event.stopPropagation(); childCard.classList.remove('is-dragging'); });
 			});
@@ -233,40 +351,11 @@
 					if (!added || added.type === 'columns') return; var list = block.children[columnIndex], target = list.findIndex(function(item){return item.id === childId;}); list.splice(target < 0 ? list.length : target + (after ? 1 : 0), 0, added); selectedId = added.id; render();
 				});
 			});
-			function selectCard() {
-				if (selectedId === block.id) return;
-				selectedId = block.id;
-				inspectorTab = 'content';
-				container.querySelectorAll('.contactpanda-newsletter-block.is-selected').forEach(function (item) {
-					item.classList.remove('is-selected');
-				});
-				card.classList.add('is-selected');
-				renderInspector();
-				sync();
-			}
-			if (block.type !== 'text') card.tabIndex = 0;
+			if (!isInlineBlock(block)) card.tabIndex = 0;
 			card.addEventListener('focusin', function (event) {
-				if (event.target.closest('.contactpanda-column-child')) return;
-				var changed = selectedId !== block.id;
-				selectCard();
-				var editor = card.closest('[data-panda-editor]');
-				if (changed && editor && window.PandaEditorUI) {
-					window.PandaEditorUI.switchPanel(editor, 'edit');
-				}
+				if (event.target.closest('.contactpanda-column-child, [data-inline-editor]')) return;
+				selectCanvasBlock(card, block, true);
 			});
-			var inlineEditor = card.querySelector('[data-inline-editor]');
-			if (inlineEditor) {
-				inlineEditor.addEventListener('input', function () {
-					var rich = inlineEditor.querySelector('.contactpanda-canvas-text'); block.content = rich ? rich.innerHTML : inlineEditor.innerHTML; sync();
-					var instance = window.tinymce && tinymce.get(editorId); var plain = document.getElementById(editorId); syncingInline = true;
-					if (instance && instance.getContent() !== block.content) instance.setContent(block.content);
-					if (plain) plain.value = block.content; syncingInline = false;
-				});
-				card.querySelectorAll('[data-command]').forEach(function (button) {
-					button.addEventListener('mousedown', function (event) { event.preventDefault(); });
-					button.addEventListener('click', function (event) { event.stopPropagation(); inlineEditor.focus(); var value = null; if (button.dataset.command === 'createLink') { value = window.prompt(i18n.targetUrl, 'https://'); if (!value) return; } document.execCommand(button.dataset.command, false, value); inlineEditor.dispatchEvent(new Event('input')); });
-				});
-			}
 			card.querySelectorAll('[data-image-align]').forEach(function (button) { button.addEventListener('click', function (event) { event.stopPropagation(); block.alignment = button.dataset.imageAlign; sync(); renderCanvas(); }); });
 			var imageWidth = card.querySelector('[data-image-width]');
 			if (imageWidth) imageWidth.addEventListener('input', function (event) { event.stopPropagation(); var match = imageWidth.value.trim().match(/^(\d+(?:\.\d+)?)\s*(px|%)$/i); if (!match) return; block.width_unit = match[2].toLowerCase(); var maximum = block.width_unit === 'px' ? 760 : 100; block.width = Math.max(1, Math.min(maximum, Number(match[1]))); sync(); var image = card.querySelector('.contactpanda-block-preview img'); if (image) image.style.width = block.width + block.width_unit; });
@@ -279,7 +368,7 @@
 					render(); return;
 				}
 				if (event.target.closest('[data-inline-editor], .contactpanda-inline-text-toolbar, .contactpanda-inline-image-toolbar')) return;
-				selectCard();
+				selectCanvasBlock(card, block, false);
 			});
 			card.addEventListener('dragstart', function (event) { if (event.target.closest('.contactpanda-column-child')) return; draggedId = block.id; event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', block.id); card.classList.add('is-dragging'); });
 			card.addEventListener('dragend', function () { draggedId = ''; card.classList.remove('is-dragging'); });
@@ -444,14 +533,40 @@
 		removeEditor(); inspector.replaceChildren(); var block = selectedBlock();
 		if (!block) { var note = document.createElement('p'); note.className = 'contactpanda-muted'; note.textContent = i18n.selectBlock; inspector.appendChild(note); return; }
 		var heading = document.createElement('h3'); heading.textContent = label(block.type); inspector.appendChild(heading);
-		if (block.type === 'heading') { inspector.appendChild(field(i18n.content, 'text', block.content, function (value) { block.content = value; })); inspector.appendChild(field(i18n.headingLevel, 'select', block.level, function (value) { block.level = value; }, [['h1','H1'],['h2','H2'],['h3','H3'],['h4','H4'],['h5','H5'],['h6','H6']])); inspector.appendChild(colorField(i18n.textColor, block.text_color || '#39495a', function (value) { block.text_color = value; })); inspector.appendChild(alignmentField(block)); }
+		if (block.type === 'heading') {
+			var headingContent = field(i18n.content, 'text', block.content, function (value) { block.content = value; });
+			headingContent.querySelector('input').dataset.inlineHeadingContent = '';
+			inspector.appendChild(headingContent);
+			inspector.appendChild(field(i18n.headingLevel, 'select', block.level, function (value) { block.level = value; }, [['h1','H1'],['h2','H2'],['h3','H3'],['h4','H4'],['h5','H5'],['h6','H6']]));
+			inspector.appendChild(colorField(i18n.textColor, block.text_color || '#39495a', function (value) { block.text_color = value; }));
+			inspector.appendChild(alignmentField(block));
+		}
 		else if (block.type === 'text') {
-			var editor = document.createElement('textarea'); editor.id = editorId; editor.value = block.content || ''; inspector.appendChild(editor); inspector.appendChild(alignmentField(block));
+			var editor = document.createElement('textarea');
+			editor.id = editorId;
+			editor.value = block.content || '';
+			inspector.appendChild(editor);
+			inspector.appendChild(alignmentField(block));
+			editor.addEventListener('input', function () { block.content = editor.value; sync(); renderCanvas(); });
 			if (window.wp && wp.editor) window.setTimeout(function () {
-				wp.editor.initialize(editorId, {tinymce: {toolbar1: 'bold italic link bullist numlist alignleft aligncenter alignright undo redo', menubar: false}, quicktags: true});
-				var instance = window.tinymce && tinymce.get(editorId);
-				if (instance) instance.on('change keyup undo redo', function () { if (syncingInline) return; block.content = instance.getContent(); sync(); renderCanvas(); });
-				var plain = document.getElementById(editorId); if (plain) plain.addEventListener('input', function () { block.content = plain.value; sync(); renderCanvas(); });
+				if (!editor.isConnected || selectedId !== block.id) return;
+				wp.editor.initialize(editorId, {
+					tinymce: {
+						toolbar1: 'bold italic link bullist numlist alignleft aligncenter alignright undo redo',
+						menubar: false,
+						setup: function (instance) {
+							instance.on('input change keyup undo redo', function () {
+								if (syncingInline || selectedId !== block.id || !editor.isConnected || instance.isHidden()) return;
+								var content = instance.getContent();
+								if (content === block.content) return;
+								block.content = content;
+								sync();
+								renderCanvas();
+							});
+						}
+					},
+					quicktags: true
+				});
 			}, 0);
 		} else if (block.type === 'image') {
 			inspector.appendChild(imagePickerField(i18n.image, block.url, block.attachment_id, function (image) { block.url = image ? image.url : ''; block.attachment_id = image ? image.id : 0; if (image && !block.alt) block.alt = image.alt || ''; render(); })); inspector.appendChild(field(i18n.alternativeText, 'text', block.alt, function (value) { block.alt = value; }));
@@ -542,6 +657,13 @@
 		var button = this, message = document.getElementById('contactpanda-test-message'); button.disabled = true; message.className = 'contactpanda-newsletter-message'; message.textContent = i18n.sending;
 		request('contactpanda_newsletter_test', {recipient: document.getElementById('contactpanda-test-email').value}).then(function (result) { if (!result.success) throw new Error((result.data && result.data.message) || i18n.testFailed); message.classList.add('is-success'); message.textContent = result.data.message; }).catch(function (error) { message.classList.add('is-error'); message.textContent = error.message === 'invalid-response' ? i18n.testFailed : error.message; }).finally(function () { button.disabled = false; });
 	});
-	form.addEventListener('submit', function () { var instance = window.tinymce && tinymce.get(editorId), block = selectedBlock(); if (instance && block && block.type === 'text') block.content = instance.getContent(); sync(); });
+	form.addEventListener('submit', function () {
+		var instance = window.tinymce && tinymce.get(editorId);
+		var block = selectedBlock();
+		if (instance && instance.initialized && !instance.isHidden() && block && block.type === 'text') {
+			block.content = instance.getContent();
+		}
+		sync();
+	});
 	render();
 }());

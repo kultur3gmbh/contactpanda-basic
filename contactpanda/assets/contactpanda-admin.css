@@ -610,8 +610,22 @@ body.contactpanda-modal-open{overflow:hidden}.contactpanda-mailing-modal{z-index
 	.contactpanda-company-link-input { flex-wrap: wrap; }
 }
 
-.contactpanda-newsletter-block:not(.is-selected) > :is(.contactpanda-inline-text-toolbar, .contactpanda-inline-image-toolbar) {
+:is(.contactpanda-newsletter-block, .contactpanda-column-child):not(.is-selected) > :is(.contactpanda-inline-text-toolbar, .contactpanda-inline-image-toolbar) {
 	display: none;
+}
+
+.contactpanda-newsletter-block [data-inline-editor] {
+	min-block-size: 1.4em;
+	cursor: text;
+}
+
+.contactpanda-newsletter-block [data-inline-editor]:focus-visible {
+	outline: 2px solid #5266d4;
+	outline-offset: 2px;
+}
+
+.contactpanda-column-child-label[draggable="true"] {
+	cursor: grab;
 }
 
 .contactpanda-template-actions .is-template-saved {

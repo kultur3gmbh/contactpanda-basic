@@ -4,7 +4,7 @@ Tags: crm, contacts, companies, newsletter, woocommerce
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 0.9.125
+Stable tag: 0.9.126
 License: GPLv3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -42,6 +42,11 @@ To reproduce an expanded copy, use Prettier 3.6.2 with parser babel, singleQuote
 The WordPress.org distribution is prepared for community translations through translate.wordpress.org. Existing PO/MO catalogs remain maintained for separate distributions and are omitted only from the WordPress.org package. Before a WordPress language pack is available, untranslated strings fall back to English.
 
 == Changelog ==
+
+= 0.9.126 =
+* Edit headings and rich text directly in the email canvas, including blocks inside columns.
+* Keep text selection and focus while product previews load.
+* Use an existing German catalog when the selected German locale has no dedicated catalog.
 
 = 0.9.125 =
 * Close the image toolbar when switching blocks and add optional image links to emails.

@@ -2,7 +2,7 @@
 /**
  * Plugin Name: ContactPanda Basic
  * Description: Free contact and company management for WordPress with newsletters, WooCommerce, and a migration assistant for existing CRM data.
- * Version: 0.9.125
+ * Version: 0.9.126
  * Author: Kultur3 GmbH
  * License: GPLv3
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -14,14 +14,17 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONTACTPANDA_VERSION', '0.9.125' );
+define( 'CONTACTPANDA_VERSION', '0.9.126' );
 // Keep browser caches independent from the public plugin version so that
 // corrected admin interactions are loaded even for same-version test builds.
-define( 'CONTACTPANDA_ASSET_VERSION', CONTACTPANDA_VERSION . '-20261112-2' );
+define( 'CONTACTPANDA_ASSET_VERSION', CONTACTPANDA_VERSION . '-20261128-1' );
 define( 'CONTACTPANDA_EXTENSION_API_VERSION', '1.1' );
 define( 'CONTACTPANDA_FILE', __FILE__ );
 define( 'CONTACTPANDA_PATH', plugin_dir_path( __FILE__ ) );
 define( 'CONTACTPANDA_URL', plugin_dir_url( __FILE__ ) );
+
+require_once CONTACTPANDA_PATH . 'includes/class-contactpanda-translations.php';
+ContactPanda_Translations::register( 'contactpanda', CONTACTPANDA_PATH . 'languages' );
 
 // Frontend forms need the bundled catalog too, without loading the admin class.
 add_action( 'init', static function () {

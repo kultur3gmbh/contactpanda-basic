@@ -711,6 +711,19 @@
 	function eventDate(value) {
 		return new Date(String(value || '').replace(' ', 'T'));
 	}
+	function refreshProductPreview(block, products) {
+		productPreviewCache[block.id] = products;
+		var id = CSS.escape(block.id);
+		var target = container.querySelector(
+			'[data-id="' +
+				id +
+				'"] > .contactpanda-block-preview, ' +
+				'[data-child-id="' +
+				id +
+				'"] > .contactpanda-column-child-content',
+		);
+		if (target) target.innerHTML = preview(block);
+	}
 	function loadProductPreview(block) {
 		if (!config.woocommerce || block.type !== 'products') return;
 		window.clearTimeout(productPreviewTimers[block.id]);
@@ -724,15 +737,30 @@
 					return response.json();
 				})
 				.then(function (result) {
-					productPreviewCache[block.id] =
-						result.success && result.data ? result.data.products || [] : [];
-					renderCanvas();
+					refreshProductPreview(
+						block,
+						result.success && result.data ? result.data.products || [] : [],
+					);
 				})
 				.catch(function () {
-					productPreviewCache[block.id] = [];
-					renderCanvas();
+					refreshProductPreview(block, []);
 				});
 		}, 250);
+	}
+	function isInlineBlock(block) {
+		return block.type === 'heading' || block.type === 'text';
+	}
+	function inlineAttributes(block) {
+		var multiline = block.type === 'text';
+		return (
+			' contenteditable="' +
+			(multiline ? 'true' : 'plaintext-only') +
+			'" data-inline-editor="true" role="textbox" aria-multiline="' +
+			multiline +
+			'" aria-label="' +
+			escapeHtml(label(block.type)).replace(/"/g, '&quot;') +
+			'"'
+		);
 	}
 	function preview(block) {
 		if (block.type === 'heading') {
@@ -740,21 +768,25 @@
 			return (
 				'<' +
 				headingTag +
+				inlineAttributes(block) +
 				' style="color:' +
 				escapeHtml(block.text_color || 'inherit') +
 				'">' +
-				escapeHtml(block.content || label('heading')) +
+				escapeHtml(block.content || '') +
 				'</' +
 				headingTag +
 				'>'
 			);
 		}
-		if (block.type === 'text')
+		if (block.type === 'text') {
 			return (
-				'<div class="contactpanda-canvas-text">' +
-				safeRich(block.content || '<p>' + escapeHtml(label('text')) + '</p>') +
+				'<div class="contactpanda-canvas-text"' +
+				inlineAttributes(block) +
+				'>' +
+				safeRich(block.content || '') +
 				'</div>'
 			);
+		}
 		if (block.type === 'hero') {
 			var overlay = Math.max(0, Math.min(90, Number(block.overlay_opacity || 45))) / 100;
 			var overlayRgba = hexToRgba(block.overlay_color, overlay);
@@ -861,48 +893,55 @@
 			);
 		}
 		if (block.type === 'gallery') return galleryPreview(block);
-		if (block.type === 'columns')
+		if (block.type === 'columns') {
+			var columns = block.children
+				.map(function (children, columnIndex) {
+					var items = children
+						.map(function (child) {
+							var editable = isInlineBlock(child);
+							return (
+								'<div class="contactpanda-column-child' +
+								(child.id === selectedId ? ' is-selected' : '') +
+								'" draggable="' +
+								!editable +
+								'" data-child-id="' +
+								escapeHtml(child.id) +
+								'">' +
+								textToolbar(child) +
+								'<span class="contactpanda-column-child-label" draggable="true">' +
+								escapeHtml(label(child.type)) +
+								'</span><div class="contactpanda-column-child-content" style="' +
+								blockStyle(child) +
+								'">' +
+								preview(child) +
+								'</div><button type="button" data-child-remove="' +
+								escapeHtml(child.id) +
+								'" title="' +
+								escapeHtml(i18n.remove) +
+								'"><span class="dashicons dashicons-trash"></span></button></div>'
+							);
+						})
+						.join('');
+					return (
+						'<div class="contactpanda-column-dropzone" data-column-index="' +
+						columnIndex +
+						'">' +
+						(items ||
+							'<span class="contactpanda-column-empty">' +
+								escapeHtml(i18n.dropBlockHere) +
+								'</span>') +
+						'</div>'
+					);
+				})
+				.join('');
 			return (
 				'<div class="contactpanda-columns-preview" style="grid-template-columns:repeat(' +
 				block.columns +
 				',minmax(0,1fr))">' +
-				block.children
-					.map(function (children, columnIndex) {
-						return (
-							'<div class="contactpanda-column-dropzone" data-column-index="' +
-							columnIndex +
-							'">' +
-							(children.length
-								? children
-										.map(function (child) {
-											return (
-												'<div class="contactpanda-column-child' +
-												(child.id === selectedId ? ' is-selected' : '') +
-												'" draggable="true" data-child-id="' +
-												escapeHtml(child.id) +
-												'"><span class="contactpanda-column-child-label">' +
-												escapeHtml(label(child.type)) +
-												'</span><div class="contactpanda-column-child-content" style="' +
-												blockStyle(child) +
-												'">' +
-												preview(child) +
-												'</div><button type="button" data-child-remove="' +
-												escapeHtml(child.id) +
-												'" title="' +
-												escapeHtml(i18n.remove) +
-												'"><span class="dashicons dashicons-trash"></span></button></div>'
-											);
-										})
-										.join('')
-								: '<span class="contactpanda-column-empty">' +
-									escapeHtml(i18n.dropBlockHere) +
-									'</span>') +
-							'</div>'
-						);
-					})
-					.join('') +
+				columns +
 				'</div>'
 			);
+		}
 		if (['phone_button', 'email_button', 'whatsapp_button'].indexOf(block.type) >= 0) {
 			var icons = { phone_button: '☎', email_button: '✉', whatsapp_button: '◉' };
 			return (
@@ -993,6 +1032,88 @@
 		if (block.type === 'posts') return postPreview(block);
 		return '';
 	}
+	function textToolbar(block) {
+		if (block.type !== 'text') return '';
+		return (
+			'<div class="contactpanda-inline-text-toolbar"><button type="button" data-command="bold" title="Bold"><strong>B</strong></button><button type="button" data-command="italic" title="Italic"><em>I</em></button><button type="button" data-command="createLink" title="' +
+			escapeHtml(i18n.insertLink) +
+			'"><span class="dashicons dashicons-admin-links"></span></button><button type="button" data-command="insertUnorderedList" title="List"><span class="dashicons dashicons-editor-ul"></span></button><button type="button" data-command="insertOrderedList" title="Numbered list"><span class="dashicons dashicons-editor-ol"></span></button><button type="button" data-command="justifyLeft"><span class="dashicons dashicons-editor-alignleft"></span></button><button type="button" data-command="justifyCenter"><span class="dashicons dashicons-editor-aligncenter"></span></button><button type="button" data-command="justifyRight"><span class="dashicons dashicons-editor-alignright"></span></button></div>'
+		);
+	}
+	function selectCanvasBlock(card, block, showInspector) {
+		if (selectedId === block.id) return;
+		selectedId = block.id;
+		inspectorTab = 'content';
+		container
+			.querySelectorAll(
+				'.contactpanda-newsletter-block.is-selected, .contactpanda-column-child.is-selected',
+			)
+			.forEach(function (item) {
+				item.classList.remove('is-selected');
+			});
+		card.classList.add('is-selected');
+		renderInspector();
+		sync();
+
+		var editor = card.closest('[data-panda-editor]');
+		if (showInspector && editor && window.PandaEditorUI) {
+			window.PandaEditorUI.switchPanel(editor, 'edit');
+		}
+	}
+	function bindInlineEditor(card, editor, block) {
+		if (!editor) return;
+		var heading = block.type === 'heading';
+
+		editor.addEventListener('focus', function () {
+			selectCanvasBlock(card, block, true);
+		});
+		editor.addEventListener('beforeinput', function (event) {
+			if (
+				heading &&
+				(event.inputType === 'insertParagraph' || event.inputType === 'insertLineBreak')
+			) {
+				event.preventDefault();
+			}
+		});
+		editor.addEventListener('input', function () {
+			block.content = heading ? editor.innerText.replace(/\s*[\r\n]+\s*/g, ' ') : editor.innerHTML;
+			sync();
+
+			if (selectedId !== block.id) return;
+			if (heading) {
+				var headingField = inspector.querySelector('[data-inline-heading-content]');
+				if (headingField) headingField.value = block.content;
+				return;
+			}
+			var plain = document.getElementById(editorId);
+			var instance = window.tinymce && tinymce.get(editorId);
+			syncingInline = true;
+			try {
+				if (instance && instance.getContent() !== block.content) instance.setContent(block.content);
+				if (plain) plain.value = block.content;
+			} finally {
+				syncingInline = false;
+			}
+		});
+		card
+			.querySelectorAll(':scope > .contactpanda-inline-text-toolbar [data-command]')
+			.forEach(function (button) {
+				button.addEventListener('mousedown', function (event) {
+					event.preventDefault();
+				});
+				button.addEventListener('click', function (event) {
+					event.stopPropagation();
+					editor.focus();
+					var value = null;
+					if (button.dataset.command === 'createLink') {
+						value = window.prompt(i18n.targetUrl, 'https://');
+						if (!value) return;
+					}
+					document.execCommand(button.dataset.command, false, value);
+					editor.dispatchEvent(new Event('input'));
+				});
+			});
+	}
 	function renderCanvas() {
 		container.replaceChildren();
 		var header = document.createElement('div');
@@ -1007,14 +1128,8 @@
 				'contactpanda-newsletter-block' + (block.id === selectedId ? ' is-selected' : '');
 			card.dataset.id = block.id;
 			card.dataset.pandaEditorElement = block.id;
-			card.draggable = block.type !== 'text';
-			var inlineTools = '';
-			if (block.type === 'text') {
-				inlineTools =
-					'<div class="contactpanda-inline-text-toolbar"><button type="button" data-command="bold" title="Bold"><strong>B</strong></button><button type="button" data-command="italic" title="Italic"><em>I</em></button><button type="button" data-command="createLink" title="' +
-					escapeHtml(i18n.insertLink) +
-					'"><span class="dashicons dashicons-admin-links"></span></button><button type="button" data-command="insertUnorderedList" title="List"><span class="dashicons dashicons-editor-ul"></span></button><button type="button" data-command="insertOrderedList" title="Numbered list"><span class="dashicons dashicons-editor-ol"></span></button><button type="button" data-command="justifyLeft"><span class="dashicons dashicons-editor-alignleft"></span></button><button type="button" data-command="justifyCenter"><span class="dashicons dashicons-editor-aligncenter"></span></button><button type="button" data-command="justifyRight"><span class="dashicons dashicons-editor-alignright"></span></button></div>';
-			}
+			card.draggable = !isInlineBlock(block) && block.type !== 'columns';
+			var inlineTools = textToolbar(block);
 			if (block.type === 'image') {
 				inlineTools =
 					'<div class="contactpanda-inline-image-toolbar"><div class="contactpanda-inline-align"><button type="button" data-image-align="left"><span class="dashicons dashicons-editor-alignleft"></span></button><button type="button" data-image-align="center"><span class="dashicons dashicons-editor-aligncenter"></span></button><button type="button" data-image-align="right"><span class="dashicons dashicons-editor-alignright"></span></button></div><label><span>' +
@@ -1024,13 +1139,9 @@
 					escapeHtml(block.width_unit) +
 					'"></label></div>';
 			}
-			var editable =
-				block.type === 'text' ? ' contenteditable="true" data-inline-editor="true"' : '';
 			card.innerHTML =
 				inlineTools +
-				'<div class="contactpanda-block-grip" draggable="true"><span class="dashicons dashicons-move"></span></div><div class="contactpanda-block-preview"' +
-				editable +
-				' style="' +
+				'<div class="contactpanda-block-grip" draggable="true"><span class="dashicons dashicons-move"></span></div><div class="contactpanda-block-preview" style="' +
 				blockStyle(block) +
 				'">' +
 				preview(block) +
@@ -1039,7 +1150,14 @@
 				'"><span class="dashicons dashicons-admin-page"></span></button><button type="button" data-action="remove" title="' +
 				escapeHtml(i18n.remove) +
 				'"><span class="dashicons dashicons-trash"></span></button></div>';
+			bindInlineEditor(
+				card,
+				card.querySelector(':scope > .contactpanda-block-preview > [data-inline-editor]'),
+				block,
+			);
 			card.querySelectorAll('.contactpanda-column-child').forEach(function (childCard) {
+				var child = locateBlock(childCard.dataset.childId).block;
+				bindInlineEditor(childCard, childCard.querySelector('[data-inline-editor]'), child);
 				childCard.addEventListener('click', function (event) {
 					event.stopPropagation();
 					var remove = event.target.closest('[data-child-remove]');
@@ -1050,9 +1168,8 @@
 						render();
 						return;
 					}
-					selectedId = childCard.dataset.childId;
-					inspectorTab = 'content';
-					render();
+					if (!event.target.closest('[data-inline-editor]'))
+						selectCanvasBlock(childCard, child, true);
 				});
 				childCard.addEventListener('dragstart', function (event) {
 					event.stopPropagation();
@@ -1106,60 +1223,11 @@
 					render();
 				});
 			});
-			function selectCard() {
-				if (selectedId === block.id) return;
-				selectedId = block.id;
-				inspectorTab = 'content';
-				container
-					.querySelectorAll('.contactpanda-newsletter-block.is-selected')
-					.forEach(function (item) {
-						item.classList.remove('is-selected');
-					});
-				card.classList.add('is-selected');
-				renderInspector();
-				sync();
-			}
-			if (block.type !== 'text') card.tabIndex = 0;
+			if (!isInlineBlock(block)) card.tabIndex = 0;
 			card.addEventListener('focusin', function (event) {
-				if (event.target.closest('.contactpanda-column-child')) return;
-				var changed = selectedId !== block.id;
-				selectCard();
-				var editor = card.closest('[data-panda-editor]');
-				if (changed && editor && window.PandaEditorUI) {
-					window.PandaEditorUI.switchPanel(editor, 'edit');
-				}
+				if (event.target.closest('.contactpanda-column-child, [data-inline-editor]')) return;
+				selectCanvasBlock(card, block, true);
 			});
-			var inlineEditor = card.querySelector('[data-inline-editor]');
-			if (inlineEditor) {
-				inlineEditor.addEventListener('input', function () {
-					var rich = inlineEditor.querySelector('.contactpanda-canvas-text');
-					block.content = rich ? rich.innerHTML : inlineEditor.innerHTML;
-					sync();
-					var instance = window.tinymce && tinymce.get(editorId);
-					var plain = document.getElementById(editorId);
-					syncingInline = true;
-					if (instance && instance.getContent() !== block.content)
-						instance.setContent(block.content);
-					if (plain) plain.value = block.content;
-					syncingInline = false;
-				});
-				card.querySelectorAll('[data-command]').forEach(function (button) {
-					button.addEventListener('mousedown', function (event) {
-						event.preventDefault();
-					});
-					button.addEventListener('click', function (event) {
-						event.stopPropagation();
-						inlineEditor.focus();
-						var value = null;
-						if (button.dataset.command === 'createLink') {
-							value = window.prompt(i18n.targetUrl, 'https://');
-							if (!value) return;
-						}
-						document.execCommand(button.dataset.command, false, value);
-						inlineEditor.dispatchEvent(new Event('input'));
-					});
-				});
-			}
 			card.querySelectorAll('[data-image-align]').forEach(function (button) {
 				button.addEventListener('click', function (event) {
 					event.stopPropagation();
@@ -1208,7 +1276,7 @@
 					)
 				)
 					return;
-				selectCard();
+				selectCanvasBlock(card, block, false);
 			});
 			card.addEventListener('dragstart', function (event) {
 				if (event.target.closest('.contactpanda-column-child')) return;
@@ -1826,11 +1894,11 @@
 		heading.textContent = label(block.type);
 		inspector.appendChild(heading);
 		if (block.type === 'heading') {
-			inspector.appendChild(
-				field(i18n.content, 'text', block.content, function (value) {
-					block.content = value;
-				}),
-			);
+			var headingContent = field(i18n.content, 'text', block.content, function (value) {
+				block.content = value;
+			});
+			headingContent.querySelector('input').dataset.inlineHeadingContent = '';
+			inspector.appendChild(headingContent);
 			inspector.appendChild(
 				field(
 					i18n.headingLevel,
@@ -1861,31 +1929,38 @@
 			editor.value = block.content || '';
 			inspector.appendChild(editor);
 			inspector.appendChild(alignmentField(block));
+			editor.addEventListener('input', function () {
+				block.content = editor.value;
+				sync();
+				renderCanvas();
+			});
 			if (window.wp && wp.editor)
 				window.setTimeout(function () {
+					if (!editor.isConnected || selectedId !== block.id) return;
 					wp.editor.initialize(editorId, {
 						tinymce: {
 							toolbar1:
 								'bold italic link bullist numlist alignleft aligncenter alignright undo redo',
 							menubar: false,
+							setup: function (instance) {
+								instance.on('input change keyup undo redo', function () {
+									if (
+										syncingInline ||
+										selectedId !== block.id ||
+										!editor.isConnected ||
+										instance.isHidden()
+									)
+										return;
+									var content = instance.getContent();
+									if (content === block.content) return;
+									block.content = content;
+									sync();
+									renderCanvas();
+								});
+							},
 						},
 						quicktags: true,
 					});
-					var instance = window.tinymce && tinymce.get(editorId);
-					if (instance)
-						instance.on('change keyup undo redo', function () {
-							if (syncingInline) return;
-							block.content = instance.getContent();
-							sync();
-							renderCanvas();
-						});
-					var plain = document.getElementById(editorId);
-					if (plain)
-						plain.addEventListener('input', function () {
-							block.content = plain.value;
-							sync();
-							renderCanvas();
-						});
 				}, 0);
 		} else if (block.type === 'image') {
 			inspector.appendChild(
@@ -2949,9 +3024,17 @@
 			});
 	});
 	form.addEventListener('submit', function () {
-		var instance = window.tinymce && tinymce.get(editorId),
-			block = selectedBlock();
-		if (instance && block && block.type === 'text') block.content = instance.getContent();
+		var instance = window.tinymce && tinymce.get(editorId);
+		var block = selectedBlock();
+		if (
+			instance &&
+			instance.initialized &&
+			!instance.isHidden() &&
+			block &&
+			block.type === 'text'
+		) {
+			block.content = instance.getContent();
+		}
 		sync();
 	});
 	render();
